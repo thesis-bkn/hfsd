@@ -1,0 +1,41 @@
+package templates
+
+templ Login() {
+	@base() {
+		<div class="wrapper">
+			<div class="login_box underline">
+				<span>Login</span>
+			</div>
+			<div class="input_box">
+				<input type="text" id="user" class="input-field" required/>
+				<label for="user" class="label">Username</label>
+				<i class="fa fa-user-o" aria-hidden="true"></i>
+			</div>
+			<div class="input_box">
+				<input type="password" id="pass" class="input-field" required/>
+				<label for="pass" class="label">Password</label>
+				<i class="fa fa-lock" aria-hidden="true"></i>
+			</div>
+			<div class="remember-forgot">
+				<div class="remember-me">
+					<input type="checkbox" id="remember"/>
+					<label for="remember">Remember me</label>
+				</div>
+				<div class="forgot">
+					<a href="#">Forgot password?</a>
+				</div>
+			</div>
+			<div class="input_box">
+				<input type="submit" value="Login" class="input-submit"/>
+			</div>
+			<div class="register">
+				<span>
+					Don't have an account?
+					<div class="hover:underline text-red">
+						<a href="#">Register</a>
+					</div>
+				</span>
+			</div>
+		</div>
+	}
+}
