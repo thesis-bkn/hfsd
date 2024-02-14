@@ -17,5 +17,5 @@ func NewHomeHandler() HomeHandler {
 
 // Home implements HomeHandler.
 func (*homeHandler) Home(c echo.Context) error {
-	return render(c, templates.Home())
+	return templates.Home().Render(c.Request().Context(), c.Response().Writer)
 }

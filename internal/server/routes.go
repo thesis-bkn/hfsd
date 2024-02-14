@@ -13,6 +13,7 @@ import (
 	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/internal/repo"
 	"github.com/thesis-bkn/hfsd/internal/server/handler"
+	"github.com/thesis-bkn/hfsd/internal/server/handler/authimpl"
 	appmw "github.com/thesis-bkn/hfsd/internal/server/middleware"
 	"github.com/thesis-bkn/hfsd/templates"
 )
@@ -34,9 +35,10 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	mwAuthenticate := appmw.Authenticate(cfg)
 
 	// Handler
-	authHandler := handler.NewAuthHandler(validate, cfg, userRepo)
+	authHandler := authimpl.NewAuthHandler(validate, cfg, userRepo)
 	homeHandler := handler.NewHomeHandler()
 
+	// Global Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(appmw.PopulateRequestContext())
@@ -49,13 +51,13 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	e.GET("/asset/*", echo.WrapHandler(assetFile))
 	e.GET("/hello", HelloHandler)
 
-	// Web
 	e.GET("/", homeHandler.Home)
 
 	// Auth ----------
 	authEndpoint := e.Group("/auth")
-	authEndpoint.GET("/login", authHandler.Login)
-	authEndpoint.GET("/signup", authHandler.Signup)
+	authEndpoint.GET("/login", authHandler.LoginView)
+	// authEndpoint.POST("login/submit", h echo.HandlerFunc, m ...echo.MiddlewareFunc)
+	authEndpoint.POST("/signup", authHandler.Signup)
 	authEndpoint.GET("/verify-token", mwAuthenticate(authHandler.Validate))
 	// ---------------
 

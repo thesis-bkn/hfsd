@@ -27,3 +27,4 @@ tmp/
 .envrc
 vendor
 bin/
+main
