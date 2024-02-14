@@ -11,6 +11,7 @@ import (
 	"github.com/thesis-bkn/hfsd/internal/entity"
 	"github.com/thesis-bkn/hfsd/internal/errors"
 	"github.com/thesis-bkn/hfsd/internal/server/transport"
+	"github.com/thesis-bkn/hfsd/templates"
 )
 
 // sign up route
@@ -24,8 +25,12 @@ type SignupResponse struct {
 	Token string `json:"token"`
 }
 
+func (a *authHandler) SignupView(c echo.Context) error {
+	return render(c, templates.Signup())
+}
+
 // Signup implements AuthHandler.
-func (a *authHandler) Signup(c echo.Context) error {
+func (a *authHandler) SignupSubmit(c echo.Context) error {
 	var (
 		signupRequest SignupRequest
 		user          entity.User

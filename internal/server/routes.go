@@ -56,9 +56,12 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	// Auth ----------
 	authEndpoint := e.Group("/auth")
 	authEndpoint.GET("/login", authHandler.LoginView)
-	// authEndpoint.POST("login/submit", h echo.HandlerFunc, m ...echo.MiddlewareFunc)
-	authEndpoint.POST("/signup", authHandler.Signup)
-	authEndpoint.GET("/verify-token", mwAuthenticate(authHandler.Validate))
+	authEndpoint.POST("/login", authHandler.LoginSubmit)
+
+	authEndpoint.GET("/signup", authHandler.SignupView)
+	authEndpoint.POST("/signup", authHandler.SignupSubmit)
+
+	authEndpoint.GET("/verify", mwAuthenticate(authHandler.Validate))
 	// ---------------
 
 	return e

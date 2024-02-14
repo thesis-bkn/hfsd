@@ -20,6 +20,7 @@ var (
 		"ERR_INSUFFICIENT_PERMISSION",
 	)
 	ErrBadRequest    = echo.NewHTTPError(http.StatusBadRequest, "ERR_BAD_REQUEST")
+	ErrUnauthorized  = echo.NewHTTPError(http.StatusUnauthorized, "ERR_UNAUTHORIZED")
 	ErrDuplicated    = echo.NewHTTPError(http.StatusBadRequest, "ERR_DUPLICATED")
 	ErrInternalError = echo.NewHTTPError(http.StatusInternalServerError, "ERR_INTERNAL_SERVER")
 )

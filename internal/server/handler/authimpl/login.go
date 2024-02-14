@@ -37,6 +37,7 @@ func (a *authHandler) LoginSubmit(c echo.Context) error {
 	var loginRequest LoginSubmitRequest
 	err := c.Bind(&loginRequest)
 	if err != nil {
+		fmt.Println("bad request")
 		return errors.ErrBadRequest
 	}
 
@@ -48,6 +49,10 @@ func (a *authHandler) LoginSubmit(c echo.Context) error {
 	if err != nil {
 		fmt.Println(err.Error())
 		return errors.ErrBadRequest
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginRequest.Password)); err != nil {
+		return errors.ErrUnauthorized
 	}
 
 	token, err := newToken(user, a.cfg.Authenticate.JwtSecret)
@@ -64,22 +69,12 @@ func (a *authHandler) LoginSubmit(c echo.Context) error {
 
 	c.SetCookie(cookie)
 
-	c.JSON(http.StatusOK, LoginSubmitResponse{
-		Username: user.Name,
-		UserID:   user.ID,
-		Token:    token,
-	})
-
-	return nil
+	return c.Redirect(http.StatusPermanentRedirect, "/auth/verify")
 }
 
 // Validate implements AuthHandler.
 func (a *authHandler) Validate(c echo.Context) error {
-	c.JSON(http.StatusOK, struct {
-		Message string `json:"message"`
-	}{
-		Message: "ok",
-	})
+    c.Redirect(http.StatusPermanentRedirect, "/hello")
 
 	return nil
 }
