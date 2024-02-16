@@ -16,7 +16,18 @@ templ Login() {
 					<input type="password" name="password" class="grow" placeholder="password"/>
 				</label>
 				<div class="grid justify-center mb-3">
-					<button class="btn btn-outline btn-wide place-self-center text-base" type="submit">Login</button>
+					<button
+						@htmx:response-error.window="Swal.fire({
+                            title: 'Error!',
+                            text: 'Failed to login',
+                            icon: 'error',
+                            confirmButtonText: 'Continue'
+                        })"
+						class="btn btn-outline btn-wide place-self-center text-base"
+						type="submit"
+					>
+						Login
+					</button>
 				</div>
 				<div class="grid justify-center link link-neutral text-base">
 					<a href="/auth/signup">Register</a>

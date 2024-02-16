@@ -22,8 +22,8 @@ func (a *authHandler) LoginView(c echo.Context) error {
 }
 
 type LoginSubmitRequest struct {
-	Email    string `validate:"required,email" json:"email"`
-	Password string `validate:"required"       json:"password"`
+	Email    string `validate:"required,email" json:"email"    form:"email"`
+	Password string `validate:"required"       json:"password" form:"password"`
 }
 
 type LoginSubmitResponse struct {
@@ -37,18 +37,17 @@ func (a *authHandler) LoginSubmit(c echo.Context) error {
 	var loginRequest LoginSubmitRequest
 	err := c.Bind(&loginRequest)
 	if err != nil {
-		fmt.Println("bad request")
 		return errors.ErrBadRequest
 	}
 
 	if err := a.validate.Struct(loginRequest); err != nil {
+		fmt.Println("err", err)
 		return errors.ErrBadRequest
 	}
 
 	user, err := a.userRepo.GetByEmail(c.Request().Context(), loginRequest.Email)
 	if err != nil {
-		fmt.Println(err.Error())
-		return errors.ErrBadRequest
+		return errors.ErrUnauthorized
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginRequest.Password)); err != nil {
@@ -74,7 +73,7 @@ func (a *authHandler) LoginSubmit(c echo.Context) error {
 
 // Validate implements AuthHandler.
 func (a *authHandler) Validate(c echo.Context) error {
-    c.Redirect(http.StatusPermanentRedirect, "/hello")
+	c.Redirect(http.StatusPermanentRedirect, "/hello")
 
 	return nil
 }
