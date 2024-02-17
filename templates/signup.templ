@@ -19,13 +19,22 @@ templ Signup() {
 					<button
 						class="btn btn-outline btn-wide place-self-center text-base"
 						type="submit"
-						@htmx:response-error.window="Swal.fire({
-                            title: 'Error!',
-                            text: 'Failed to signup',
-                            icon: 'error',
-                            confirmButtonText: 'Continue'
-                        })"
+						@htmx:after-request.window="
+                            if ($event.detail.successful == true) {
+                                window.location.replace('/inference');
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Failed to signup',
+                                    icon: 'error',
+                                    confirmButtonText: 'Continue'
+                                })
+                            }
+                        "
 					>Signup</button>
+				</div>
+				<div class="grid justify-center link link-neutral text-base">
+					<a href="/auth/login">Login</a>
 				</div>
 			</form>
 		</div>

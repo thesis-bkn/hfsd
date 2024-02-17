@@ -2,9 +2,9 @@ package templates
 
 import "github.com/thesis-bkn/hfsd/templates/components"
 
-templ Hello(name string) {
+templ InferenceView() {
 	@base() {
 		@components.NavBar(false)
-		<div>Hello, { name }</div>
+		@components.SearchBox()
 	}
 }

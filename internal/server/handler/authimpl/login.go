@@ -65,15 +65,18 @@ func (a *authHandler) LoginSubmit(c echo.Context) error {
 	cookie.Value = token
 	cookie.Expires = time.Now().Add(time.Hour * 24 * 14).UTC()
 	cookie.HttpOnly = true
+	cookie.Path = "/"
 
 	c.SetCookie(cookie)
 
-	return c.Redirect(http.StatusMovedPermanently, "/auth/verify")
+	c.Response().Status = http.StatusOK
+
+	return nil
 }
 
 // Validate implements AuthHandler.
 func (a *authHandler) Validate(c echo.Context) error {
-	c.Redirect(http.StatusPermanentRedirect, "/hello")
+	c.Redirect(http.StatusMovedPermanently, "/inference")
 
 	return nil
 }

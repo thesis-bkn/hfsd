@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -14,6 +15,8 @@ import (
 func Authenticate(cfg *config.Config) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			fmt.Println("cookies, ", c.Cookies())
+
 			jwtToken, ok := c.Get(transport.ContextKeyCookieToken.String()).(string)
 			if !ok {
 				c.Redirect(http.StatusMovedPermanently, "/auth/login")

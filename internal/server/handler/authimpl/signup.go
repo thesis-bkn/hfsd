@@ -65,9 +65,11 @@ func (a *authHandler) SignupSubmit(c echo.Context) error {
 	cookie.Value = token
 	cookie.Expires = time.Now().Add(time.Hour * 24 * 14).UTC()
 	cookie.HttpOnly = true
+	cookie.Path = "/"
 
 	c.SetCookie(cookie)
-	c.Redirect(http.StatusMovedPermanently, "/hello")
+
+	c.Response().Status = http.StatusOK
 
 	return nil
 }

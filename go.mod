@@ -12,10 +12,10 @@ require (
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/ztrue/tracerr v0.4.0
 	golang.org/x/crypto v0.18.0
+	github.com/a-h/templ v0.2.543
 )
 
 require (
-	github.com/a-h/templ v0.2.543 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect

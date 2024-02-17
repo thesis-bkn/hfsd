@@ -12,8 +12,9 @@ import (
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/internal/repo"
-	"github.com/thesis-bkn/hfsd/internal/server/handler"
 	"github.com/thesis-bkn/hfsd/internal/server/handler/authimpl"
+	"github.com/thesis-bkn/hfsd/internal/server/handler/homeimpl"
+	"github.com/thesis-bkn/hfsd/internal/server/handler/inferenceimpl"
 	appmw "github.com/thesis-bkn/hfsd/internal/server/middleware"
 	"github.com/thesis-bkn/hfsd/templates"
 )
@@ -35,8 +36,9 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	mwAuthenticate := appmw.Authenticate(cfg)
 
 	// Handler
+	homeHandler := homeimpl.NewHomeHandler()
 	authHandler := authimpl.NewAuthHandler(validate, cfg, userRepo)
-	homeHandler := handler.NewHomeHandler()
+	infHandler := inferenceimpl.NewInferenceHandler()
 
 	// Global Middleware
 	e.Use(middleware.Logger())
@@ -49,7 +51,6 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	assetFile := http.FileServer(http.FS(templates.Assets))
 	e.GET("/static/*", echo.WrapHandler(fileServer))
 	e.GET("/asset/*", echo.WrapHandler(assetFile))
-	e.GET("/hello", HelloHandler)
 
 	e.GET("/", homeHandler.Home)
 
@@ -64,9 +65,8 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	authEndpoint.GET("/verify", mwAuthenticate(authHandler.Validate))
 	// ---------------
 
-	return e
-}
+	// Inference ------
+	e.GET("/inference", mwAuthenticate(infHandler.InferenceView))
 
-func HelloHandler(c echo.Context) error {
-	return templates.Hello("Khang").Render(c.Request().Context(), c.Response().Writer)
+	return e
 }

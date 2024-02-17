@@ -17,14 +17,20 @@ templ Login() {
 				</label>
 				<div class="grid justify-center mb-3">
 					<button
-						@htmx:response-error.window="Swal.fire({
-                            title: 'Error!',
-                            text: 'Failed to login',
-                            icon: 'error',
-                            confirmButtonText: 'Continue'
-                        })"
 						class="btn btn-outline btn-wide place-self-center text-base"
 						type="submit"
+						@htmx:after-request.window="
+                            if ($event.detail.successful == true) {
+                                window.location.replace('/inference');
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Failed to login',
+                                    icon: 'error',
+                                    confirmButtonText: 'Continue'
+                                })
+                            }
+                        "
 					>
 						Login
 					</button>
