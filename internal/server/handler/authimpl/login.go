@@ -68,7 +68,7 @@ func (a *authHandler) LoginSubmit(c echo.Context) error {
 
 	c.SetCookie(cookie)
 
-	return c.Redirect(http.StatusPermanentRedirect, "/auth/verify")
+	return c.Redirect(http.StatusMovedPermanently, "/auth/verify")
 }
 
 // Validate implements AuthHandler.
@@ -102,6 +102,7 @@ func newToken(user *entity.User, jwtSecrets string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
 	return token.SignedString([]byte(jwtSecrets))
 }
 

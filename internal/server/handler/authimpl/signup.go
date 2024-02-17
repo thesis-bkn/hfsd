@@ -16,9 +16,8 @@ import (
 
 // sign up route
 type SignupRequest struct {
-	Username string `json:"username" validate:"required"`
-	Password string `json:"password" validate:"required"`
-	Email    string `json:"email"    validate:"required,email"`
+	Password string `json:"password" validate:"required"       form:"password"`
+	Email    string `json:"email"    validate:"required,email" form:"email"`
 }
 
 type SignupResponse struct {
@@ -45,7 +44,6 @@ func (a *authHandler) SignupSubmit(c echo.Context) error {
 	}
 
 	user.ID = uuid.NewString()
-	user.Name = signupRequest.Username
 	user.Email = signupRequest.Email
 	user.Activated = false
 	user.Password, err = hashPassword(signupRequest.Password)
@@ -69,7 +67,7 @@ func (a *authHandler) SignupSubmit(c echo.Context) error {
 	cookie.HttpOnly = true
 
 	c.SetCookie(cookie)
-	c.JSON(http.StatusOK, SignupResponse{Token: token})
+	c.Redirect(http.StatusMovedPermanently, "/hello")
 
 	return nil
 }

@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
@@ -21,16 +20,16 @@ func Authenticate(cfg *config.Config) echo.MiddlewareFunc {
 			}
 			claims := &entity.ProfileClaim{}
 
-			if _, err := jwt.ParseWithClaims(strings.TrimPrefix(jwtToken, "Bearer "), claims, func(t *jwt.Token) (interface{}, error) {
+			if _, err := jwt.ParseWithClaims(jwtToken, claims, func(t *jwt.Token) (interface{}, error) {
 				return []byte(cfg.Authenticate.JwtSecret), nil
 			}); err != nil {
 				c.Redirect(http.StatusMovedPermanently, "/auth/login")
 				return nil
 			}
-			if !claims.Activated {
-				c.Redirect(http.StatusMovedPermanently, "/auth/login")
-				return nil
-			}
+			// if !claims.Activated {
+			// 	c.Redirect(http.StatusMovedPermanently, "/auth/login")
+			// 	return nil
+			// }
 
 			c.Set(transport.ContextAuthenticatedUID.String(), claims.UserID)
 

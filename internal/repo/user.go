@@ -2,8 +2,8 @@ package repo
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/jackc/pgconn"
 	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/internal/entity"
 	"github.com/ztrue/tracerr"
@@ -24,22 +24,22 @@ func NewUserRepo(client database.Client) UserRepo {
 
 const (
 	CREATE_USER_QUERY = `
-    insert into users (id, name, password, activated, email) 
-    values (:id, :name, :password, :activated, :email)
+    insert into users (id, password, activated, email) 
+    values (:id, :password, :activated, :email)
     `
 )
 
 // CreateUser implements UserRepo.
 func (u *userRepo) CreateUser(ctx context.Context, user *entity.User) error {
 	if _, err := u.client.DB().NamedExecContext(ctx, CREATE_USER_QUERY, user); err != nil {
-		return tracerr.Wrap(err.(*pgconn.PgError))
+		return tracerr.Wrap(err)
 	}
 
 	return nil
 }
 
 const (
-	GET_BY_USERNAME_QUERY = `
+	GET_BY_EMAIL_QUERY = `
         select * from users 
         where email = $1
     `
@@ -48,7 +48,8 @@ const (
 // GetByUsername implements UserRepo.
 func (u *userRepo) GetByEmail(ctx context.Context, email string) (*entity.User, error) {
 	var user entity.User
-	if err := u.client.DB().GetContext(ctx, &user, GET_BY_USERNAME_QUERY, email); err != nil {
+	if err := u.client.DB().GetContext(ctx, &user, GET_BY_EMAIL_QUERY, email); err != nil {
+		fmt.Println(err.Error())
 		return nil, tracerr.Wrap(err)
 	}
 	return &user, nil

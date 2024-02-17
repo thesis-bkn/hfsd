@@ -16,7 +16,16 @@ templ Signup() {
 					<input type="password" name="password" class="grow" placeholder="password"/>
 				</label>
 				<div class="grid justify-center mb-3">
-					<button class="btn btn-outline btn-wide place-self-center text-base" type="submit">Signup</button>
+					<button
+						class="btn btn-outline btn-wide place-self-center text-base"
+						type="submit"
+						@htmx:response-error.window="Swal.fire({
+                            title: 'Error!',
+                            text: 'Failed to signup',
+                            icon: 'error',
+                            confirmButtonText: 'Continue'
+                        })"
+					>Signup</button>
 				</div>
 			</form>
 		</div>
