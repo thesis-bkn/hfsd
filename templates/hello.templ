@@ -1,7 +1,10 @@
 package templates
 
+import "github.com/thesis-bkn/hfsd/templates/components"
+
 templ Hello(name string) {
 	@base() {
+		@components.NavBar(false)
 		<div>Hello, { name }</div>
 	}
 }
