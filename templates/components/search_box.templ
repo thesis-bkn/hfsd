@@ -13,8 +13,12 @@ templ SearchBox() {
 				type="search"
 				id="default-search"
 				class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-				placeholder="Search Mockups, Logos..."
+				placeholder="Search models"
 				required
+				hx-post="/model/search"
+				hx-trigger="input changed delay:500ms, search"
+				hx-target="#search-results"
+				hx-indicator=".htmx-indicator"
 			/>
 			<button
 				type="submit"
@@ -25,3 +29,28 @@ templ SearchBox() {
 		</div>
 	</form>
 }
+
+// <h3>
+//   Search Contacts
+//   <span class="htmx-indicator">
+//     <img src="/img/bars.svg"/> Searching...
+//    </span>
+// </h3>
+// <input class="form-control" type="search"
+//        name="search" placeholder="Begin Typing To Search Users..."
+//        hx-post="/search"
+//        hx-trigger="input changed delay:500ms, search"
+//        hx-target="#search-results"
+//        hx-indicator=".htmx-indicator">
+//
+// <table class="table">
+//     <thead>
+//     <tr>
+//       <th>First Name</th>
+//       <th>Last Name</th>
+//       <th>Email</th>
+//     </tr>
+//     </thead>
+//     <tbody id="search-results">
+//     </tbody>
+// </table>
