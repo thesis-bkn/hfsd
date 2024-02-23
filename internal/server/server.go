@@ -8,7 +8,7 @@ import (
 
 func NewServer() *echo.Echo {
 	cfg := config.LoadConfig()
-	client := database.NewClient(cfg)
+	client := database.NewClient()
 
 	return registerRoutes(cfg, client)
 }

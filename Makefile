@@ -1,7 +1,7 @@
 all: build
 
 gen:
-	@./bin/tailwindcss --minify -o ./templates/asset/style.css
+	@bun run tailwindcss --minify -o ./templates/asset/style.css
 	@go generate ./...
 	@templ generate
 
