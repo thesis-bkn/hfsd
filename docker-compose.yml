@@ -1,16 +1,14 @@
-version: '3.8'
+version: "3"
 
 services:
-  psql:
-    image: postgres:latest
-    environment:
-      POSTGRES_DB: ${DB_DATABASE}
-      POSTGRES_USER: ${DB_USERNAME}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+  minio:
+    image: quay.io/minio/minio
     ports:
-      - "${DB_PORT}:5432"
+      - "9000:9000"
+      - "9001:9001"
     volumes:
-      - psql_volume:/var/lib/postgresql/data
+      - ~/data:/data
+    env_file:
+      - .env
+    command: server /data --console-address ":9001"
 
-volumes:
-  psql_volume:
