@@ -33,3 +33,5 @@ node_modules
 bun.lockb
 *.db
 local
+.venv
+
