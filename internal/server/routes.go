@@ -30,7 +30,6 @@ func registerRoutes(cfg *config.Config, client client.Client) *echo.Echo {
 	// Repo
 
 	// Middleware
-	mwAuthenticate := appmw.Authenticate(cfg)
 
 	// Handler
 	homeHandler := homeimpl.NewHomeHandler()
@@ -57,8 +56,8 @@ func registerRoutes(cfg *config.Config, client client.Client) *echo.Echo {
 	// Inference ------
 	e.GET("/inference", infHandler.InferenceView)
 	// Finetune  -------
-	e.GET("/finetune", mwAuthenticate(finetuneHandler.FinetuneView))
-	e.GET("/finetune/:clientID", mwAuthenticate(finetuneHandler.FinetuneModelView))
+	e.GET("/finetune", finetuneHandler.FinetuneView)
+	e.GET("/finetune/:clientID", finetuneHandler.FinetuneModelView)
 
 	return e
 }
