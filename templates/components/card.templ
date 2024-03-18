@@ -1,0 +1,14 @@
+package components
+
+templ Card(imageURL string, name string) {
+	<div class="card w-96 bg-base-100 shadow-xl">
+		<figure>
+			<img src={ imageURL }/>
+		</figure>
+		<div class="card-body">
+			<div class="card-actions justify-end">
+				<button class="btn btn-primary">Buy Now</button>
+			</div>
+		</div>
+	</div>
+}

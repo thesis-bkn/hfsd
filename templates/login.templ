@@ -21,6 +21,7 @@ templ Login() {
 						type="submit"
 						@htmx:after-request.window="
                             if ($event.detail.successful == true) {
+                                console.log('succesful logged in')
                                 window.location.replace('/inference');
                             } else {
                                 Swal.fire({

@@ -20,7 +20,7 @@ type client struct {
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
-    email TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
     activated INTEGER DEFAULT 0,
     created_at INTEGER DEFAULT (strftime('%s', 'now')) NOT NULL
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
 `
 
 func NewClient() Client {
-	db, err := sqlx.Connect("sqlite3", "./data/sqlite.db")
+	db, err := sqlx.Connect("sqlite3", "sqlite.db")
 	if err != nil {
 		tracerr.PrintSourceColor(err)
 		log.Fatal(err.Error())

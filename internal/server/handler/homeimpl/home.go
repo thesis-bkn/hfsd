@@ -1,18 +1,20 @@
 package homeimpl
 
 import (
+	"fmt"
+
 	"github.com/labstack/echo/v4"
-	"github.com/thesis-bkn/hfsd/internal/server/handler"
 	"github.com/thesis-bkn/hfsd/templates"
 )
 
-type homeHandler struct{}
+type HomeHandler struct{}
 
-func NewHomeHandler() handler.HomeHandler {
-	return &homeHandler{}
+func NewHomeHandler() *HomeHandler {
+	return &HomeHandler{}
 }
 
 // Home implements HomeHandler.
-func (*homeHandler) Home(c echo.Context) error {
+func (*HomeHandler) Home(c echo.Context) error {
+	fmt.Println(">>>to here")
 	return templates.Home().Render(c.Request().Context(), c.Response().Writer)
 }

@@ -12,7 +12,8 @@ import (
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/internal/repo"
-	"github.com/thesis-bkn/hfsd/internal/server/handler/authimpl"
+	"github.com/thesis-bkn/hfsd/internal/server/handler"
+	"github.com/thesis-bkn/hfsd/internal/server/handler/finetuneimpl"
 	"github.com/thesis-bkn/hfsd/internal/server/handler/homeimpl"
 	"github.com/thesis-bkn/hfsd/internal/server/handler/inferenceimpl"
 	appmw "github.com/thesis-bkn/hfsd/internal/server/middleware"
@@ -37,8 +38,9 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 
 	// Handler
 	homeHandler := homeimpl.NewHomeHandler()
-	authHandler := authimpl.NewAuthHandler(validate, cfg, userRepo)
+	authHandler := handler.NewAuthHandler(validate, cfg, userRepo)
 	infHandler := inferenceimpl.NewInferenceHandler()
+	finetuneHandler := finetuneimpl.NewFineTuneHandler()
 
 	// Global Middleware
 	e.Use(middleware.Logger())
@@ -61,12 +63,13 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 
 	authEndpoint.GET("/signup", authHandler.SignupView)
 	authEndpoint.POST("/signup", authHandler.SignupSubmit)
-
-	authEndpoint.GET("/verify", mwAuthenticate(authHandler.Validate))
 	// ---------------
 
 	// Inference ------
-	e.GET("/inference", mwAuthenticate(infHandler.InferenceView))
+	e.GET("/inference", infHandler.InferenceView)
+	// Finetune  -------
+	e.GET("/finetune", mwAuthenticate(finetuneHandler.FinetuneView))
+	e.GET("/finetune/:clientID", mwAuthenticate(finetuneHandler.FinetuneModelView))
 
 	return e
 }

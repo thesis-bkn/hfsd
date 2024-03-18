@@ -31,4 +31,5 @@ main
 
 node_modules
 bun.lockb
-data/sqlite.db
+*.db
+local

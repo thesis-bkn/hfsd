@@ -1,14 +1,11 @@
 version: "3"
 
 services:
-  minio:
-    image: quay.io/minio/minio
+  storage:
+    build:
+      context: .
+      dockerfile: ./docker/gcp-emulator.Dockerfile
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9023:9023"
     volumes:
-      - ~/data:/data
-    env_file:
-      - .env
-    command: server /data --console-address ":9001"
-
+      - ./data:/data

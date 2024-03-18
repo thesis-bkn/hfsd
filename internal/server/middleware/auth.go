@@ -17,6 +17,7 @@ func Authenticate(cfg *config.Config) echo.MiddlewareFunc {
 			jwtToken, ok := c.Get(transport.ContextKeyCookieToken.String()).(string)
 			if !ok {
 				c.Redirect(http.StatusMovedPermanently, "/auth/login")
+				return nil
 			}
 			claims := &entity.ProfileClaim{}
 
@@ -26,10 +27,6 @@ func Authenticate(cfg *config.Config) echo.MiddlewareFunc {
 				c.Redirect(http.StatusMovedPermanently, "/auth/login")
 				return nil
 			}
-			// if !claims.Activated {
-			// 	c.Redirect(http.StatusMovedPermanently, "/auth/login")
-			// 	return nil
-			// }
 
 			c.Set(transport.ContextAuthenticatedUID.String(), claims.UserID)
 

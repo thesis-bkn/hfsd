@@ -5,23 +5,29 @@ templ NavBar(isFineTune bool) {
 		<div class="navbar bg-base-100">
 			<div class="navbar-start">
 				<a class="btn btn-ghost text-xl" href="/">HFSD</a>
-			</div>
-			<div class="navbar-center">
 				<ul>
 					if isFineTune {
-						<div class="btn btn-outline mr-2">
-							<li>Inference</li>
-						</div>
-						<div class="btn btn-active btn-neutral">
-							<li>Finetune</li>
-						</div>
+						<a href="/inference">
+							<div class="btn btn-outline mr-2">
+								<li>Inference</li>
+							</div>
+						</a>
+						<a href="/finetune">
+							<div class="btn btn-active btn-neutral">
+								<li>Finetune</li>
+							</div>
+						</a>
 					} else {
-						<div class="btn btn-active btn-neutral mr-2">
-							<li>Inference</li>
-						</div>
-						<div class="btn btn-outline">
-							<li>Finetune</li>
-						</div>
+						<a href="/inference">
+							<div class="btn btn-active btn-neutral mr-2">
+								<li>Inference</li>
+							</div>
+						</a>
+						<a href="/finetune">
+							<div class="btn btn-outline">
+								<li>Finetune</li>
+							</div>
+						</a>
 					}
 				</ul>
 			</div>

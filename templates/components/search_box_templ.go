@@ -33,28 +33,3 @@ func SearchBox() templ.Component {
 		return templ_7745c5c3_Err
 	})
 }
-
-// <h3>
-//   Search Contacts
-//   <span class="htmx-indicator">
-//     <img src="/img/bars.svg"/> Searching...
-//    </span>
-// </h3>
-// <input class="form-control" type="search"
-//        name="search" placeholder="Begin Typing To Search Users..."
-//        hx-post="/search"
-//        hx-trigger="input changed delay:500ms, search"
-//        hx-target="#search-results"
-//        hx-indicator=".htmx-indicator">
-//
-// <table class="table">
-//     <thead>
-//     <tr>
-//       <th>First Name</th>
-//       <th>Last Name</th>
-//       <th>Email</th>
-//     </tr>
-//     </thead>
-//     <tbody id="search-results">
-//     </tbody>
-// </table>

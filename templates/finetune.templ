@@ -1,0 +1,39 @@
+package templates
+
+import (
+	"fmt"
+
+	"github.com/thesis-bkn/hfsd/templates/components"
+)
+
+type ModelInfo struct {
+	Name   string
+	ID     string
+	Domain string
+}
+
+templ FinetuneView(models []*ModelInfo) {
+	@base() {
+		@components.NavBar(true)
+		<div class="m-4">
+			<header class="underline underline-offset-2 font-semibold underline-offset-auto text-2xl mb-4">
+				# Choose model to finetune
+			</header>
+			<div class="flex flex-wrap gap-2">
+				for _, model := range models {
+					<a href={ templ.SafeURL(fmt.Sprintf("/finetune/%s", model.ID)) }>
+						<button class="btn btn-outline">
+							{ fmt.Sprintf("%s - %s", model.Domain, model.Name) }
+						</button>
+					</a>
+				}
+			</div>
+		</div>
+	}
+}
+
+templ FinetuneModelView(models *ModelInfo) {
+	@base() {
+		@components.NavBar(true)
+	}
+}
