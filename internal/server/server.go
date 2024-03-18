@@ -2,13 +2,17 @@ package server
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/thesis-bkn/hfsd/internal/client"
 	"github.com/thesis-bkn/hfsd/internal/config"
-	"github.com/thesis-bkn/hfsd/internal/database"
+	"github.com/ztrue/tracerr"
 )
 
-func NewServer() *echo.Echo {
+func NewServer() (*echo.Echo, error) {
 	cfg := config.LoadConfig()
-	client := database.NewClient()
+	client, err := client.NewClient(cfg)
+	if err != nil {
+		return nil, tracerr.Wrap(err)
+	}
 
-	return registerRoutes(cfg, client)
+	return registerRoutes(cfg, client), nil
 }

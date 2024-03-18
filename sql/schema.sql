@@ -1,4 +1,3 @@
--- Your SQL goes here
 create table if not exists models
 (
     id     text primary key,

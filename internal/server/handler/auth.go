@@ -13,7 +13,6 @@ import (
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/entity"
 	"github.com/thesis-bkn/hfsd/internal/errors"
-	"github.com/thesis-bkn/hfsd/internal/repo"
 	"github.com/thesis-bkn/hfsd/internal/server/transport"
 	"github.com/thesis-bkn/hfsd/templates"
 	"github.com/ztrue/tracerr"
@@ -24,18 +23,14 @@ type AuthHandler struct {
 	validate *validator.Validate
 
 	cfg *config.Config
-
-	userRepo repo.UserRepo
 }
 
 func NewAuthHandler(
 	validate *validator.Validate,
 	cfg *config.Config,
-	userRepo repo.UserRepo,
 ) *AuthHandler {
 	return &AuthHandler{
 		validate: validate,
-		userRepo: userRepo,
 		cfg:      cfg,
 	}
 }
@@ -69,24 +64,9 @@ func (a *AuthHandler) LoginSubmit(c echo.Context) error {
 		return errors.ErrBadRequest
 	}
 
-	user, err := a.userRepo.GetByEmail(c.Request().Context(), loginRequest.Email)
-	if err != nil {
-		return errors.ErrUnauthorized
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginRequest.Password)); err != nil {
-		return errors.ErrUnauthorized
-	}
-
-	token, err := newToken(user, a.cfg.Authenticate.JwtSecret)
-	if err != nil {
-		fmt.Println(err.Error())
-		return errors.ErrInternalError
-	}
-
 	cookie := new(http.Cookie)
 	cookie.Name = transport.ContextKeyCookieToken.String()
-	cookie.Value = token
+	// cookie.Value = token
 	cookie.Expires = time.Now().Add(time.Hour * 24 * 14).UTC()
 	cookie.HttpOnly = true
 	cookie.Path = "/"
@@ -165,10 +145,6 @@ func (a *AuthHandler) SignupSubmit(c echo.Context) error {
 	user.Password, err = hashPassword(signupRequest.Password)
 	if err != nil {
 		return tracerr.Wrap(err)
-	}
-
-	if err = a.userRepo.CreateUser(c.Request().Context(), &user); err != nil {
-		return errors.ErrBadRequest
 	}
 
 	token, err := newToken(&user, a.cfg.Authenticate.JwtSecret)

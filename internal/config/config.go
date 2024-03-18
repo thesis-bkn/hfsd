@@ -7,11 +7,8 @@ import (
 )
 
 type Config struct {
-	Port int `env:"PORT" envDefault:"2002"`
-
-	Authenticate struct {
-		JwtSecret string `env:"JWT_SECRET"`
-	} `envPrefix:"AUTHENTICATE_"`
+	Port        int    `env:"PORT"         envDefault:"2002"`
+	DatabaseURL string `env:"DATABASE_URL"`
 }
 
 func LoadConfig() *Config {

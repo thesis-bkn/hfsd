@@ -5,14 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
+	"github.com/thesis-bkn/hfsd/internal/client"
 	"github.com/thesis-bkn/hfsd/internal/config"
-	"github.com/thesis-bkn/hfsd/internal/database"
-	"github.com/thesis-bkn/hfsd/internal/repo"
-	"github.com/thesis-bkn/hfsd/internal/server/handler"
 	"github.com/thesis-bkn/hfsd/internal/server/handler/finetuneimpl"
 	"github.com/thesis-bkn/hfsd/internal/server/handler/homeimpl"
 	"github.com/thesis-bkn/hfsd/internal/server/handler/inferenceimpl"
@@ -20,7 +17,7 @@ import (
 	"github.com/thesis-bkn/hfsd/templates"
 )
 
-func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
+func registerRoutes(cfg *config.Config, client client.Client) *echo.Echo {
 	e := echo.New()
 	e.Server.Addr = fmt.Sprintf(":%d", cfg.Port)
 	e.Server.IdleTimeout = time.Minute
@@ -28,17 +25,15 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	e.Server.WriteTimeout = 30 * time.Second
 
 	// Helper
-	validate := validator.New(validator.WithRequiredStructEnabled())
+	// validate := validator.New(validator.WithRequiredStructEnabled())
 
 	// Repo
-	userRepo := repo.NewUserRepo(client)
 
 	// Middleware
 	mwAuthenticate := appmw.Authenticate(cfg)
 
 	// Handler
 	homeHandler := homeimpl.NewHomeHandler()
-	authHandler := handler.NewAuthHandler(validate, cfg, userRepo)
 	infHandler := inferenceimpl.NewInferenceHandler()
 	finetuneHandler := finetuneimpl.NewFineTuneHandler()
 
@@ -57,12 +52,6 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	e.GET("/", homeHandler.Home)
 
 	// Auth ----------
-	authEndpoint := e.Group("/auth")
-	authEndpoint.GET("/login", authHandler.LoginView)
-	authEndpoint.POST("/login", authHandler.LoginSubmit)
-
-	authEndpoint.GET("/signup", authHandler.SignupView)
-	authEndpoint.POST("/signup", authHandler.SignupSubmit)
 	// ---------------
 
 	// Inference ------

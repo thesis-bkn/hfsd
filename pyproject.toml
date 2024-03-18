@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "server"
+version = "0.1.0"
+description = ""
+authors = ["khangkontum <khangkontum@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+ml-collections = "^0.1.1"
+absl-py = "^2.1.0"
+diffusers = "0.25.1"
+wandb = "^0.16.3"
+torchvision = "^0.17.1"
+torch = "^2.2.1"
+accelerate = "^0.27.2"
+inflect = "^7.0.0"
+transformers = "^4.38.1"
+sqlalchemy = "^2.0.28"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
