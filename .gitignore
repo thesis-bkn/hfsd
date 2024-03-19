@@ -35,3 +35,5 @@ bun.lockb
 local
 .venv
 
+__pycache__
+test

@@ -1,20 +1,19 @@
-package client
+package database
 
 import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/thesis-bkn/hfsd/database"
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/ztrue/tracerr"
 )
 
 type Client interface {
-	Query() *database.Queries
+	Query() *Queries
 }
 
 type client struct {
-	queries *database.Queries
+	queries *Queries
 }
 
 func NewClient(cfg *config.Config) (Client, error) {
@@ -26,11 +25,11 @@ func NewClient(cfg *config.Config) (Client, error) {
 		return nil, tracerr.Wrap(err)
 	}
 
-	queries := database.New(conn)
+	queries := New(conn)
 
 	return &client{queries}, nil
 }
 
-func (c *client) Query() *database.Queries {
+func (c *client) Query() *Queries {
 	return c.queries
 }

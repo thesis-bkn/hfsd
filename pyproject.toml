@@ -17,6 +17,7 @@ accelerate = "^0.27.2"
 inflect = "^7.0.0"
 transformers = "^4.38.1"
 sqlalchemy = "^2.0.28"
+boto3 = "^1.34.65"
 
 [build-system]
 requires = ["poetry-core"]

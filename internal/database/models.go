@@ -38,11 +38,12 @@ type Inference struct {
 }
 
 type Model struct {
-	ID     string
-	Domain string
-	Name   string
-	Base   string
-	Ckpt   []byte
+	ID        string
+	Domain    string
+	Name      string
+	Base      string
+	Ckpt      []byte
+	CreatedAt pgtype.Timestamp
 }
 
 type Task struct {

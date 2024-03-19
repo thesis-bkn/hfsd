@@ -8,8 +8,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
-	"github.com/thesis-bkn/hfsd/internal/client"
 	"github.com/thesis-bkn/hfsd/internal/config"
+	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/internal/server/handler/finetuneimpl"
 	"github.com/thesis-bkn/hfsd/internal/server/handler/homeimpl"
 	"github.com/thesis-bkn/hfsd/internal/server/handler/inferenceimpl"
@@ -17,7 +17,7 @@ import (
 	"github.com/thesis-bkn/hfsd/templates"
 )
 
-func registerRoutes(cfg *config.Config, client client.Client) *echo.Echo {
+func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	e := echo.New()
 	e.Server.Addr = fmt.Sprintf(":%d", cfg.Port)
 	e.Server.IdleTimeout = time.Minute

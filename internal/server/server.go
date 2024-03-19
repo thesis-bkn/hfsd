@@ -2,14 +2,14 @@ package server
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/thesis-bkn/hfsd/internal/client"
 	"github.com/thesis-bkn/hfsd/internal/config"
+	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/ztrue/tracerr"
 )
 
 func NewServer() (*echo.Echo, error) {
 	cfg := config.LoadConfig()
-	client, err := client.NewClient(cfg)
+	client, err := database.NewClient(cfg)
 	if err != nil {
 		return nil, tracerr.Wrap(err)
 	}

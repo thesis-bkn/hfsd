@@ -1,10 +1,11 @@
 create table if not exists models
 (
-    id     text primary key,
-    domain text                                                not null,
-    name   text                                                not null,
-    base   text default 'runwayml/stable-diffusion-inpainting' not null,
-    ckpt   bytea
+    id          text primary key,
+    domain      text                                                not null,
+    name        text                                                not null,
+    base        text default 'runwayml/stable-diffusion-inpainting' not null,
+    ckpt        bytea                                               not null,
+    created_at  timestamp default now()
 );
 
 create table if not exists inferences
@@ -32,7 +33,7 @@ create table if not exists base_assets
 
 create table if not exists tasks
 (
-    id              text primary key,
+    id              text,
     source_model_id text not null,
     output_model_id text,
     task_type       text not null,
@@ -45,6 +46,7 @@ create table if not exists tasks
     timesteps       bytea,
     next_latents    bytea,
     image_torchs    bytea,
+    primary key (id, task_type),
     foreign key (source_model_id) references models (id),
     foreign key (output_model_id) references models (id)
 );

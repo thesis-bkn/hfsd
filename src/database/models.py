@@ -44,7 +44,8 @@ class Model:
     domain: str
     name: str
     base: str
-    ckpt: Optional[memoryview]
+    ckpt: memoryview
+    created_at: Optional[datetime.datetime]
 
 
 @dataclasses.dataclass()
