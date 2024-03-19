@@ -29,7 +29,7 @@ func Home() templ.Component {
 				templ_7745c5c3_Buffer = templ.GetBuffer()
 				defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"hero min-h-screen\"><div class=\"hero-overlay\"></div><div class=\"hero-content text-center text-neutral-content\"><div class=\"max-w-md\"><h1 class=\"mb-5 text-5xl font-bold\">Human Feedback for Stable Diffusion</h1><p class=\"mb-5\">Provident cupiditate voluptatem et in. Quaerat fugiat ut assumenda excepturi exercitationem quasi. In deleniti eaque aut repudiandae et a id nisi.</p><a href=\"/inference\"><button class=\"btn btn-primary\">Get Started</button></a></div></div></div>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"hero min-h-screen\" style=\"background-image: url(/asset/background-white.png);\"><div class=\"hero-overlay bg-opacity-15\"></div><div class=\"hero-content\"><div class=\"text-center\"><div class=\"max-w-md\"><h1 class=\"mb-5 text-5xl font-bold text-primary\">Human Feedback for  <span class=\"text-accent\">Stable Diffusion </span>model</h1><a href=\"/inference\"><button class=\"btn glass btn-outline mr-2\">Inference Image</button> <button class=\"btn glass btn-outline\">Finetune Model</button></a></div></div></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -5,12 +5,7 @@ module.exports = {
     fontFamily: {
       sans: ["Poppins", "sans-serif"],
     },
-    extend: {
-      colors: {
-        primary: "#c6c3c3",
-        secondary: "#ffffff",
-      },
-    },
+    extend: {},
   },
   plugins: [require("daisyui")],
 };
