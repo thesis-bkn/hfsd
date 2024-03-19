@@ -14,3 +14,7 @@ VALUES ($1, $2, $3, $4, $5);
 SELECT * FROM tasks
 WHERE id = $1 AND task_type = $2
 LIMIT 1;
+
+-- name: InsertBaseAsset :exec
+INSERT INTO base_assets (id, image, image_url, mask, mask_url, domain)
+VALUES ($1, $2, $3, $4, $5, $6);

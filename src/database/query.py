@@ -8,7 +8,7 @@ from typing import AsyncIterator, Iterator, Optional
 import sqlalchemy
 import sqlalchemy.ext.asyncio
 
-from database import models
+from src.database import models
 
 
 GET_MODEL = """-- name: get_model \\:one
@@ -22,6 +22,22 @@ SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, 
 WHERE id = :p1 AND task_type = :p2
 LIMIT 1
 """
+
+
+INSERT_BASE_ASSET = """-- name: insert_base_asset \\:exec
+INSERT INTO base_assets (id, image, image_url, mask, mask_url, domain)
+VALUES (:p1, :p2, :p3, :p4, :p5, :p6)
+"""
+
+
+@dataclasses.dataclass()
+class InsertBaseAssetParams:
+    id: str
+    image: memoryview
+    image_url: str
+    mask: memoryview
+    mask_url: str
+    domain: str
 
 
 INSERT_MODEL = """-- name: insert_model \\:exec
@@ -82,6 +98,16 @@ class Querier:
             image_torchs=row[12],
         )
 
+    def insert_base_asset(self, arg: InsertBaseAssetParams) -> None:
+        self._conn.execute(sqlalchemy.text(INSERT_BASE_ASSET), {
+            "p1": arg.id,
+            "p2": arg.image,
+            "p3": arg.image_url,
+            "p4": arg.mask,
+            "p5": arg.mask_url,
+            "p6": arg.domain,
+        })
+
     def insert_model(self, arg: InsertModelParams) -> None:
         self._conn.execute(sqlalchemy.text(INSERT_MODEL), {
             "p1": arg.id,
@@ -140,6 +166,16 @@ class AsyncQuerier:
             next_latents=row[11],
             image_torchs=row[12],
         )
+
+    async def insert_base_asset(self, arg: InsertBaseAssetParams) -> None:
+        await self._conn.execute(sqlalchemy.text(INSERT_BASE_ASSET), {
+            "p1": arg.id,
+            "p2": arg.image,
+            "p3": arg.image_url,
+            "p4": arg.mask,
+            "p5": arg.mask_url,
+            "p6": arg.domain,
+        })
 
     async def insert_model(self, arg: InsertModelParams) -> None:
         await self._conn.execute(sqlalchemy.text(INSERT_MODEL), {

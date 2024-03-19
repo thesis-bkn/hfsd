@@ -60,6 +60,32 @@ func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) 
 	return i, err
 }
 
+const insertBaseAsset = `-- name: InsertBaseAsset :exec
+INSERT INTO base_assets (id, image, image_url, mask, mask_url, domain)
+VALUES ($1, $2, $3, $4, $5, $6)
+`
+
+type InsertBaseAssetParams struct {
+	ID       string
+	Image    []byte
+	ImageUrl string
+	Mask     []byte
+	MaskUrl  string
+	Domain   string
+}
+
+func (q *Queries) InsertBaseAsset(ctx context.Context, arg InsertBaseAssetParams) error {
+	_, err := q.db.Exec(ctx, insertBaseAsset,
+		arg.ID,
+		arg.Image,
+		arg.ImageUrl,
+		arg.Mask,
+		arg.MaskUrl,
+		arg.Domain,
+	)
+	return err
+}
+
 const insertModel = `-- name: InsertModel :exec
 INSERT INTO models (id, domain, name, base, ckpt)
 VALUES ($1, $2, $3, $4, $5)

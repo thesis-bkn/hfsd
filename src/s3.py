@@ -1,6 +1,7 @@
 import boto3
 from typing import Optional
 import io
+import os
 from PIL import Image
 
 
@@ -18,7 +19,7 @@ class ImageUploader:
         aws_access_key_id: str,
         aws_secret_access_key: str,
         bucket_name: str,
-        endpoint_url: str = "https://s3.cloudfly.vn",
+        endpoint_url: str,
     ):
         if self.__initialized:
             return
@@ -43,10 +44,8 @@ class ImageUploader:
 
             # Generate pre-signed URL for the uploaded image
             url = self.generate_presigned_url(s3_key)
-            print(f"Image uploaded successfully to S3 with key: {s3_key}")
             return url
         except Exception as e:
-            print(f"Error uploading image to S3: {e}")
             return None
 
     def generate_presigned_url(self, s3_key, expiration=3600) -> Optional[str]:
@@ -60,24 +59,3 @@ class ImageUploader:
         except Exception as e:
             print(f"Error generating presigned URL: {e}")
             return None
-
-
-# # Usage example:
-# # Initialize the uploader
-# uploader = S3ImageUploader(
-#     aws_access_key_id="YOUR_AWS_ACCESS_KEY_ID",
-#     aws_secret_access_key="YOUR_AWS_SECRET_ACCESS_KEY",
-#     bucket_name="YOUR_S3_BUCKET_NAME",
-# )
-#
-# # Load PIL image from file or any source
-# pil_image = Image.open("path/to/local/image.jpg")
-#
-# # Specify S3 key
-# s3_key = "images/image.jpg"
-#
-# # Upload the image to S3 and get the presigned URL
-# image_url = uploader.upload_image(pil_image, s3_key)
-#
-# if image_url:
-#     print("Presigned URL:", image_url)

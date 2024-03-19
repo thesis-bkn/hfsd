@@ -23,6 +23,6 @@ sql:
       - out: src/database
         plugin: py
         options:
-          package: database
+          package: src.database
           emit_sync_querier: true
           emit_async_querier: true
