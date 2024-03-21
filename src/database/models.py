@@ -10,10 +10,10 @@ from typing import Any, Optional
 class Asset:
     task_id: str
     order: int
-    image: Optional[memoryview]
-    image_url: Optional[str]
-    mask: Optional[memoryview]
-    mask_url: Optional[str]
+    image: memoryview
+    image_url: str
+    mask: memoryview
+    mask_url: str
 
 
 @dataclasses.dataclass()

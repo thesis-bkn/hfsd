@@ -24,6 +24,22 @@ LIMIT 1
 """
 
 
+INSERT_ASSET = """-- name: insert_asset \\:exec
+INSERT INTO assets (task_id, "order", image, image_url, mask, mask_url)
+VALUES (:p1, :p2, :p3, :p4, :p5, :p6)
+"""
+
+
+@dataclasses.dataclass()
+class InsertAssetParams:
+    task_id: str
+    order: int
+    image: memoryview
+    image_url: str
+    mask: memoryview
+    mask_url: str
+
+
 INSERT_BASE_ASSET = """-- name: insert_base_asset \\:exec
 INSERT INTO base_assets (id, image, image_url, mask, mask_url, domain)
 VALUES (:p1, :p2, :p3, :p4, :p5, :p6)
@@ -38,6 +54,12 @@ class InsertBaseAssetParams:
     mask: memoryview
     mask_url: str
     domain: str
+
+
+INSERT_INFERENCE_TASK = """-- name: insert_inference_task \\:exec
+INSERT INTO tasks (id, source_model_id, task_type) 
+VALUES ( :p1, :p2, 'inference' )
+"""
 
 
 INSERT_MODEL = """-- name: insert_model \\:exec
@@ -98,6 +120,16 @@ class Querier:
             image_torchs=row[12],
         )
 
+    def insert_asset(self, arg: InsertAssetParams) -> None:
+        self._conn.execute(sqlalchemy.text(INSERT_ASSET), {
+            "p1": arg.task_id,
+            "p2": arg.order,
+            "p3": arg.image,
+            "p4": arg.image_url,
+            "p5": arg.mask,
+            "p6": arg.mask_url,
+        })
+
     def insert_base_asset(self, arg: InsertBaseAssetParams) -> None:
         self._conn.execute(sqlalchemy.text(INSERT_BASE_ASSET), {
             "p1": arg.id,
@@ -107,6 +139,9 @@ class Querier:
             "p5": arg.mask_url,
             "p6": arg.domain,
         })
+
+    def insert_inference_task(self, *, id: str, source_model_id: str) -> None:
+        self._conn.execute(sqlalchemy.text(INSERT_INFERENCE_TASK), {"p1": id, "p2": source_model_id})
 
     def insert_model(self, arg: InsertModelParams) -> None:
         self._conn.execute(sqlalchemy.text(INSERT_MODEL), {
@@ -167,6 +202,16 @@ class AsyncQuerier:
             image_torchs=row[12],
         )
 
+    async def insert_asset(self, arg: InsertAssetParams) -> None:
+        await self._conn.execute(sqlalchemy.text(INSERT_ASSET), {
+            "p1": arg.task_id,
+            "p2": arg.order,
+            "p3": arg.image,
+            "p4": arg.image_url,
+            "p5": arg.mask,
+            "p6": arg.mask_url,
+        })
+
     async def insert_base_asset(self, arg: InsertBaseAssetParams) -> None:
         await self._conn.execute(sqlalchemy.text(INSERT_BASE_ASSET), {
             "p1": arg.id,
@@ -176,6 +221,9 @@ class AsyncQuerier:
             "p5": arg.mask_url,
             "p6": arg.domain,
         })
+
+    async def insert_inference_task(self, *, id: str, source_model_id: str) -> None:
+        await self._conn.execute(sqlalchemy.text(INSERT_INFERENCE_TASK), {"p1": id, "p2": source_model_id})
 
     async def insert_model(self, arg: InsertModelParams) -> None:
         await self._conn.execute(sqlalchemy.text(INSERT_MODEL), {

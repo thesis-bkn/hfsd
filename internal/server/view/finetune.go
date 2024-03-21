@@ -1,19 +1,18 @@
-package finetuneimpl
+package view
 
 import (
 	echo "github.com/labstack/echo/v4"
-	"github.com/thesis-bkn/hfsd/internal/server/handler"
 	"github.com/thesis-bkn/hfsd/templates"
 )
 
-type FinetuneHandler struct{}
+type FinetuneView struct{}
 
-func NewFineTuneHandler() handler.FineTuneHandler {
-	return &FinetuneHandler{}
+func NewFinetuneView() *FinetuneView {
+	return &FinetuneView{}
 }
 
 // FinetuneView implements handler.FineTuneHandler.
-func (*FinetuneHandler) FinetuneView(c echo.Context) error {
+func (*FinetuneView) FinetuneView(c echo.Context) error {
 	var ret []*templates.ModelInfo
 	for i := 0; i < 100; i++ {
 		ret = append(ret, &templates.ModelInfo{
@@ -25,6 +24,6 @@ func (*FinetuneHandler) FinetuneView(c echo.Context) error {
 }
 
 // FinetuneModelView implements handler.FineTuneHandler.
-func (*FinetuneHandler) FinetuneModelView(c echo.Context) error {
+func (*FinetuneView) FinetuneModelView(c echo.Context) error {
 	panic("unimplemented")
 }

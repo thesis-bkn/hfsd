@@ -1,17 +1,17 @@
-package handler
+package view
 
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/thesis-bkn/hfsd/templates"
 )
 
-type HomeHandler struct{}
+type HomeView struct{}
 
-func NewHomeHandler() *HomeHandler {
-	return &HomeHandler{}
+func NewHomeView() *HomeView {
+	return &HomeView{}
 }
 
 // Home implements HomeHandler.
-func (*HomeHandler) Home(c echo.Context) error {
+func (*HomeView) Home(c echo.Context) error {
 	return templates.Home().Render(c.Request().Context(), c.Response().Writer)
 }

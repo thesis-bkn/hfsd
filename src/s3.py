@@ -32,12 +32,10 @@ class ImageUploader:
         )
         self.bucket_name = bucket_name
 
-    def upload_image(self, pil_image: Image.Image, s3_key: str) -> Optional[str]:
+    def upload_image(self, image: bytes, s3_key: str) -> Optional[str]:
         try:
             # Convert PIL image to bytes
-            image_bytes = io.BytesIO()
-            pil_image.save(image_bytes, format="JPEG")
-            image_bytes.seek(0)
+            image_bytes = io.BytesIO(image)
 
             # Upload image to S3
             self.s3_client.upload_fileobj(image_bytes, self.bucket_name, s3_key)

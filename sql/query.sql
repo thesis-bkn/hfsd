@@ -18,3 +18,11 @@ LIMIT 1;
 -- name: InsertBaseAsset :exec
 INSERT INTO base_assets (id, image, image_url, mask, mask_url, domain)
 VALUES ($1, $2, $3, $4, $5, $6);
+
+-- name: InsertInferenceTask :exec
+INSERT INTO tasks (id, source_model_id, task_type) 
+VALUES ( $1, $2, 'inference' );
+
+-- name: InsertAsset :exec
+INSERT INTO assets (task_id, "order", image, image_url, mask, mask_url)
+VALUES ($1, $2, $3, $4, $5, $6);

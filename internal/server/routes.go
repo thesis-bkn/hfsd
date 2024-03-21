@@ -5,15 +5,16 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
-	"github.com/thesis-bkn/hfsd/internal/server/handler/finetuneimpl"
-	"github.com/thesis-bkn/hfsd/internal/server/handler/homeimpl"
-	"github.com/thesis-bkn/hfsd/internal/server/handler/inferenceimpl"
+	"github.com/thesis-bkn/hfsd/internal/s3"
+	"github.com/thesis-bkn/hfsd/internal/server/handler"
 	appmw "github.com/thesis-bkn/hfsd/internal/server/middleware"
+	"github.com/thesis-bkn/hfsd/internal/server/view"
 	"github.com/thesis-bkn/hfsd/templates"
 )
 
@@ -25,16 +26,16 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	e.Server.WriteTimeout = 30 * time.Second
 
 	// Helper
-	// validate := validator.New(validator.WithRequiredStructEnabled())
-
-	// Repo
-
-	// Middleware
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	s3Client := s3.NewS3Client(cfg)
 
 	// Handler
-	homeHandler := homeimpl.NewHomeHandler()
-	infHandler := inferenceimpl.NewInferenceHandler()
-	finetuneHandler := finetuneimpl.NewFineTuneHandler()
+	inferenceHandler := handler.NewInferenceHandler(cfg, s3Client, client, validate)
+
+	// View
+	homeView := view.NewHomeView()
+	infView := view.NewInferenceView()
+	finetuneView := view.NewFinetuneView()
 
 	// Global Middleware
 	e.Use(middleware.Logger())
@@ -48,16 +49,15 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	e.GET("/static/*", echo.WrapHandler(fileServer))
 	e.GET("/asset/*", echo.WrapHandler(assetFile))
 
-	e.GET("/", homeHandler.Home)
-
-	// Auth ----------
-	// ---------------
+	e.GET("/", homeView.Home)
+	apiEpts := e.Group("/api")
+	apiEpts.POST("/inference", inferenceHandler.SubmitInferenceTask)
 
 	// Inference ------
-	e.GET("/inference", infHandler.InferenceView)
+	e.GET("/inference", infView.InferenceView)
 	// Finetune  -------
-	e.GET("/finetune", finetuneHandler.FinetuneView)
-	e.GET("/finetune/:clientID", finetuneHandler.FinetuneModelView)
+	e.GET("/finetune", finetuneView.FinetuneView)
+	e.GET("/finetune/:clientID", finetuneView.FinetuneModelView)
 
 	return e
 }

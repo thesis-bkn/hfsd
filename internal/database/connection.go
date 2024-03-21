@@ -10,10 +10,12 @@ import (
 
 type Client interface {
 	Query() *Queries
+	Conn() *pgx.Conn
 }
 
 type client struct {
 	queries *Queries
+	conn    *pgx.Conn
 }
 
 func NewClient(cfg *config.Config) (Client, error) {
@@ -27,9 +29,16 @@ func NewClient(cfg *config.Config) (Client, error) {
 
 	queries := New(conn)
 
-	return &client{queries}, nil
+	return &client{
+		queries: queries,
+		conn:    conn,
+	}, nil
 }
 
 func (c *client) Query() *Queries {
 	return c.queries
+}
+
+func (c *client) Conn() *pgx.Conn {
+	return c.conn
 }

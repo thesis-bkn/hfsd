@@ -60,6 +60,32 @@ func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) 
 	return i, err
 }
 
+const insertAsset = `-- name: InsertAsset :exec
+INSERT INTO assets (task_id, "order", image, image_url, mask, mask_url)
+VALUES ($1, $2, $3, $4, $5, $6)
+`
+
+type InsertAssetParams struct {
+	TaskID   string
+	Order    int16
+	Image    []byte
+	ImageUrl string
+	Mask     []byte
+	MaskUrl  string
+}
+
+func (q *Queries) InsertAsset(ctx context.Context, arg InsertAssetParams) error {
+	_, err := q.db.Exec(ctx, insertAsset,
+		arg.TaskID,
+		arg.Order,
+		arg.Image,
+		arg.ImageUrl,
+		arg.Mask,
+		arg.MaskUrl,
+	)
+	return err
+}
+
 const insertBaseAsset = `-- name: InsertBaseAsset :exec
 INSERT INTO base_assets (id, image, image_url, mask, mask_url, domain)
 VALUES ($1, $2, $3, $4, $5, $6)
@@ -83,6 +109,21 @@ func (q *Queries) InsertBaseAsset(ctx context.Context, arg InsertBaseAssetParams
 		arg.MaskUrl,
 		arg.Domain,
 	)
+	return err
+}
+
+const insertInferenceTask = `-- name: InsertInferenceTask :exec
+INSERT INTO tasks (id, source_model_id, task_type) 
+VALUES ( $1, $2, 'inference' )
+`
+
+type InsertInferenceTaskParams struct {
+	ID            string
+	SourceModelID string
+}
+
+func (q *Queries) InsertInferenceTask(ctx context.Context, arg InsertInferenceTaskParams) error {
+	_, err := q.db.Exec(ctx, insertInferenceTask, arg.ID, arg.SourceModelID)
 	return err
 }
 

@@ -55,10 +55,10 @@ create table if not exists assets
 (
     task_id   text,
     "order"   smallint,
-    image     bytea,
-    image_url text,
-    mask      bytea,
-    mask_url  text,
+    image     bytea     not null,
+    image_url text      not null,
+    mask      bytea     not null,
+    mask_url  text      not null,
     primary key (task_id, "order"),
     foreign key (task_id) references tasks (id)
 );

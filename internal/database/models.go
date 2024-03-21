@@ -12,9 +12,9 @@ type Asset struct {
 	TaskID   string
 	Order    int16
 	Image    []byte
-	ImageUrl pgtype.Text
+	ImageUrl string
 	Mask     []byte
-	MaskUrl  pgtype.Text
+	MaskUrl  string
 }
 
 type BaseAsset struct {

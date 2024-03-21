@@ -25,14 +25,14 @@ base_assets = config.get_value("base_assets")
 for domain in base_assets:
     for filename in tqdm(os.listdir(domain["image_dir"])):
         id, _ = os.path.splitext(filename)
-        image = Image.open(os.path.join(domain["image_dir"], filename))
-        mask = Image.open(os.path.join(domain["mask_dir"], filename))
+        image = open(os.path.join(domain["image_dir"], filename), "rb").read()
+        mask = open(os.path.join(domain["mask_dir"], filename), "rb").read()
 
         params = InsertBaseAssetParams(
             id=id,
-            image=memoryview(image.tobytes()),
+            image=memoryview(image),
             image_url=os.path.join("images", filename),
-            mask=memoryview(mask.tobytes()),
+            mask=memoryview(mask),
             mask_url=os.path.join("masks", filename),
             domain=domain["domain"],
         )
