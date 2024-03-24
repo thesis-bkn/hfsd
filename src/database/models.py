@@ -3,7 +3,14 @@
 #   sqlc v1.25.0
 import dataclasses
 import datetime
+import enum
 from typing import Any, Optional
+
+
+class TaskVariant(str, enum.Enum):
+    INFERENCE = "inference"
+    SAMPLE = "sample"
+    FINETUNE = "finetune"
 
 
 @dataclasses.dataclass()
@@ -53,7 +60,7 @@ class Task:
     id: str
     source_model_id: str
     output_model_id: Optional[str]
-    task_type: str
+    task_type: TaskVariant
     created_at: Optional[datetime.datetime]
     handled_at: Optional[datetime.datetime]
     finished_at: Optional[datetime.datetime]

@@ -12,7 +12,7 @@ import "bytes"
 
 import "github.com/thesis-bkn/hfsd/templates/components"
 
-func fileInput(label string) templ.Component {
+func fileInput(label string, name string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -38,7 +38,15 @@ func fileInput(label string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span></div><input type=\"file\" class=\"file-input file-input-bordered w-full max-w-xs\"></label>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span></div><input type=\"file\" name=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(name))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" accept=\"image/*\" class=\"file-input file-input-bordered w-full max-w-xs\"></label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -49,7 +57,7 @@ func fileInput(label string) templ.Component {
 	})
 }
 
-func textInput(label string) templ.Component {
+func textInput(label string, name string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -75,7 +83,15 @@ func textInput(label string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span></div><input type=\"text\" placeholder=\"Type here\" class=\"input input-bordered w-full max-w-xs\"></label>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span></div><input type=\"text\" name=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(name))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" placeholder=\"Type here\" class=\"input input-bordered w-full max-w-xs\"></label>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -109,19 +125,19 @@ func InferenceView() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" <div class=\"flex justify-center mb-20\"><div><h2 class=\"text-xl font-semibold\">Create mask with your image</h2><div class=\"divider\"></div><iframe src=\"https://stevhliu-inpaint-mask-maker.hf.space\" frameborder=\"0\" width=\"850\" height=\"450\"></iframe><h2 class=\"text-xl font-semibold mt-5\">Upload your image and mask image</h2><div class=\"divider\"></div><form action=\"#\" class=\"flex flex-col items-center\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" <div class=\"flex justify-center mb-20\"><div><h2 class=\"text-xl font-semibold\">Create mask with your image</h2><div class=\"divider\"></div><iframe src=\"https://stevhliu-inpaint-mask-maker.hf.space\" frameborder=\"0\" width=\"850\" height=\"450\"></iframe><h2 class=\"text-xl font-semibold mt-5\">Upload your image and mask image</h2><div class=\"divider\"></div><form class=\"flex flex-col items-center\" hx-post=\"/api/inference\" hx-encoding=\"multipart/form-data\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = fileInput("Image").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = fileInput("Image", "image").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = fileInput("Mask image").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = fileInput("Mask image", "mask").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = textInput("Model").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = textInput("Model", "model").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -1,6 +1,5 @@
 from src.database.query import InsertBaseAssetParams
 from src.s3 import ImageUploader
-from PIL import Image
 from os import environ
 from sqlalchemy.engine import create_engine
 from src.config import ConfigReader
@@ -22,11 +21,12 @@ conn = create_engine(
 querier = Querier(conn)
 
 base_assets = config.get_value("base_assets")
-for domain in base_assets:
+commit_frequency = 100  # commit per 100 images
+for i, domain in enumerate(base_assets):
     for filename in tqdm(os.listdir(domain["image_dir"])):
         id, _ = os.path.splitext(filename)
-        image = open(os.path.join(domain["image_dir"], filename), "rb").read()
-        mask = open(os.path.join(domain["mask_dir"], filename), "rb").read()
+        image = open(os.path.join(domain["image_dir"], id), "rb").read()
+        mask = open(os.path.join(domain["mask_dir"], id), "rb").read()
 
         params = InsertBaseAssetParams(
             id=id,
@@ -39,5 +39,7 @@ for domain in base_assets:
         image_uploader.upload_image(image, params.image_url)
         image_uploader.upload_image(mask, params.mask_url)
         querier.insert_base_asset(params)
+        if i % commit_frequency == 0:
+            conn.commit()
 
-    conn.commit()
+conn.commit()

@@ -11,6 +11,14 @@ import sqlalchemy.ext.asyncio
 from src.database import models
 
 
+GET_EARLIEST_PENDING_TASK = """-- name: get_earliest_pending_task \\:one
+SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, human_prefs, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
+WHERE handled_at IS NULL
+ORDER BY created_at DESC
+LIMIT 1
+"""
+
+
 GET_MODEL = """-- name: get_model \\:one
 SELECT id, domain, name, base, ckpt, created_at FROM models
 WHERE id = :p1 LIMIT 1
@@ -87,6 +95,26 @@ class Querier:
     def __init__(self, conn: sqlalchemy.engine.Connection):
         self._conn = conn
 
+    def get_earliest_pending_task(self) -> Optional[models.Task]:
+        row = self._conn.execute(sqlalchemy.text(GET_EARLIEST_PENDING_TASK)).first()
+        if row is None:
+            return None
+        return models.Task(
+            id=row[0],
+            source_model_id=row[1],
+            output_model_id=row[2],
+            task_type=row[3],
+            created_at=row[4],
+            handled_at=row[5],
+            finished_at=row[6],
+            human_prefs=row[7],
+            prompt_embeds=row[8],
+            latents=row[9],
+            timesteps=row[10],
+            next_latents=row[11],
+            image_torchs=row[12],
+        )
+
     def get_model(self, *, id: str) -> Optional[models.Model]:
         row = self._conn.execute(sqlalchemy.text(GET_MODEL), {"p1": id}).first()
         if row is None:
@@ -100,7 +128,7 @@ class Querier:
             created_at=row[5],
         )
 
-    def get_task(self, *, id: str, task_type: str) -> Optional[models.Task]:
+    def get_task(self, *, id: str, task_type: models.TaskVariant) -> Optional[models.Task]:
         row = self._conn.execute(sqlalchemy.text(GET_TASK), {"p1": id, "p2": task_type}).first()
         if row is None:
             return None
@@ -169,6 +197,26 @@ class AsyncQuerier:
     def __init__(self, conn: sqlalchemy.ext.asyncio.AsyncConnection):
         self._conn = conn
 
+    async def get_earliest_pending_task(self) -> Optional[models.Task]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_EARLIEST_PENDING_TASK))).first()
+        if row is None:
+            return None
+        return models.Task(
+            id=row[0],
+            source_model_id=row[1],
+            output_model_id=row[2],
+            task_type=row[3],
+            created_at=row[4],
+            handled_at=row[5],
+            finished_at=row[6],
+            human_prefs=row[7],
+            prompt_embeds=row[8],
+            latents=row[9],
+            timesteps=row[10],
+            next_latents=row[11],
+            image_torchs=row[12],
+        )
+
     async def get_model(self, *, id: str) -> Optional[models.Model]:
         row = (await self._conn.execute(sqlalchemy.text(GET_MODEL), {"p1": id})).first()
         if row is None:
@@ -182,7 +230,7 @@ class AsyncQuerier:
             created_at=row[5],
         )
 
-    async def get_task(self, *, id: str, task_type: str) -> Optional[models.Task]:
+    async def get_task(self, *, id: str, task_type: models.TaskVariant) -> Optional[models.Task]:
         row = (await self._conn.execute(sqlalchemy.text(GET_TASK), {"p1": id, "p2": task_type})).first()
         if row is None:
             return None

@@ -5,8 +5,54 @@
 package database
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type TaskVariant string
+
+const (
+	TaskVariantInference TaskVariant = "inference"
+	TaskVariantSample    TaskVariant = "sample"
+	TaskVariantFinetune  TaskVariant = "finetune"
+)
+
+func (e *TaskVariant) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = TaskVariant(s)
+	case string:
+		*e = TaskVariant(s)
+	default:
+		return fmt.Errorf("unsupported scan type for TaskVariant: %T", src)
+	}
+	return nil
+}
+
+type NullTaskVariant struct {
+	TaskVariant TaskVariant
+	Valid       bool // Valid is true if TaskVariant is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullTaskVariant) Scan(value interface{}) error {
+	if value == nil {
+		ns.TaskVariant, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.TaskVariant.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullTaskVariant) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.TaskVariant), nil
+}
 
 type Asset struct {
 	TaskID   string
@@ -50,7 +96,7 @@ type Task struct {
 	ID            string
 	SourceModelID string
 	OutputModelID pgtype.Text
-	TaskType      string
+	TaskType      TaskVariant
 	CreatedAt     pgtype.Timestamp
 	HandledAt     pgtype.Timestamp
 	FinishedAt    pgtype.Timestamp

@@ -6,6 +6,12 @@ WHERE id = $1 LIMIT 1;
 SELECT * FROM models
 WHERE domain = $1;
 
+-- name: GetEarliestPendingTask :one
+SELECT * FROM tasks
+WHERE handled_at IS NULL
+ORDER BY created_at DESC
+LIMIT 1;
+
 -- name: InsertModel :exec
 INSERT INTO models (id, domain, name, base, ckpt)
 VALUES ($1, $2, $3, $4, $5);

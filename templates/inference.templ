@@ -2,21 +2,21 @@ package templates
 
 import "github.com/thesis-bkn/hfsd/templates/components"
 
-templ fileInput(label string) {
+templ fileInput(label string, name string) {
 	<label class="form-control w-full max-w-xs">
 		<div class="label">
 			<span class="label-text">{ label }</span>
 		</div>
-		<input type="file" class="file-input file-input-bordered w-full max-w-xs"/>
+		<input type="file" name={ name } accept="image/*" class="file-input file-input-bordered w-full max-w-xs"/>
 	</label>
 }
 
-templ textInput(label string) {
+templ textInput(label string, name string) {
 	<label class="form-control w-full max-w-xs">
 		<div class="label">
 			<span class="label-text">{ label }</span>
 		</div>
-		<input type="text" placeholder="Type here" class="input input-bordered w-full max-w-xs"/>
+		<input type="text" name={ name } placeholder="Type here" class="input input-bordered w-full max-w-xs"/>
 	</label>
 }
 
@@ -30,10 +30,14 @@ templ InferenceView() {
 				<iframe src="https://stevhliu-inpaint-mask-maker.hf.space" frameborder="0" width="850" height="450"></iframe>
 				<h2 class="text-xl font-semibold mt-5">Upload your image and mask image</h2>
 				<div class="divider"></div>
-				<form action="#" class="flex flex-col items-center">
-					@fileInput("Image")
-					@fileInput("Mask image")
-					@textInput("Model")
+				<form
+					class="flex flex-col items-center"
+					hx-post="/api/inference"
+					hx-encoding="multipart/form-data"
+				>
+					@fileInput("Image", "image")
+					@fileInput("Mask image", "mask")
+					@textInput("Model", "model")
 					<button class="btn btn-active btn-secondary mt-5 px-20">Inference</button>
 				</form>
 			</div>

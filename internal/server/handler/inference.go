@@ -49,6 +49,7 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
+
 	mask, err := c.FormFile("mask")
 	if err != nil {
 		return tracerr.Wrap(err)

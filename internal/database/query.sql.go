@@ -9,6 +9,34 @@ import (
 	"context"
 )
 
+const getEarliestPendingTask = `-- name: GetEarliestPendingTask :one
+SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, human_prefs, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
+WHERE handled_at IS NULL
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetEarliestPendingTask(ctx context.Context) (Task, error) {
+	row := q.db.QueryRow(ctx, getEarliestPendingTask)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.SourceModelID,
+		&i.OutputModelID,
+		&i.TaskType,
+		&i.CreatedAt,
+		&i.HandledAt,
+		&i.FinishedAt,
+		&i.HumanPrefs,
+		&i.PromptEmbeds,
+		&i.Latents,
+		&i.Timesteps,
+		&i.NextLatents,
+		&i.ImageTorchs,
+	)
+	return i, err
+}
+
 const getModel = `-- name: GetModel :one
 SELECT id, domain, name, base, ckpt, created_at FROM models
 WHERE id = $1 LIMIT 1
@@ -36,7 +64,7 @@ LIMIT 1
 
 type GetTaskParams struct {
 	ID       string
-	TaskType string
+	TaskType TaskVariant
 }
 
 func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) {

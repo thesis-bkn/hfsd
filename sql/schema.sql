@@ -31,12 +31,15 @@ create table if not exists base_assets
     domain    text  not null
 );
 
+
+CREATE TYPE task_variant AS ENUM ('inference', 'sample', 'finetune');
+
 create table if not exists tasks
 (
     id              text,
     source_model_id text not null,
     output_model_id text,
-    task_type       text not null,
+    task_type       task_variant not null,
     created_at      timestamp default now(),
     handled_at      timestamp,
     finished_at     timestamp,
