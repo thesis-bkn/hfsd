@@ -24,11 +24,11 @@ func NewFactoryView(
 }
 
 func (f *FactoryView) View(c echo.Context) error {
-	tasks, err := f.client.Query().ListAllTask(c.Request().Context())
+	tasks, err := f.client.Query().ListAllTaskWithAsset(c.Request().Context())
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	return templates.FactoryView(f.cfg.EndpointUrl, tasks).
+	return templates.FactoryView(f.cfg, tasks).
 		Render(c.Request().Context(), c.Response().Writer)
 }

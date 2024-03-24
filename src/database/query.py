@@ -3,7 +3,7 @@
 #   sqlc v1.25.0
 # source: query.sql
 import dataclasses
-from typing import AsyncIterator, Iterator, Optional
+from typing import Any, AsyncIterator, Iterator, Optional
 
 import sqlalchemy
 import sqlalchemy.ext.asyncio
@@ -85,9 +85,18 @@ class InsertModelParams:
     ckpt: memoryview
 
 
-LIST_ALL_TASK = """-- name: list_all_task \\:many
-SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, human_prefs, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
+LIST_ALL_TASK_WITH_ASSET = """-- name: list_all_task_with_asset \\:many
+SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.human_prefs, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, assets.task_id, assets."order", assets.image, assets.image_url, assets.mask, assets.mask_url
+FROM tasks
+JOIN assets ON assets.task_id = tasks.id
+WHERE assets."order" = 0
 """
+
+
+@dataclasses.dataclass()
+class ListAllTaskWithAssetRow:
+    tasks: Optional[Any]
+    assets: Optional[Any]
 
 
 LIST_MODELS_BY_DOMAIN = """-- name: list_models_by_domain \\:many
@@ -185,23 +194,12 @@ class Querier:
             "p5": arg.ckpt,
         })
 
-    def list_all_task(self) -> Iterator[models.Task]:
-        result = self._conn.execute(sqlalchemy.text(LIST_ALL_TASK))
+    def list_all_task_with_asset(self) -> Iterator[ListAllTaskWithAssetRow]:
+        result = self._conn.execute(sqlalchemy.text(LIST_ALL_TASK_WITH_ASSET))
         for row in result:
-            yield models.Task(
-                id=row[0],
-                source_model_id=row[1],
-                output_model_id=row[2],
-                task_type=row[3],
-                created_at=row[4],
-                handled_at=row[5],
-                finished_at=row[6],
-                human_prefs=row[7],
-                prompt_embeds=row[8],
-                latents=row[9],
-                timesteps=row[10],
-                next_latents=row[11],
-                image_torchs=row[12],
+            yield ListAllTaskWithAssetRow(
+                tasks=row[0],
+                assets=row[1],
             )
 
     def list_models_by_domain(self, *, domain: str) -> Iterator[models.Model]:
@@ -306,23 +304,12 @@ class AsyncQuerier:
             "p5": arg.ckpt,
         })
 
-    async def list_all_task(self) -> AsyncIterator[models.Task]:
-        result = await self._conn.stream(sqlalchemy.text(LIST_ALL_TASK))
+    async def list_all_task_with_asset(self) -> AsyncIterator[ListAllTaskWithAssetRow]:
+        result = await self._conn.stream(sqlalchemy.text(LIST_ALL_TASK_WITH_ASSET))
         async for row in result:
-            yield models.Task(
-                id=row[0],
-                source_model_id=row[1],
-                output_model_id=row[2],
-                task_type=row[3],
-                created_at=row[4],
-                handled_at=row[5],
-                finished_at=row[6],
-                human_prefs=row[7],
-                prompt_embeds=row[8],
-                latents=row[9],
-                timesteps=row[10],
-                next_latents=row[11],
-                image_torchs=row[12],
+            yield ListAllTaskWithAssetRow(
+                tasks=row[0],
+                assets=row[1],
             )
 
     async def list_models_by_domain(self, *, domain: str) -> AsyncIterator[models.Model]:

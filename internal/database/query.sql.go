@@ -179,33 +179,47 @@ func (q *Queries) InsertModel(ctx context.Context, arg InsertModelParams) error 
 	return err
 }
 
-const listAllTask = `-- name: ListAllTask :many
-SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, human_prefs, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
+const listAllTaskWithAsset = `-- name: ListAllTaskWithAsset :many
+SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.human_prefs, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, assets.task_id, assets."order", assets.image, assets.image_url, assets.mask, assets.mask_url
+FROM tasks
+JOIN assets ON assets.task_id = tasks.id
+WHERE assets."order" = 0
 `
 
-func (q *Queries) ListAllTask(ctx context.Context) ([]Task, error) {
-	rows, err := q.db.Query(ctx, listAllTask)
+type ListAllTaskWithAssetRow struct {
+	Task  Task
+	Asset Asset
+}
+
+func (q *Queries) ListAllTaskWithAsset(ctx context.Context) ([]ListAllTaskWithAssetRow, error) {
+	rows, err := q.db.Query(ctx, listAllTaskWithAsset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Task
+	var items []ListAllTaskWithAssetRow
 	for rows.Next() {
-		var i Task
+		var i ListAllTaskWithAssetRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.SourceModelID,
-			&i.OutputModelID,
-			&i.TaskType,
-			&i.CreatedAt,
-			&i.HandledAt,
-			&i.FinishedAt,
-			&i.HumanPrefs,
-			&i.PromptEmbeds,
-			&i.Latents,
-			&i.Timesteps,
-			&i.NextLatents,
-			&i.ImageTorchs,
+			&i.Task.ID,
+			&i.Task.SourceModelID,
+			&i.Task.OutputModelID,
+			&i.Task.TaskType,
+			&i.Task.CreatedAt,
+			&i.Task.HandledAt,
+			&i.Task.FinishedAt,
+			&i.Task.HumanPrefs,
+			&i.Task.PromptEmbeds,
+			&i.Task.Latents,
+			&i.Task.Timesteps,
+			&i.Task.NextLatents,
+			&i.Task.ImageTorchs,
+			&i.Asset.TaskID,
+			&i.Asset.Order,
+			&i.Asset.Image,
+			&i.Asset.ImageUrl,
+			&i.Asset.Mask,
+			&i.Asset.MaskUrl,
 		); err != nil {
 			return nil, err
 		}

@@ -12,8 +12,12 @@ WHERE handled_at IS NULL
 ORDER BY created_at DESC
 LIMIT 1;
 
--- name: ListAllTask :many
-SELECT * FROM tasks;
+-- name: ListAllTaskWithAsset :many
+SELECT sqlc.embed(tasks), sqlc.embed(assets)
+FROM tasks
+JOIN assets ON assets.task_id = tasks.id
+WHERE assets."order" = 0;
+
 
 -- name: InsertModel :exec
 INSERT INTO models (id, domain, name, base, ckpt)
