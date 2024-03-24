@@ -184,6 +184,7 @@ SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, 
 FROM tasks
 JOIN assets ON assets.task_id = tasks.id
 WHERE assets."order" = 0
+ORDER BY tasks.created_at DESC
 `
 
 type ListAllTaskWithAssetRow struct {

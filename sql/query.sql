@@ -16,7 +16,8 @@ LIMIT 1;
 SELECT sqlc.embed(tasks), sqlc.embed(assets)
 FROM tasks
 JOIN assets ON assets.task_id = tasks.id
-WHERE assets."order" = 0;
+WHERE assets."order" = 0
+ORDER BY tasks.created_at DESC;
 
 
 -- name: InsertModel :exec
