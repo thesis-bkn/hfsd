@@ -34,6 +34,7 @@ templ InferenceView() {
 					class="flex flex-col items-center"
 					hx-post="/api/inference"
 					hx-encoding="multipart/form-data"
+					hx-disabled-elt="input[type='text'], input[type='file'], button"
 					@htmx:after-request.window="
                         if ($event.detail.successful == true) {
                             console.log('succesfull submit task')
@@ -58,7 +59,10 @@ templ InferenceView() {
 					@fileInput("Image", "image")
 					@fileInput("Mask image", "mask")
 					@textInput("Model", "model")
-					<button class="btn btn-active btn-secondary mt-5 px-20">Inference</button>
+					<button
+						type="submit"
+						class="btn btn-active btn-secondary mt-5 px-20"
+					>Inference</button>
 				</form>
 			</div>
 		</div>

@@ -1,0 +1,30 @@
+package templates
+
+import "github.com/thesis-bkn/hfsd/templates/components"
+import "github.com/thesis-bkn/hfsd/templates/model"
+
+templ FactoryView(tasks []*model.Task) {
+	@base() {
+		@components.NavBar("factory")
+		<ul>
+			for _, task := range tasks {
+				<li>
+					<div class="card w-96 bg-base-100 shadow-xl">
+						<figure><img src="https://daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.jpg" alt="Shoes"/></figure>
+						<div class="card-body">
+							<h2 class="card-title">
+								{ task.ID }
+								<div class="badge badge-secondary">NEW</div>
+							</h2>
+							<p>If a dog chews shoes whose shoes does he choose?</p>
+							<div class="card-actions justify-end">
+								<div class="badge badge-outline">Fashion</div>
+								<div class="badge badge-outline">Products</div>
+							</div>
+						</div>
+					</div>
+				</li>
+			}
+		</ul>
+	}
+}

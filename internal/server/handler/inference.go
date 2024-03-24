@@ -7,7 +7,7 @@ import (
 	"path"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
+    gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
 	"github.com/ztrue/tracerr"
@@ -15,6 +15,10 @@ import (
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/internal/s3"
+)
+
+const (
+    modelIDsAlphabet = `0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ`
 )
 
 type InferenceHandler struct {
@@ -64,7 +68,7 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	taskUUID, err := uuid.NewV7()
+    taskID, err := gonanoid.Generate(modelIDsAlphabet, 5)
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
@@ -84,14 +88,14 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	query := i.client.Query().WithTx(tx)
 	order := 0
 	if err := query.InsertInferenceTask(c.Request().Context(), database.InsertInferenceTaskParams{
-		ID:            taskUUID.String(),
+		ID:            taskID,
 		SourceModelID: model,
 	}); err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	imageURL := path.Join(i.cfg.ImagePath, fmt.Sprintf("%d-%s", order, taskUUID.String()))
-	maskUrl := path.Join(i.cfg.MaskPath, fmt.Sprintf("%d-%s", order, taskUUID.String()))
+	imageURL := path.Join(i.cfg.ImagePath, fmt.Sprintf("%d-%s", order, taskID))
+	maskUrl := path.Join(i.cfg.MaskPath, fmt.Sprintf("%d-%s", order, taskID))
 
 	if err := i.s3Client.UploadImage(imageB, imageURL); err != nil {
 		return tracerr.Wrap(err)
@@ -101,7 +105,7 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	}
 
 	if err := query.InsertAsset(c.Request().Context(), database.InsertAssetParams{
-		TaskID:   taskUUID.String(),
+		TaskID:   taskID,
 		Order:    0,
 		Image:    imageB,
 		ImageUrl: imageURL,
