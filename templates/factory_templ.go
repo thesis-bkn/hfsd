@@ -11,9 +11,9 @@ import "io"
 import "bytes"
 
 import "github.com/thesis-bkn/hfsd/templates/components"
-import "github.com/thesis-bkn/hfsd/templates/model"
+import "github.com/thesis-bkn/hfsd/internal/database"
 
-func FactoryView(tasks []*model.Task) templ.Component {
+func FactoryView(endpointUrl string, tasks []database.Task) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {

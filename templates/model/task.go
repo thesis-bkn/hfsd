@@ -21,7 +21,7 @@ type Task struct {
 	CreatedAt     time.Time
 	HandledAt     *time.Time
 	FinishedAt    *time.Time
-    HumanPrefs    []*HumanPref
+	HumanPrefs    []*HumanPref
 }
 
 type HumanPref struct {

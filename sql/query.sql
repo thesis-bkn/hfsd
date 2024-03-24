@@ -12,6 +12,9 @@ WHERE handled_at IS NULL
 ORDER BY created_at DESC
 LIMIT 1;
 
+-- name: ListAllTask :many
+SELECT * FROM tasks;
+
 -- name: InsertModel :exec
 INSERT INTO models (id, domain, name, base, ckpt)
 VALUES ($1, $2, $3, $4, $5);

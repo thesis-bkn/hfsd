@@ -12,6 +12,6 @@ func NewInferenceView() *InferenceView {
 	return &InferenceView{}
 }
 
-func (*InferenceView) InferenceView(c echo.Context) error {
+func (*InferenceView) View(c echo.Context) error {
 	return templates.InferenceView().Render(c.Request().Context(), c.Response().Writer)
 }

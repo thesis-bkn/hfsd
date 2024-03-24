@@ -1,9 +1,9 @@
 package templates
 
 import "github.com/thesis-bkn/hfsd/templates/components"
-import "github.com/thesis-bkn/hfsd/templates/model"
+import "github.com/thesis-bkn/hfsd/internal/database"
 
-templ FactoryView(tasks []*model.Task) {
+templ FactoryView(endpointUrl string, tasks []database.Task) {
 	@base() {
 		@components.NavBar("factory")
 		<ul>

@@ -36,6 +36,7 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	homeView := view.NewHomeView()
 	infView := view.NewInferenceView()
 	finetuneView := view.NewFinetuneView()
+	factoryView := view.NewFactoryView(client, cfg)
 
 	// Global Middleware
 	e.Use(middleware.Logger())
@@ -50,12 +51,13 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	e.GET("/asset/*", echo.WrapHandler(assetFile))
 
 	e.GET("/", homeView.Home)
+	// APIs
 	apiEpts := e.Group("/api")
 	apiEpts.POST("/inference", inferenceHandler.SubmitInferenceTask)
 
-	// Inference ------
-	e.GET("/inference", infView.InferenceView)
-	// Finetune  -------
+	// Views ------
+	e.GET("/inference", infView.View)
+	e.GET("/factory", factoryView.View)
 	e.GET("/finetune", finetuneView.FinetuneView)
 	e.GET("/finetune/:clientID", finetuneView.FinetuneModelView)
 

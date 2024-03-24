@@ -179,6 +179,44 @@ func (q *Queries) InsertModel(ctx context.Context, arg InsertModelParams) error 
 	return err
 }
 
+const listAllTask = `-- name: ListAllTask :many
+SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, human_prefs, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
+`
+
+func (q *Queries) ListAllTask(ctx context.Context) ([]Task, error) {
+	rows, err := q.db.Query(ctx, listAllTask)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.SourceModelID,
+			&i.OutputModelID,
+			&i.TaskType,
+			&i.CreatedAt,
+			&i.HandledAt,
+			&i.FinishedAt,
+			&i.HumanPrefs,
+			&i.PromptEmbeds,
+			&i.Latents,
+			&i.Timesteps,
+			&i.NextLatents,
+			&i.ImageTorchs,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listModelsByDomain = `-- name: ListModelsByDomain :many
 SELECT id, domain, name, base, ckpt, created_at FROM models
 WHERE domain = $1
