@@ -22,7 +22,7 @@ templ textInput(label string, name string) {
 
 templ InferenceView() {
 	@base() {
-		@components.NavBar(false)
+		@components.NavBar("inference")
 		<div class="flex justify-center mb-20">
 			<div>
 				<h2 class="text-xl font-semibold">Create mask with your image</h2>
@@ -35,25 +35,25 @@ templ InferenceView() {
 					hx-post="/api/inference"
 					hx-encoding="multipart/form-data"
 					@htmx:after-request.window="
-                            if ($event.detail.successful == true) {
-                                console.log('succesfull submit task')
-                                Swal.fire({
-                                    title: 'Success!',
-                                    text: 'Success upload inference task',
-                                    icon: 'success',
-                                    confirmButtonText: 'Continue'
-                                }).then((result) => {
-                                    window.location.reload()
-                                })
-                            } else {
-                                Swal.fire({
-                                    title: 'Error!',
-                                    text: 'Failed to upload, please try again',
-                                    icon: 'error',
-                                    confirmButtonText: 'Continue'
-                                })
-                            }
-                        "
+                        if ($event.detail.successful == true) {
+                            console.log('succesfull submit task')
+                            Swal.fire({
+                                title: 'Success!',
+                                text: 'Success upload inference task',
+                                icon: 'success',
+                                confirmButtonText: 'Continue'
+                            }).then((result) => {
+                                window.location.reload()
+                            })
+                        } else {
+                            Swal.fire({
+                                title: 'Error!',
+                                text: 'Failed to upload, please try again',
+                                icon: 'error',
+                                confirmButtonText: 'Continue'
+                            })
+                        }
+                    "
 				>
 					@fileInput("Image", "image")
 					@fileInput("Mask image", "mask")
