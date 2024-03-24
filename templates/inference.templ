@@ -34,6 +34,26 @@ templ InferenceView() {
 					class="flex flex-col items-center"
 					hx-post="/api/inference"
 					hx-encoding="multipart/form-data"
+					@htmx:after-request.window="
+                            if ($event.detail.successful == true) {
+                                console.log('succesfull submit task')
+                                Swal.fire({
+                                    title: 'Success!',
+                                    text: 'Success upload inference task',
+                                    icon: 'success',
+                                    confirmButtonText: 'Continue'
+                                }).then((result) => {
+                                    window.location.reload()
+                                })
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: 'Failed to upload, please try again',
+                                    icon: 'error',
+                                    confirmButtonText: 'Continue'
+                                })
+                            }
+                        "
 				>
 					@fileInput("Image", "image")
 					@fileInput("Mask image", "mask")
