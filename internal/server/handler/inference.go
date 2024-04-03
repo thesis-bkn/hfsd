@@ -7,9 +7,9 @@ import (
 	"path"
 
 	"github.com/go-playground/validator/v10"
-    gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/ztrue/tracerr"
 
 	"github.com/thesis-bkn/hfsd/internal/config"
@@ -18,7 +18,7 @@ import (
 )
 
 const (
-    modelIDsAlphabet = `0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ`
+	modelIDsAlphabet = `0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ`
 )
 
 type InferenceHandler struct {
@@ -42,12 +42,9 @@ func NewInferenceHandler(
 	}
 }
 
-type InferenceTaskRequest struct {
-	Model string `form:"model" validate:"required" json:"model"`
-}
-
 func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	model := c.FormValue("model")
+	prompt := c.FormValue("prompt")
 
 	image, err := c.FormFile("image")
 	if err != nil {
@@ -68,7 +65,7 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-    taskID, err := gonanoid.Generate(modelIDsAlphabet, 5)
+	taskID, err := gonanoid.Generate(modelIDsAlphabet, 5)
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
@@ -106,6 +103,7 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 
 	if err := query.InsertAsset(c.Request().Context(), database.InsertAssetParams{
 		TaskID:   taskID,
+		Prompt:   prompt,
 		Order:    0,
 		Image:    imageB,
 		ImageUrl: imageURL,

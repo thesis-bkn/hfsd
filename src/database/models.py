@@ -17,7 +17,7 @@ class TaskVariant(str, enum.Enum):
 class Asset:
     task_id: str
     order: int
-    prompt: Optional[str]
+    prompt: str
     image: memoryview
     image_url: str
     mask: memoryview

@@ -59,7 +59,7 @@ create table if not exists assets
 (
     task_id   text,
     "order"   smallint,
-    prompt    text,
+    prompt    text      not null,
     image     bytea     not null,
     image_url text      not null,
     mask      bytea     not null,

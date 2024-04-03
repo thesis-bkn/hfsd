@@ -42,8 +42,8 @@ LIMIT 1
 
 
 INSERT_ASSET = """-- name: insert_asset \\:exec
-INSERT INTO assets (task_id, "order", image, image_url, mask, mask_url)
-VALUES (:p1, :p2, :p3, :p4, :p5, :p6)
+INSERT INTO assets (task_id, "order", prompt, image, image_url, mask, mask_url)
+VALUES (:p1, :p2, :p3, :p4, :p5, :p6, :p7)
 """
 
 
@@ -51,6 +51,7 @@ VALUES (:p1, :p2, :p3, :p4, :p5, :p6)
 class InsertAssetParams:
     task_id: str
     order: int
+    prompt: str
     image: memoryview
     image_url: str
     mask: memoryview
@@ -74,7 +75,7 @@ class InsertBaseAssetParams:
 
 
 INSERT_INFERENCE_TASK = """-- name: insert_inference_task \\:exec
-INSERT INTO tasks (id, source_model_id, task_type) 
+INSERT INTO tasks (id, source_model_id, task_type)
 VALUES ( :p1, :p2, 'inference' )
 """
 
@@ -219,10 +220,11 @@ class Querier:
         self._conn.execute(sqlalchemy.text(INSERT_ASSET), {
             "p1": arg.task_id,
             "p2": arg.order,
-            "p3": arg.image,
-            "p4": arg.image_url,
-            "p5": arg.mask,
-            "p6": arg.mask_url,
+            "p3": arg.prompt,
+            "p4": arg.image,
+            "p5": arg.image_url,
+            "p6": arg.mask,
+            "p7": arg.mask_url,
         })
 
     def insert_base_asset(self, arg: InsertBaseAssetParams) -> None:
@@ -364,10 +366,11 @@ class AsyncQuerier:
         await self._conn.execute(sqlalchemy.text(INSERT_ASSET), {
             "p1": arg.task_id,
             "p2": arg.order,
-            "p3": arg.image,
-            "p4": arg.image_url,
-            "p5": arg.mask,
-            "p6": arg.mask_url,
+            "p3": arg.prompt,
+            "p4": arg.image,
+            "p5": arg.image_url,
+            "p6": arg.mask,
+            "p7": arg.mask_url,
         })
 
     async def insert_base_asset(self, arg: InsertBaseAssetParams) -> None:

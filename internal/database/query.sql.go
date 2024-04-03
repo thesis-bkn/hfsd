@@ -113,13 +113,14 @@ func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) 
 }
 
 const insertAsset = `-- name: InsertAsset :exec
-INSERT INTO assets (task_id, "order", image, image_url, mask, mask_url)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO assets (task_id, "order", prompt, image, image_url, mask, mask_url)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 `
 
 type InsertAssetParams struct {
 	TaskID   string
 	Order    int16
+	Prompt   string
 	Image    []byte
 	ImageUrl string
 	Mask     []byte
@@ -130,6 +131,7 @@ func (q *Queries) InsertAsset(ctx context.Context, arg InsertAssetParams) error 
 	_, err := q.db.Exec(ctx, insertAsset,
 		arg.TaskID,
 		arg.Order,
+		arg.Prompt,
 		arg.Image,
 		arg.ImageUrl,
 		arg.Mask,
@@ -165,7 +167,7 @@ func (q *Queries) InsertBaseAsset(ctx context.Context, arg InsertBaseAssetParams
 }
 
 const insertInferenceTask = `-- name: InsertInferenceTask :exec
-INSERT INTO tasks (id, source_model_id, task_type) 
+INSERT INTO tasks (id, source_model_id, task_type)
 VALUES ( $1, $2, 'inference' )
 `
 

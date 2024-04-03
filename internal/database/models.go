@@ -57,7 +57,7 @@ func (ns NullTaskVariant) Value() (driver.Value, error) {
 type Asset struct {
 	TaskID   string
 	Order    int16
-	Prompt   pgtype.Text
+	Prompt   string
 	Image    []byte
 	ImageUrl string
 	Mask     []byte
