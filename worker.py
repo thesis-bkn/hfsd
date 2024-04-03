@@ -1,14 +1,16 @@
+import datetime
+import time
+from os import environ
 from typing import Optional
-from src import database
+
+import schedule
+from sqlalchemy.engine import create_engine
+
 from src.config import ConfigReader
 from src.database import Querier
-from sqlalchemy.engine import create_engine
-from os import environ
-import schedule
-import time
-import datetime
-
 from src.database.models import Task, TaskVariant
+from src.handlers import InferenceHandler
+from src.s3 import ImageUploader
 
 
 class CronJob:
@@ -23,6 +25,14 @@ class CronJob:
         ).connect()
         self.querier = Querier(self.conn)
         self.current_task: Optional[Task] = None
+        self.uploader = ImageUploader(
+            aws_access_key_id=environ["AWS_ACCESS_KEY_ID"],
+            aws_secret_access_key=environ["AWS_SECRET_ACCESS_KEY"],
+            bucket_name=environ["BUCKET_NAME"],
+            endpoint_url=environ["S3_ENDPOINT_URL"],
+        )
+
+        self.inf_handler = InferenceHandler(conn=self.conn, uploader=self.uploader)
 
     def run_job(self):
         # Define the job to be executed
@@ -36,7 +46,7 @@ class CronJob:
         # Specify what task is this
         match pending_task.task_type:
             case TaskVariant.INFERENCE:
-                print("inference task")
+                self.inf_handler.handle(task=pending_task)
             case TaskVariant.FINETUNE:
                 print("fine tune task")
             case TaskVariant.SAMPLE:

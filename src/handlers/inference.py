@@ -15,20 +15,20 @@ from src.s3 import ImageUploader
 
 
 class InferenceHandler:
-    def __init__(self) -> None:
-        pass
-
-    def handle(self, task: Task, conn: Connection, uploader: ImageUploader):
+    def __init__(self, conn: Connection, uploader: ImageUploader) -> None:
         self.conn = conn
+        self.uploader = uploader
         self.querier = Querier(self.conn)
+
+    def handle(self, task: Task):
         pipe = StableDiffusionInpaintPipeline.from_pretrained(
             "runwayml/stable-diffusion-inpainting",
             torch_dtype=torch.float16,
         )
-        self.pipe = pipe.to("cuda")
-        self.pipe.vae.requires_grad_(False)
-        self.pipe.text_encoder.requires_grad_(False)
-        self.pipe.unet.requires_grad_(False)
+        pipe = pipe.to("cuda")
+        pipe.vae.requires_grad_(False)
+        pipe.text_encoder.requires_grad_(False)
+        pipe.unet.requires_grad_(False)
 
         # if task.source_model_id != "base":
         #     self.ckpt = self.querier.get_model(id=task.source_model_id)
@@ -43,14 +43,12 @@ class InferenceHandler:
         #     self.pipe.load_lora_weights(state_dict)
 
         # get image
-        self.asset = self.querier.get_first_asset_by_model_id(task_id=task.id)
-        if self.asset is None:
+        asset = self.querier.get_first_asset_by_model_id(task_id=task.id)
+        if asset is None:
             raise Exception("can not find asset to inference")
-        image = Image.open(io.BytesIO(self.asset.image.tobytes()))
-        mask = Image.open(io.BytesIO(self.asset.mask.tobytes()))
-        output = self.pipe(
-            prompt=self.asset.prompt, image=image, mask_image=mask
-        ).images[0]
+        image = Image.open(io.BytesIO(asset.image.tobytes()))
+        mask = Image.open(io.BytesIO(asset.mask.tobytes()))
+        output = pipe(prompt=asset.prompt, image=image, mask_image=mask).images[0]
 
         # upload output image to cloudfly
         # then save new record inside table inference
@@ -61,7 +59,7 @@ class InferenceHandler:
         output_bytes = image_bytes.getvalue()
 
         key = os.path.join("output", task.id)
-        uploader.upload_image(
+        self.uploader.upload_image(
             output_bytes,
             s3_key=key,
         )
@@ -69,11 +67,11 @@ class InferenceHandler:
         self.querier.save_inference(
             SaveInferenceParams(
                 id=task.id,
-                prompt=self.asset.prompt,
-                image=memoryview(self.asset.image),
-                image_url=self.asset.image_url,
-                mask=memoryview(self.asset.mask),
-                mask_url=self.asset.mask_url,
+                prompt=asset.prompt,
+                image=memoryview(asset.image),
+                image_url=asset.image_url,
+                mask=memoryview(asset.mask),
+                mask_url=asset.mask_url,
                 output=memoryview(output_bytes),
                 output_url=key,
                 from_model=task.source_model_id,
@@ -87,4 +85,4 @@ class InferenceHandler:
             finished_at=datetime.datetime.now(datetime.UTC),
         )
 
-        conn.commit()
+        self.conn.commit()
