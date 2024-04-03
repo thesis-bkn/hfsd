@@ -22,11 +22,13 @@ querier = Querier(conn)
 
 base_assets = config.get_value("base_assets")
 commit_frequency = 100  # commit per 100 images
-for i, domain in enumerate(base_assets):
+i = 0
+for domain in base_assets:
     for filename in tqdm(os.listdir(domain["image_dir"])):
+        i += 1
         id, _ = os.path.splitext(filename)
-        image = open(os.path.join(domain["image_dir"], id), "rb").read()
-        mask = open(os.path.join(domain["mask_dir"], id), "rb").read()
+        image = open(os.path.join(domain["image_dir"], filename), "rb").read()
+        mask = open(os.path.join(domain["mask_dir"], filename), "rb").read()
 
         params = InsertBaseAssetParams(
             id=id,

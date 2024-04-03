@@ -64,6 +64,5 @@ create table if not exists assets
     image_url text      not null,
     mask      bytea     not null,
     mask_url  text      not null,
-    primary key (task_id, "order"),
-    foreign key (task_id) references tasks (id)
+    primary key (task_id, "order")
 );
