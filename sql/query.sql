@@ -19,7 +19,6 @@ JOIN assets ON assets.task_id = tasks.id
 WHERE assets."order" = 0
 ORDER BY tasks.created_at DESC;
 
-
 -- name: InsertModel :exec
 INSERT INTO models (id, domain, name, base, ckpt)
 VALUES ($1, $2, $3, $4, $5);
@@ -40,3 +39,22 @@ VALUES ( $1, $2, 'inference' );
 -- name: InsertAsset :exec
 INSERT INTO assets (task_id, "order", image, image_url, mask, mask_url)
 VALUES ($1, $2, $3, $4, $5, $6);
+
+-- name: UpdateTaskStatus :exec
+INSERT INTO tasks (id, task_type, handled_at, finished_at)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (id, task_type)
+DO UPDATE SET
+    handled_at = COALESCE(tasks.handled_at, EXCLUDED.handled_at),
+    finished_at = COALESCE(tasks.finished_at, EXCLUDED.finished_at);
+
+-- name: GetFirstAssetByModelID :one
+SELECT * FROM assets
+WHERE task_id = $1
+AND "order" = 0
+LIMIT 1;
+
+-- name: SaveInference :exec
+INSERT INTO inferences (id, prompt, image, image_url, mask, mask_url, output, output_url, from_model)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+

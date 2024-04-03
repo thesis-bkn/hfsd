@@ -7,6 +7,8 @@ package database
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getEarliestPendingTask = `-- name: GetEarliestPendingTask :one
@@ -33,6 +35,28 @@ func (q *Queries) GetEarliestPendingTask(ctx context.Context) (Task, error) {
 		&i.Timesteps,
 		&i.NextLatents,
 		&i.ImageTorchs,
+	)
+	return i, err
+}
+
+const getFirstAssetByModelID = `-- name: GetFirstAssetByModelID :one
+SELECT task_id, "order", prompt, image, image_url, mask, mask_url FROM assets
+WHERE task_id = $1
+AND "order" = 0
+LIMIT 1
+`
+
+func (q *Queries) GetFirstAssetByModelID(ctx context.Context, taskID string) (Asset, error) {
+	row := q.db.QueryRow(ctx, getFirstAssetByModelID, taskID)
+	var i Asset
+	err := row.Scan(
+		&i.TaskID,
+		&i.Order,
+		&i.Prompt,
+		&i.Image,
+		&i.ImageUrl,
+		&i.Mask,
+		&i.MaskUrl,
 	)
 	return i, err
 }
@@ -180,7 +204,7 @@ func (q *Queries) InsertModel(ctx context.Context, arg InsertModelParams) error 
 }
 
 const listAllTaskWithAsset = `-- name: ListAllTaskWithAsset :many
-SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.human_prefs, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, assets.task_id, assets."order", assets.image, assets.image_url, assets.mask, assets.mask_url
+SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.human_prefs, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, assets.task_id, assets."order", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url
 FROM tasks
 JOIN assets ON assets.task_id = tasks.id
 WHERE assets."order" = 0
@@ -217,6 +241,7 @@ func (q *Queries) ListAllTaskWithAsset(ctx context.Context) ([]ListAllTaskWithAs
 			&i.Task.ImageTorchs,
 			&i.Asset.TaskID,
 			&i.Asset.Order,
+			&i.Asset.Prompt,
 			&i.Asset.Image,
 			&i.Asset.ImageUrl,
 			&i.Asset.Mask,
@@ -262,4 +287,62 @@ func (q *Queries) ListModelsByDomain(ctx context.Context, domain string) ([]Mode
 		return nil, err
 	}
 	return items, nil
+}
+
+const saveInference = `-- name: SaveInference :exec
+INSERT INTO inferences (id, prompt, image, image_url, mask, mask_url, output, output_url, from_model)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+`
+
+type SaveInferenceParams struct {
+	ID        string
+	Prompt    pgtype.Text
+	Image     []byte
+	ImageUrl  string
+	Mask      []byte
+	MaskUrl   string
+	Output    []byte
+	OutputUrl string
+	FromModel string
+}
+
+func (q *Queries) SaveInference(ctx context.Context, arg SaveInferenceParams) error {
+	_, err := q.db.Exec(ctx, saveInference,
+		arg.ID,
+		arg.Prompt,
+		arg.Image,
+		arg.ImageUrl,
+		arg.Mask,
+		arg.MaskUrl,
+		arg.Output,
+		arg.OutputUrl,
+		arg.FromModel,
+	)
+	return err
+}
+
+const updateTaskStatus = `-- name: UpdateTaskStatus :exec
+INSERT INTO tasks (id, task_type, handled_at, finished_at)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (id, task_type)
+DO UPDATE SET
+    handled_at = COALESCE(tasks.handled_at, EXCLUDED.handled_at),
+    finished_at = COALESCE(tasks.finished_at, EXCLUDED.finished_at)
+`
+
+type UpdateTaskStatusParams struct {
+	ID         string
+	TaskType   TaskVariant
+	HandledAt  pgtype.Timestamp
+	FinishedAt pgtype.Timestamp
+}
+
+func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) error {
+	_, err := q.db.Exec(ctx, updateTaskStatus,
+		arg.ID,
+		arg.TaskType,
+		arg.HandledAt,
+		arg.FinishedAt,
+	)
+	return err
 }

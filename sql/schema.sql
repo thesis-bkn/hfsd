@@ -11,6 +11,7 @@ create table if not exists models
 create table if not exists inferences
 (
     id         text primary key,
+    prompt     text,
     image      bytea not null,
     image_url  text  not null,
     mask       bytea not null,
@@ -58,6 +59,7 @@ create table if not exists assets
 (
     task_id   text,
     "order"   smallint,
+    prompt    text,
     image     bytea     not null,
     image_url text      not null,
     mask      bytea     not null,

@@ -17,6 +17,7 @@ class TaskVariant(str, enum.Enum):
 class Asset:
     task_id: str
     order: int
+    prompt: Optional[str]
     image: memoryview
     image_url: str
     mask: memoryview
@@ -36,6 +37,7 @@ class BaseAsset:
 @dataclasses.dataclass()
 class Inference:
     id: str
+    prompt: Optional[str]
     image: memoryview
     image_url: str
     mask: memoryview

@@ -3,6 +3,7 @@
 #   sqlc v1.25.0
 # source: query.sql
 import dataclasses
+import datetime
 from typing import Any, AsyncIterator, Iterator, Optional
 
 import sqlalchemy
@@ -15,6 +16,14 @@ GET_EARLIEST_PENDING_TASK = """-- name: get_earliest_pending_task \\:one
 SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, human_prefs, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
 WHERE handled_at IS NULL
 ORDER BY created_at DESC
+LIMIT 1
+"""
+
+
+GET_FIRST_ASSET_BY_MODEL_ID = """-- name: get_first_asset_by_model_id \\:one
+SELECT task_id, "order", prompt, image, image_url, mask, mask_url FROM assets
+WHERE task_id = :p1
+AND "order" = 0
 LIMIT 1
 """
 
@@ -86,7 +95,7 @@ class InsertModelParams:
 
 
 LIST_ALL_TASK_WITH_ASSET = """-- name: list_all_task_with_asset \\:many
-SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.human_prefs, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, assets.task_id, assets."order", assets.image, assets.image_url, assets.mask, assets.mask_url
+SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.human_prefs, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, assets.task_id, assets."order", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url
 FROM tasks
 JOIN assets ON assets.task_id = tasks.id
 WHERE assets."order" = 0
@@ -103,6 +112,35 @@ class ListAllTaskWithAssetRow:
 LIST_MODELS_BY_DOMAIN = """-- name: list_models_by_domain \\:many
 SELECT id, domain, name, base, ckpt, created_at FROM models
 WHERE domain = :p1
+"""
+
+
+SAVE_INFERENCE = """-- name: save_inference \\:exec
+INSERT INTO inferences (id, prompt, image, image_url, mask, mask_url, output, output_url, from_model)
+VALUES (:p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8, :p9)
+"""
+
+
+@dataclasses.dataclass()
+class SaveInferenceParams:
+    id: str
+    prompt: Optional[str]
+    image: memoryview
+    image_url: str
+    mask: memoryview
+    mask_url: str
+    output: memoryview
+    output_url: str
+    from_model: str
+
+
+UPDATE_TASK_STATUS = """-- name: update_task_status \\:exec
+INSERT INTO tasks (id, task_type, handled_at, finished_at)
+VALUES (:p1, :p2, :p3, :p4)
+ON CONFLICT (id, task_type)
+DO UPDATE SET
+    handled_at = COALESCE(tasks.handled_at, EXCLUDED.handled_at),
+    finished_at = COALESCE(tasks.finished_at, EXCLUDED.finished_at)
 """
 
 
@@ -128,6 +166,20 @@ class Querier:
             timesteps=row[10],
             next_latents=row[11],
             image_torchs=row[12],
+        )
+
+    def get_first_asset_by_model_id(self, *, task_id: str) -> Optional[models.Asset]:
+        row = self._conn.execute(sqlalchemy.text(GET_FIRST_ASSET_BY_MODEL_ID), {"p1": task_id}).first()
+        if row is None:
+            return None
+        return models.Asset(
+            task_id=row[0],
+            order=row[1],
+            prompt=row[2],
+            image=row[3],
+            image_url=row[4],
+            mask=row[5],
+            mask_url=row[6],
         )
 
     def get_model(self, *, id: str) -> Optional[models.Model]:
@@ -215,6 +267,27 @@ class Querier:
                 created_at=row[5],
             )
 
+    def save_inference(self, arg: SaveInferenceParams) -> None:
+        self._conn.execute(sqlalchemy.text(SAVE_INFERENCE), {
+            "p1": arg.id,
+            "p2": arg.prompt,
+            "p3": arg.image,
+            "p4": arg.image_url,
+            "p5": arg.mask,
+            "p6": arg.mask_url,
+            "p7": arg.output,
+            "p8": arg.output_url,
+            "p9": arg.from_model,
+        })
+
+    def update_task_status(self, *, id: str, task_type: models.TaskVariant, handled_at: Optional[datetime.datetime], finished_at: Optional[datetime.datetime]) -> None:
+        self._conn.execute(sqlalchemy.text(UPDATE_TASK_STATUS), {
+            "p1": id,
+            "p2": task_type,
+            "p3": handled_at,
+            "p4": finished_at,
+        })
+
 
 class AsyncQuerier:
     def __init__(self, conn: sqlalchemy.ext.asyncio.AsyncConnection):
@@ -238,6 +311,20 @@ class AsyncQuerier:
             timesteps=row[10],
             next_latents=row[11],
             image_torchs=row[12],
+        )
+
+    async def get_first_asset_by_model_id(self, *, task_id: str) -> Optional[models.Asset]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_FIRST_ASSET_BY_MODEL_ID), {"p1": task_id})).first()
+        if row is None:
+            return None
+        return models.Asset(
+            task_id=row[0],
+            order=row[1],
+            prompt=row[2],
+            image=row[3],
+            image_url=row[4],
+            mask=row[5],
+            mask_url=row[6],
         )
 
     async def get_model(self, *, id: str) -> Optional[models.Model]:
@@ -324,3 +411,24 @@ class AsyncQuerier:
                 ckpt=row[4],
                 created_at=row[5],
             )
+
+    async def save_inference(self, arg: SaveInferenceParams) -> None:
+        await self._conn.execute(sqlalchemy.text(SAVE_INFERENCE), {
+            "p1": arg.id,
+            "p2": arg.prompt,
+            "p3": arg.image,
+            "p4": arg.image_url,
+            "p5": arg.mask,
+            "p6": arg.mask_url,
+            "p7": arg.output,
+            "p8": arg.output_url,
+            "p9": arg.from_model,
+        })
+
+    async def update_task_status(self, *, id: str, task_type: models.TaskVariant, handled_at: Optional[datetime.datetime], finished_at: Optional[datetime.datetime]) -> None:
+        await self._conn.execute(sqlalchemy.text(UPDATE_TASK_STATUS), {
+            "p1": id,
+            "p2": task_type,
+            "p3": handled_at,
+            "p4": finished_at,
+        })

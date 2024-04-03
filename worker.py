@@ -1,12 +1,14 @@
-import schedule
-import time
+from typing import Optional
 from src import database
 from src.config import ConfigReader
 from src.database import Querier
 from sqlalchemy.engine import create_engine
 from os import environ
+import schedule
+import time
+import datetime
 
-from src.database.models import TaskVariant
+from src.database.models import Task, TaskVariant
 
 
 class CronJob:
@@ -20,6 +22,7 @@ class CronJob:
             environ["DATABASE_URL"].replace("postgres://", "postgresql://")
         ).connect()
         self.querier = Querier(self.conn)
+        self.current_task: Optional[Task] = None
 
     def run_job(self):
         # Define the job to be executed
@@ -38,6 +41,14 @@ class CronJob:
                 print("fine tune task")
             case TaskVariant.SAMPLE:
                 print("sample task")
+
+        # mark that this task is being handled
+        self.querier.update_task_status(
+            id=pending_task.id,
+            task_type=pending_task.task_type,
+            handled_at=datetime.datetime.now(datetime.UTC),
+            finished_at=None,
+        )
 
     def start(self):
         # Start the scheduler
