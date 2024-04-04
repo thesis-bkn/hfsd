@@ -13,9 +13,8 @@ import "bytes"
 import "github.com/thesis-bkn/hfsd/templates/components"
 import "github.com/thesis-bkn/hfsd/internal/database"
 import "path"
-import "github.com/thesis-bkn/hfsd/internal/config"
 
-func FactoryView(cfg *config.Config, taskWithAssets []database.ListAllTaskWithAssetRow) templ.Component {
+func FactoryView(bucketEpt string, taskWithAssets []database.ListAllTaskWithAssetRow) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -38,16 +37,16 @@ func FactoryView(cfg *config.Config, taskWithAssets []database.ListAllTaskWithAs
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" <div class=\"grid mx-5 grid-cols-5 gap-10\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" <div class=\"flex flex-wrap m-20\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			for _, taskWithAsset := range taskWithAssets {
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"card w-55 bg-base-100 shadow-xl\"><figure><img src=\"")
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"card w-96 bg-base-100 shadow-xl\"><figure><img src=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(path.Join(cfg.EndpointUrl, cfg.Bucket, taskWithAsset.Asset.ImageUrl)))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(path.Join(bucketEpt, taskWithAsset.Asset.ImageUrl)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -58,7 +57,7 @@ func FactoryView(cfg *config.Config, taskWithAssets []database.ListAllTaskWithAs
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(taskWithAsset.Task.ID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/factory.templ`, Line: 21, Col: 30}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/factory.templ`, Line: 20, Col: 30}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -85,17 +84,13 @@ func FactoryView(cfg *config.Config, taskWithAssets []database.ListAllTaskWithAs
 						return templ_7745c5c3_Err
 					}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</h2><div class=\"flex space-x-2\">")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
 				if !taskWithAsset.Task.HandledAt.Valid {
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"badge badge-warning\">Pending</div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div></div></div>")
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</h2></div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

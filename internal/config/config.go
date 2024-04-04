@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/caarlos0/env/v10"
 )
@@ -27,4 +28,8 @@ func LoadConfig() *Config {
 	cfg.MaskPath = "masks"
 
 	return &cfg
+}
+
+func (c *Config) BucketEpt() string {
+	return path.Join(c.EndpointUrl, c.Bucket)
 }

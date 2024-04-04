@@ -259,6 +259,47 @@ func (q *Queries) ListAllTaskWithAsset(ctx context.Context) ([]ListAllTaskWithAs
 	return items, nil
 }
 
+const listInferences = `-- name: ListInferences :many
+SELECT id, prompt, image, image_url, mask, mask_url, output, output_url, from_model FROM inferences
+LIMIT $1
+OFFSET $2
+`
+
+type ListInferencesParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) ListInferences(ctx context.Context, arg ListInferencesParams) ([]Inference, error) {
+	rows, err := q.db.Query(ctx, listInferences, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Inference
+	for rows.Next() {
+		var i Inference
+		if err := rows.Scan(
+			&i.ID,
+			&i.Prompt,
+			&i.Image,
+			&i.ImageUrl,
+			&i.Mask,
+			&i.MaskUrl,
+			&i.Output,
+			&i.OutputUrl,
+			&i.FromModel,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listModelsByDomain = `-- name: ListModelsByDomain :many
 SELECT id, domain, name, base, ckpt, created_at FROM models
 WHERE domain = $1

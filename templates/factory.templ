@@ -3,17 +3,16 @@ package templates
 import "github.com/thesis-bkn/hfsd/templates/components"
 import "github.com/thesis-bkn/hfsd/internal/database"
 import "path"
-import "github.com/thesis-bkn/hfsd/internal/config"
 
-templ FactoryView(cfg *config.Config, taskWithAssets []database.ListAllTaskWithAssetRow) {
+templ FactoryView(bucketEpt string, taskWithAssets []database.ListAllTaskWithAssetRow) {
 	@base() {
 		@components.NavBar("factory")
-		<div class="grid mx-5 grid-cols-5 gap-10">
+		<div class="flex flex-wrap m-20">
 			for _, taskWithAsset := range taskWithAssets {
-				<div class="card w-55 bg-base-100 shadow-xl">
+				<div class="card w-96 bg-base-100 shadow-xl">
 					<figure>
 						<img
-							src={ path.Join(cfg.EndpointUrl, cfg.Bucket, taskWithAsset.Asset.ImageUrl) }
+							src={ path.Join(bucketEpt, taskWithAsset.Asset.ImageUrl) }
 							alt="Image"
 						/>
 					</figure>
@@ -28,12 +27,10 @@ templ FactoryView(cfg *config.Config, taskWithAssets []database.ListAllTaskWithA
 								case database.TaskVariantSample:
 									<div class="badge badge-secondary">#sample</div>
 							}
-						</h2>
-						<div class="flex space-x-2">
 							if !taskWithAsset.Task.HandledAt.Valid {
 								<div class="badge badge-warning">Pending</div>
 							}
-						</div>
+						</h2>
 					</div>
 				</div>
 			}

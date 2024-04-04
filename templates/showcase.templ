@@ -1,0 +1,63 @@
+package templates
+
+import (
+	"github.com/thesis-bkn/hfsd/templates/components"
+	"github.com/thesis-bkn/hfsd/internal/database"
+	"fmt"
+	"path"
+)
+
+templ directionButton(isActive bool, inner, next string) {
+	if isActive {
+		<a href={ templ.SafeURL(next) }>
+			<button class="join-item btn">{ inner }</button>
+		</a>
+	} else {
+		<button class="join-item btn" disabled="disabled">{ inner }</button>
+	}
+}
+
+templ downloadIcon() {
+	<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 9l-5 5-5-5M12 12.8V2.5"></path></svg>
+}
+
+templ ShowcaseView(bucketEpt string, infs []database.Inference, page int64) {
+	@base() {
+		@components.NavBar("showcase")
+		<div class="flex flex-wrap m-20">
+			for _, inf := range infs {
+				<div class="card w-96 bg-base-100 shadow-xl">
+					<figure>
+						<div class="diff aspect-square">
+							<div class="diff-item-1">
+								<img alt="daisy" src={ path.Join(bucketEpt, inf.ImageUrl) }/>
+							</div>
+							<div class="diff-item-2">
+								<img alt="daisy" src={ path.Join(bucketEpt, inf.OutputUrl) }/>
+							</div>
+							<div class="diff-resizer"></div>
+						</div>
+					</figure>
+					<div class="card-body">
+						<p>{ inf.Prompt.String }</p>
+						<div class="card-actions justify-end">
+							<a href={ templ.SafeURL(path.Join(bucketEpt, inf.ImageUrl)) }>
+								<button class="btn btn-outline btn-primary">
+									@downloadIcon()
+									Download
+								</button>
+							</a>
+						</div>
+					</div>
+				</div>
+			}
+		</div>
+		<div class="max-w-max mx-auto fixed inset-x-0 bottom-10">
+			<div class="join">
+				@directionButton(page > 0, "«", fmt.Sprintf("showcase?page=%d", page-1))
+				<button class="join-item btn">{ fmt.Sprintf("Page %d", page) }</button>
+				@directionButton(len(infs) > 0, "»", fmt.Sprintf("showcase?page=%d", page+1))
+			</div>
+		</div>
+	}
+}

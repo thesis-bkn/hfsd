@@ -29,6 +29,7 @@ func (f *FactoryView) View(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	return templates.FactoryView(f.cfg, tasks).
+	return templates.
+		FactoryView(f.cfg.BucketEpt(), tasks).
 		Render(c.Request().Context(), c.Response().Writer)
 }

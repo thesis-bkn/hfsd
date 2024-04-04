@@ -110,6 +110,13 @@ class ListAllTaskWithAssetRow:
     assets: Optional[Any]
 
 
+LIST_INFERENCES = """-- name: list_inferences \\:many
+SELECT id, prompt, image, image_url, mask, mask_url, output, output_url, from_model FROM inferences
+LIMIT :p1
+OFFSET :p2
+"""
+
+
 LIST_MODELS_BY_DOMAIN = """-- name: list_models_by_domain \\:many
 SELECT id, domain, name, base, ckpt, created_at FROM models
 WHERE domain = :p1
@@ -257,6 +264,21 @@ class Querier:
                 assets=row[1],
             )
 
+    def list_inferences(self, *, limit: int, offset: int) -> Iterator[models.Inference]:
+        result = self._conn.execute(sqlalchemy.text(LIST_INFERENCES), {"p1": limit, "p2": offset})
+        for row in result:
+            yield models.Inference(
+                id=row[0],
+                prompt=row[1],
+                image=row[2],
+                image_url=row[3],
+                mask=row[4],
+                mask_url=row[5],
+                output=row[6],
+                output_url=row[7],
+                from_model=row[8],
+            )
+
     def list_models_by_domain(self, *, domain: str) -> Iterator[models.Model]:
         result = self._conn.execute(sqlalchemy.text(LIST_MODELS_BY_DOMAIN), {"p1": domain})
         for row in result:
@@ -401,6 +423,21 @@ class AsyncQuerier:
             yield ListAllTaskWithAssetRow(
                 tasks=row[0],
                 assets=row[1],
+            )
+
+    async def list_inferences(self, *, limit: int, offset: int) -> AsyncIterator[models.Inference]:
+        result = await self._conn.stream(sqlalchemy.text(LIST_INFERENCES), {"p1": limit, "p2": offset})
+        async for row in result:
+            yield models.Inference(
+                id=row[0],
+                prompt=row[1],
+                image=row[2],
+                image_url=row[3],
+                mask=row[4],
+                mask_url=row[5],
+                output=row[6],
+                output_url=row[7],
+                from_model=row[8],
             )
 
     async def list_models_by_domain(self, *, domain: str) -> AsyncIterator[models.Model]:

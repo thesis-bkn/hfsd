@@ -11,8 +11,8 @@ func NewFinetuneView() *FinetuneView {
 	return &FinetuneView{}
 }
 
-// FinetuneView implements handler.FineTuneHandler.
-func (*FinetuneView) FinetuneView(c echo.Context) error {
+// View implements handler.FineTuneHandler.
+func (*FinetuneView) View(c echo.Context) error {
 	var ret []*templates.ModelInfo
 	for i := 0; i < 100; i++ {
 		ret = append(ret, &templates.ModelInfo{
@@ -21,9 +21,4 @@ func (*FinetuneView) FinetuneView(c echo.Context) error {
 		})
 	}
 	return templates.FinetuneView(ret).Render(c.Request().Context(), c.Response().Writer)
-}
-
-// FinetuneModelView implements handler.FineTuneHandler.
-func (*FinetuneView) FinetuneModelView(c echo.Context) error {
-	panic("unimplemented")
 }

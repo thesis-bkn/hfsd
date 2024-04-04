@@ -58,3 +58,8 @@ LIMIT 1;
 INSERT INTO inferences (id, prompt, image, image_url, mask, mask_url, output, output_url, from_model)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
 
+-- name: ListInferences :many
+SELECT * FROM inferences
+LIMIT $1
+OFFSET $2;
+

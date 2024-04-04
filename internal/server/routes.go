@@ -37,6 +37,7 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	infView := view.NewInferenceView()
 	finetuneView := view.NewFinetuneView()
 	factoryView := view.NewFactoryView(client, cfg)
+	showcaseView := view.NewShowcaseView(client, cfg)
 
 	// Global Middleware
 	e.Use(middleware.Logger())
@@ -58,8 +59,8 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	// Views ------
 	e.GET("/inference", infView.View)
 	e.GET("/factory", factoryView.View)
-	e.GET("/finetune", finetuneView.FinetuneView)
-	e.GET("/finetune/:clientID", finetuneView.FinetuneModelView)
+	e.GET("/finetune", finetuneView.View)
+	e.GET("/showcase", showcaseView.View)
 
 	return e
 }
