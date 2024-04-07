@@ -29,7 +29,7 @@ LIMIT 1
 
 
 GET_MODEL = """-- name: get_model \\:one
-SELECT id, domain, name, base, ckpt, created_at FROM models
+SELECT id, domain, name, base, ckpt, parent, created_at FROM models
 WHERE id = :p1 LIMIT 1
 """
 
@@ -118,7 +118,7 @@ OFFSET :p2
 
 
 LIST_MODELS_BY_DOMAIN = """-- name: list_models_by_domain \\:many
-SELECT id, domain, name, base, ckpt, created_at FROM models
+SELECT id, domain, name, base, ckpt, parent, created_at FROM models
 WHERE domain = :p1
 """
 
@@ -200,7 +200,8 @@ class Querier:
             name=row[2],
             base=row[3],
             ckpt=row[4],
-            created_at=row[5],
+            parent=row[5],
+            created_at=row[6],
         )
 
     def get_task(self, *, id: str, task_type: models.TaskVariant) -> Optional[models.Task]:
@@ -288,7 +289,8 @@ class Querier:
                 name=row[2],
                 base=row[3],
                 ckpt=row[4],
-                created_at=row[5],
+                parent=row[5],
+                created_at=row[6],
             )
 
     def save_inference(self, arg: SaveInferenceParams) -> None:
@@ -361,7 +363,8 @@ class AsyncQuerier:
             name=row[2],
             base=row[3],
             ckpt=row[4],
-            created_at=row[5],
+            parent=row[5],
+            created_at=row[6],
         )
 
     async def get_task(self, *, id: str, task_type: models.TaskVariant) -> Optional[models.Task]:
@@ -449,7 +452,8 @@ class AsyncQuerier:
                 name=row[2],
                 base=row[3],
                 ckpt=row[4],
-                created_at=row[5],
+                parent=row[5],
+                created_at=row[6],
             )
 
     async def save_inference(self, arg: SaveInferenceParams) -> None:

@@ -1,33 +1,127 @@
 package templates
 
 import (
-	"fmt"
-
 	"github.com/thesis-bkn/hfsd/templates/components"
+	"github.com/thesis-bkn/hfsd/internal/database"
 )
 
-type ModelInfo struct {
-	Name   string
-	ID     string
-	Domain string
+func graph(models []database.Model) (map[string]*database.Model, map[string][]*database.Model, string) {
+	graphM := make(map[string][]*database.Model)
+	modelM := make(map[string]*database.Model)
+
+	for i := range models {
+		graphM[models[i].ID] = []*database.Model{}
+		modelM[models[i].ID] = &models[i]
+	}
+
+	for i, model := range models {
+		if model.ID == "base" || graphM[model.Parent] == nil {
+			continue
+		}
+		graphM[model.Parent] = append(graphM[model.Parent], &models[i])
+	}
+
+	return modelM, graphM, "base"
 }
 
-templ FinetuneView(models []*ModelInfo) {
+templ tree(modelM map[string]*database.Model, graphM map[string][]*database.Model, curModel string) {
+	<li>
+		<span>{ modelM[curModel].Name }</span>
+		if len(graphM[curModel]) > 0 {
+			<ul>
+				for _, child := range graphM[curModel] {
+					@tree(modelM, graphM, child.ID)
+				}
+			</ul>
+		}
+	</li>
+}
+
+templ FinetuneView(models []database.Model) {
 	@base() {
 		@components.NavBar("finetune")
-		<div class="m-4">
-			<header class="underline underline-offset-2 font-semibold underline-offset-auto text-2xl mb-4">
-				# Choose model to finetune
-			</header>
-			<div class="flex flex-wrap gap-2">
-				for _, model := range models {
-					<a href={ templ.SafeURL(fmt.Sprintf("/finetune/%s", model.ID)) }>
-						<button class="btn btn-outline">
-							{ fmt.Sprintf("%s - %s", model.Domain, model.Name) }
-						</button>
-					</a>
-				}
-			</div>
+		@treeStyle()
+		<div class="flex justify-center">
+			<ul class="tree">
+				@tree(graph(models))
+			</ul>
 		</div>
 	}
+}
+
+templ treeStyle() {
+	<style>
+        .tree,
+        .tree ul,
+        .tree li {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            position: relative;
+        }
+        .tree {
+            margin: 0 0 1em;
+            text-align: center;
+        }
+        .tree,
+        .tree ul {
+            display: table;
+        }
+        .tree ul {
+            width: 100%;
+        }
+        .tree li {
+            display: table-cell;
+            padding: .5em 0;
+            vertical-align: top;
+        }
+        .tree li:before {
+            outline: solid 1px #666;
+            content: "";
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
+        .tree li:first-child:before {
+            left: 50%;
+        }
+        .tree li:last-child:before {
+            right: 50%;
+        }
+        .tree code,
+        .tree span {
+            border: solid .1em #666;
+            border-radius: .2em;
+            display: inline-block;
+            margin: 0 .2em .5em;
+            padding: .2em .5em;
+            position: relative;
+        }
+        .tree ul:before,
+        .tree code:before,
+        .tree span:before {
+            outline: solid 1px #666;
+            content: "";
+            height: .5em;
+            left: 50%;
+            position: absolute;
+        }
+        .tree ul:before {
+            top: -.5em;
+        }
+        .tree code:before,
+        .tree span:before {
+            top: -.55em;
+        }
+        .tree>li {
+            margin-top: 0;
+        }
+        .tree>li:before,
+        .tree>li:after,
+        .tree>li>code:before,
+        .tree>li>span:before {
+            outline: none;
+        }
+    </style>
 }

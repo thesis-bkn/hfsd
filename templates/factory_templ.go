@@ -90,6 +90,18 @@ func FactoryView(bucketEpt string, taskWithAssets []database.ListAllTaskWithAsse
 						return templ_7745c5c3_Err
 					}
 				}
+				if taskWithAsset.Task.HandledAt.Valid && !taskWithAsset.Task.FinishedAt.Valid {
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"badge badge-info\">Processing</div>")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
+				if taskWithAsset.Task.FinishedAt.Valid {
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"badge badge-warning\">Finished</div>")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</h2></div></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

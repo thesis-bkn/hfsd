@@ -5,6 +5,7 @@ create table if not exists models
     name        text                                                not null,
     base        text default 'runwayml/stable-diffusion-inpainting' not null,
     ckpt        bytea                                               not null,
+    parent      text default 'base'                                 not null,
     created_at  timestamp default now()
 );
 

@@ -91,6 +91,7 @@ type Model struct {
 	Name      string
 	Base      string
 	Ckpt      []byte
+	Parent    string
 	CreatedAt pgtype.Timestamp
 }
 

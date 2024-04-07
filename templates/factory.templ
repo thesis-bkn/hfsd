@@ -30,6 +30,12 @@ templ FactoryView(bucketEpt string, taskWithAssets []database.ListAllTaskWithAss
 							if !taskWithAsset.Task.HandledAt.Valid {
 								<div class="badge badge-warning">Pending</div>
 							}
+							if taskWithAsset.Task.HandledAt.Valid && !taskWithAsset.Task.FinishedAt.Valid {
+								<div class="badge badge-info">Processing</div>
+							}
+							if taskWithAsset.Task.FinishedAt.Valid {
+								<div class="badge badge-warning">Finished</div>
+							}
 						</h2>
 					</div>
 				</div>

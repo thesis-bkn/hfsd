@@ -2,6 +2,7 @@ package view
 
 import (
 	echo "github.com/labstack/echo/v4"
+	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/templates"
 )
 
@@ -13,12 +14,31 @@ func NewFinetuneView() *FinetuneView {
 
 // View implements handler.FineTuneHandler.
 func (*FinetuneView) View(c echo.Context) error {
-	var ret []*templates.ModelInfo
-	for i := 0; i < 100; i++ {
-		ret = append(ret, &templates.ModelInfo{
-			Name: "hello world",
-			ID:   "hello-world",
-		})
+	models := []database.Model{
+		{
+			ID:   "base",
+			Name: "base",
+		},
+		{
+			ID:     "baobui",
+			Name:   "baobuidepchai",
+			Parent: "base",
+		},
+		{
+			ID:     "baobui2",
+			Name:   "son of baobui",
+			Parent: "baobui",
+		},
+		{
+			ID:     "baobui3",
+			Name:   "second son of baobui",
+			Parent: "baobui",
+		},
 	}
-	return templates.FinetuneView(ret).Render(c.Request().Context(), c.Response().Writer)
+	return templates.
+		FinetuneView(models).
+		Render(
+			c.Request().Context(),
+			c.Response().Writer,
+		)
 }

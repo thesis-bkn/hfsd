@@ -62,7 +62,7 @@ func (q *Queries) GetFirstAssetByModelID(ctx context.Context, taskID string) (As
 }
 
 const getModel = `-- name: GetModel :one
-SELECT id, domain, name, base, ckpt, created_at FROM models
+SELECT id, domain, name, base, ckpt, parent, created_at FROM models
 WHERE id = $1 LIMIT 1
 `
 
@@ -75,6 +75,7 @@ func (q *Queries) GetModel(ctx context.Context, id string) (Model, error) {
 		&i.Name,
 		&i.Base,
 		&i.Ckpt,
+		&i.Parent,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -301,7 +302,7 @@ func (q *Queries) ListInferences(ctx context.Context, arg ListInferencesParams) 
 }
 
 const listModelsByDomain = `-- name: ListModelsByDomain :many
-SELECT id, domain, name, base, ckpt, created_at FROM models
+SELECT id, domain, name, base, ckpt, parent, created_at FROM models
 WHERE domain = $1
 `
 
@@ -320,6 +321,7 @@ func (q *Queries) ListModelsByDomain(ctx context.Context, domain string) ([]Mode
 			&i.Name,
 			&i.Base,
 			&i.Ckpt,
+			&i.Parent,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err

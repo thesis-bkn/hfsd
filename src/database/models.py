@@ -54,6 +54,7 @@ class Model:
     name: str
     base: str
     ckpt: memoryview
+    parent: str
     created_at: Optional[datetime.datetime]
 
 
