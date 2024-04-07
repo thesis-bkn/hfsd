@@ -13,5 +13,15 @@ func NewInferenceView() *InferenceView {
 }
 
 func (*InferenceView) View(c echo.Context) error {
-	return templates.InferenceView().Render(c.Request().Context(), c.Response().Writer)
+	model := c.Request().URL.Query().Get("model")
+	var modelName *string
+	if model != "" {
+		modelName = &model
+	}
+	return templates.
+		InferenceView(modelName).
+		Render(
+			c.Request().Context(),
+			c.Response().Writer,
+		)
 }

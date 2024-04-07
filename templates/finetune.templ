@@ -1,9 +1,59 @@
 package templates
 
 import (
+	"fmt"
+
 	"github.com/thesis-bkn/hfsd/templates/components"
 	"github.com/thesis-bkn/hfsd/internal/database"
 )
+
+templ FinetuneView(models []database.Model) {
+	@base() {
+		@components.NavBar("finetune")
+		@treeStyle()
+		for i := range models {
+			@swalStyle(&models[i])
+		}
+		<div class="flex justify-center">
+			<ul class="tree">
+				@tree(graph(models))
+			</ul>
+		</div>
+	}
+}
+
+func swalFire(model *database.Model) string {
+	return fmt.Sprintf(
+		`
+        Swal.fire(
+            { template: '#model-%s' }
+        ).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire("Changes are not saved", "", "info");
+            } else if (result.isDenied) {
+                window.location.replace('/inference?model=%s')
+            }
+        })
+    `, model.ID, model.ID)
+}
+
+templ tree(modelM map[string]*database.Model, graphM map[string][]*database.Model, curModel string) {
+	<li>
+		<span
+			class="cursor-pointer bg-violet-500 hover:bg-violet-600 active:bg-violet-700 focus:outline-none focus:ring focus:ring-violet-300"
+			@click={ swalFire(modelM[curModel]) }
+		>
+			{ modelM[curModel].Name }
+		</span>
+		if len(graphM[curModel]) > 0 {
+			<ul>
+				for _, child := range graphM[curModel] {
+					@tree(modelM, graphM, child.ID)
+				}
+			</ul>
+		}
+	</li>
+}
 
 func graph(models []database.Model) (map[string]*database.Model, map[string][]*database.Model, string) {
 	graphM := make(map[string][]*database.Model)
@@ -24,29 +74,24 @@ func graph(models []database.Model) (map[string]*database.Model, map[string][]*d
 	return modelM, graphM, "base"
 }
 
-templ tree(modelM map[string]*database.Model, graphM map[string][]*database.Model, curModel string) {
-	<li>
-		<span>{ modelM[curModel].Name }</span>
-		if len(graphM[curModel]) > 0 {
-			<ul>
-				for _, child := range graphM[curModel] {
-					@tree(modelM, graphM, child.ID)
-				}
-			</ul>
-		}
-	</li>
-}
-
-templ FinetuneView(models []database.Model) {
-	@base() {
-		@components.NavBar("finetune")
-		@treeStyle()
-		<div class="flex justify-center">
-			<ul class="tree">
-				@tree(graph(models))
-			</ul>
-		</div>
-	}
+templ swalStyle(model *database.Model) {
+	<template id={ fmt.Sprintf("model-%s", model.ID) }>
+		<swal-title>
+			<span class="text-blue-600">{ model.Name }</span>
+		</swal-title>
+		<swal-html>
+			<p>Finetune or inference using this model</p>
+		</swal-html>
+		<swal-button type="confirm" color="#36D399">
+			Finetune
+		</swal-button>
+		<swal-button type="deny" color="#CC009C">
+			Inference
+		</swal-button>
+		<swal-button type="cancel">
+			Cancel
+		</swal-button>
+	</template>
 }
 
 templ treeStyle() {
