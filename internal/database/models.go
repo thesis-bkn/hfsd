@@ -11,6 +11,50 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type ModelStatus string
+
+const (
+	ModelStatusFinetuned ModelStatus = "finetuned"
+	ModelStatusSampling  ModelStatus = "sampling"
+	ModelStatusRating    ModelStatus = "rating"
+	ModelStatusTraining  ModelStatus = "training"
+)
+
+func (e *ModelStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ModelStatus(s)
+	case string:
+		*e = ModelStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ModelStatus: %T", src)
+	}
+	return nil
+}
+
+type NullModelStatus struct {
+	ModelStatus ModelStatus
+	Valid       bool // Valid is true if ModelStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullModelStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.ModelStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.ModelStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullModelStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.ModelStatus), nil
+}
+
 type TaskVariant string
 
 const (
@@ -92,6 +136,7 @@ type Model struct {
 	Base      string
 	Ckpt      []byte
 	Parent    string
+	Status    ModelStatus
 	CreatedAt pgtype.Timestamp
 }
 

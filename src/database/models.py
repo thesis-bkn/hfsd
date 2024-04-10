@@ -7,6 +7,13 @@ import enum
 from typing import Any, Optional
 
 
+class ModelStatus(str, enum.Enum):
+    FINETUNED = "finetuned"
+    SAMPLING = "sampling"
+    RATING = "rating"
+    TRAINING = "training"
+
+
 class TaskVariant(str, enum.Enum):
     INFERENCE = "inference"
     SAMPLE = "sample"
@@ -53,8 +60,9 @@ class Model:
     domain: str
     name: str
     base: str
-    ckpt: memoryview
+    ckpt: Optional[memoryview]
     parent: str
+    status: ModelStatus
     created_at: Optional[datetime.datetime]
 
 

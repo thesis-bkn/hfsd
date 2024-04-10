@@ -1,11 +1,14 @@
+create type model_status as enum ('finetuned', 'sampling', 'rating', 'training');
+
 create table if not exists models
 (
-    id          text primary key,
+    id          text                                                primary key,
     domain      text                                                not null,
     name        text                                                not null,
     base        text default 'runwayml/stable-diffusion-inpainting' not null,
-    ckpt        bytea                                               not null,
+    ckpt        bytea,
     parent      text default 'base'                                 not null,
+    status      model_status                                        not null,
     created_at  timestamp default now()
 );
 
@@ -67,3 +70,10 @@ create table if not exists assets
     mask_url  text      not null,
     primary key (task_id, "order")
 );
+
+-- Setup
+--
+-- INSERT INTO models (id, domain, name)
+-- VALUES ('base-sessile', 'sessile', 'base'),
+--        ('base-pedunculated', 'pedunculated', 'base'),
+--        ('base-outpaint', 'outpaint', 'base');

@@ -29,7 +29,7 @@ LIMIT 1
 
 
 GET_MODEL = """-- name: get_model \\:one
-SELECT id, domain, name, base, ckpt, parent, created_at FROM models
+SELECT id, domain, name, base, ckpt, parent, status, created_at FROM models
 WHERE id = :p1 LIMIT 1
 """
 
@@ -92,7 +92,19 @@ class InsertModelParams:
     domain: str
     name: str
     base: str
-    ckpt: memoryview
+    ckpt: Optional[memoryview]
+
+
+INSERT_PENDING_MODEL = """-- name: insert_pending_model \\:exec
+INSERT INTO models (id, domain, name, parent, status)
+VALUES (:p1, :p2, :p3, :p4, 'sampling')
+"""
+
+
+INSERT_SAMPLE_TASK = """-- name: insert_sample_task \\:exec
+INSERT INTO tasks(id, source_model_id, output_model_id, task_type)
+VALUES ( :p1, :p2, :p3, 'sample')
+"""
 
 
 LIST_ALL_TASK_WITH_ASSET = """-- name: list_all_task_with_asset \\:many
@@ -118,7 +130,7 @@ OFFSET :p2
 
 
 LIST_MODELS_BY_DOMAIN = """-- name: list_models_by_domain \\:many
-SELECT id, domain, name, base, ckpt, parent, created_at FROM models
+SELECT id, domain, name, base, ckpt, parent, status, created_at FROM models
 WHERE domain = :p1
 """
 
@@ -201,7 +213,8 @@ class Querier:
             base=row[3],
             ckpt=row[4],
             parent=row[5],
-            created_at=row[6],
+            status=row[6],
+            created_at=row[7],
         )
 
     def get_task(self, *, id: str, task_type: models.TaskVariant) -> Optional[models.Task]:
@@ -257,6 +270,17 @@ class Querier:
             "p5": arg.ckpt,
         })
 
+    def insert_pending_model(self, *, id: str, domain: str, name: str, parent: str) -> None:
+        self._conn.execute(sqlalchemy.text(INSERT_PENDING_MODEL), {
+            "p1": id,
+            "p2": domain,
+            "p3": name,
+            "p4": parent,
+        })
+
+    def insert_sample_task(self, *, id: str, source_model_id: str, output_model_id: Optional[str]) -> None:
+        self._conn.execute(sqlalchemy.text(INSERT_SAMPLE_TASK), {"p1": id, "p2": source_model_id, "p3": output_model_id})
+
     def list_all_task_with_asset(self) -> Iterator[ListAllTaskWithAssetRow]:
         result = self._conn.execute(sqlalchemy.text(LIST_ALL_TASK_WITH_ASSET))
         for row in result:
@@ -290,7 +314,8 @@ class Querier:
                 base=row[3],
                 ckpt=row[4],
                 parent=row[5],
-                created_at=row[6],
+                status=row[6],
+                created_at=row[7],
             )
 
     def save_inference(self, arg: SaveInferenceParams) -> None:
@@ -364,7 +389,8 @@ class AsyncQuerier:
             base=row[3],
             ckpt=row[4],
             parent=row[5],
-            created_at=row[6],
+            status=row[6],
+            created_at=row[7],
         )
 
     async def get_task(self, *, id: str, task_type: models.TaskVariant) -> Optional[models.Task]:
@@ -420,6 +446,17 @@ class AsyncQuerier:
             "p5": arg.ckpt,
         })
 
+    async def insert_pending_model(self, *, id: str, domain: str, name: str, parent: str) -> None:
+        await self._conn.execute(sqlalchemy.text(INSERT_PENDING_MODEL), {
+            "p1": id,
+            "p2": domain,
+            "p3": name,
+            "p4": parent,
+        })
+
+    async def insert_sample_task(self, *, id: str, source_model_id: str, output_model_id: Optional[str]) -> None:
+        await self._conn.execute(sqlalchemy.text(INSERT_SAMPLE_TASK), {"p1": id, "p2": source_model_id, "p3": output_model_id})
+
     async def list_all_task_with_asset(self) -> AsyncIterator[ListAllTaskWithAssetRow]:
         result = await self._conn.stream(sqlalchemy.text(LIST_ALL_TASK_WITH_ASSET))
         async for row in result:
@@ -453,7 +490,8 @@ class AsyncQuerier:
                 base=row[3],
                 ckpt=row[4],
                 parent=row[5],
-                created_at=row[6],
+                status=row[6],
+                created_at=row[7],
             )
 
     async def save_inference(self, arg: SaveInferenceParams) -> None:

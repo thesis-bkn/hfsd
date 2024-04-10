@@ -5,46 +5,76 @@ import (
 
 	"github.com/thesis-bkn/hfsd/templates/components"
 	"github.com/thesis-bkn/hfsd/internal/database"
+	"github.com/thesis-bkn/hfsd/internal/entity"
+	"strings"
 )
 
-templ FinetuneView(models []database.Model) {
+templ FinetuneView(models []database.Model, domain entity.Domain) {
 	@base() {
 		@components.NavBar("finetune")
 		@treeStyle()
 		for i := range models {
 			@swalStyle(&models[i])
 		}
-		<div class="flex justify-center">
+		<div class="max-w-max mx-auto fixed inset-x-0 top-10 capitalize text-2xl text-gray-900 dark:text-white">
+			<p>{ domain.String() } Models</p>
+		</div>
+		<div class="flex overflow-x-auto justify-center mt-8">
 			<ul class="tree">
-				@tree(graph(models))
+				@tree(graph(models, domain))
 			</ul>
 		</div>
 	}
 }
 
-func swalFire(model *database.Model) string {
-	return fmt.Sprintf(
-		`
-        Swal.fire(
-            { template: '#model-%s' }
-        ).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire("Changes are not saved", "", "info");
-            } else if (result.isDenied) {
-                window.location.replace('/inference?model=%s')
-            }
-        })
-    `, model.ID, model.ID)
+script swalFire(modelID string) {
+    Swal.fire(
+        { template: `#model-${modelID}` }
+    ).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/api/finetune/${modelID}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            }).then(response => {
+                if (response.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Submit finetuning model successfully',
+                        confirmButtonText: 'Continue'
+                    }).then(_ => {
+                        window.location.reload()
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Failed to submit finetune new model.',
+                        confirmButtonText: 'Continue'
+                    });
+                }
+            })
+
+        } else if (result.isDenied) {
+            window.location.replace(`/inference?model=${modelID}`)
+        }
+    })
 }
 
 templ tree(modelM map[string]*database.Model, graphM map[string][]*database.Model, curModel string) {
 	<li>
-		<span
-			class="cursor-pointer bg-violet-500 hover:bg-violet-600 active:bg-violet-700 focus:outline-none focus:ring focus:ring-violet-300"
-			@click={ swalFire(modelM[curModel]) }
+		<button
+			class={ "btn", "place-content-center",
+                templ.KV("btn-accent", modelM[curModel].Status == database.ModelStatusSampling),
+                templ.KV("btn-secondary", modelM[curModel].Status == database.ModelStatusRating),
+                templ.KV("btn-primary", modelM[curModel].Status == database.ModelStatusFinetuned),
+                templ.KV("btn-warning", modelM[curModel].Status == database.ModelStatusTraining) }
+			onClick={ swalFire(modelM[curModel].ID) }
 		>
 			{ modelM[curModel].Name }
-		</span>
+		</button>
 		if len(graphM[curModel]) > 0 {
 			<ul>
 				for _, child := range graphM[curModel] {
@@ -55,7 +85,7 @@ templ tree(modelM map[string]*database.Model, graphM map[string][]*database.Mode
 	</li>
 }
 
-func graph(models []database.Model) (map[string]*database.Model, map[string][]*database.Model, string) {
+func graph(models []database.Model, domain entity.Domain) (map[string]*database.Model, map[string][]*database.Model, string) {
 	graphM := make(map[string][]*database.Model)
 	modelM := make(map[string]*database.Model)
 
@@ -65,13 +95,13 @@ func graph(models []database.Model) (map[string]*database.Model, map[string][]*d
 	}
 
 	for i, model := range models {
-		if model.ID == "base" || graphM[model.Parent] == nil {
+		if strings.Contains(model.ID, "base") || graphM[model.Parent] == nil {
 			continue
 		}
 		graphM[model.Parent] = append(graphM[model.Parent], &models[i])
 	}
 
-	return modelM, graphM, "base"
+	return modelM, graphM, fmt.Sprintf("base-%s", domain.String())
 }
 
 templ swalStyle(model *database.Model) {
@@ -95,7 +125,7 @@ templ swalStyle(model *database.Model) {
 }
 
 templ treeStyle() {
-	<style>
+	<style type="text/css">
         .tree,
         .tree ul,
         .tree li {
@@ -135,7 +165,7 @@ templ treeStyle() {
             right: 50%;
         }
         .tree code,
-        .tree span {
+        .tree button {
             border: solid .1em #666;
             border-radius: .2em;
             display: inline-block;
@@ -145,7 +175,7 @@ templ treeStyle() {
         }
         .tree ul:before,
         .tree code:before,
-        .tree span:before {
+        .tree button:before {
             outline: solid 1px #666;
             content: "";
             height: .5em;
@@ -156,7 +186,7 @@ templ treeStyle() {
             top: -.5em;
         }
         .tree code:before,
-        .tree span:before {
+        .tree button:before {
             top: -.55em;
         }
         .tree>li {
@@ -165,7 +195,7 @@ templ treeStyle() {
         .tree>li:before,
         .tree>li:after,
         .tree>li>code:before,
-        .tree>li>span:before {
+        .tree>li>button:before {
             outline: none;
         }
     </style>

@@ -1,5 +1,11 @@
 package components
 
+import (
+	"fmt"
+
+	"github.com/thesis-bkn/hfsd/internal/entity"
+)
+
 func activeLink(source, current string) string {
 	if source == current {
 		return "block py-2 px-3 md:p-0 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:dark:text-blue-500 dark:bg-blue-600 md:dark:bg-transparent"
@@ -29,7 +35,23 @@ templ NavBar(current string) {
 						<a href="/factory" class={ activeLink("factory", current) }>Factory</a>
 					</li>
 					<li>
-						<a href="/finetune" class={ activeLink("finetune", current) }>Finetune</a>
+						<div class="dropdown dropdown-hover">
+							<div tabindex="0" role="button">
+								<span class={ activeLink("finetune", current) }>Finetune</span>
+							</div>
+							<ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+								for _, domain := range entity.DomainValues() {
+									<li>
+										<a
+											class="capitalize"
+											href={ templ.SafeURL(fmt.Sprintf("/finetune/%s", domain.String())) }
+										>
+											{ domain.String() }
+										</a>
+									</li>
+								}
+							</ul>
+						</div>
 					</li>
 					<li>
 						<a href="/showcase" class={ activeLink("showcase", current) }>Showcase</a>

@@ -23,6 +23,10 @@ ORDER BY tasks.created_at DESC;
 INSERT INTO models (id, domain, name, base, ckpt)
 VALUES ($1, $2, $3, $4, $5);
 
+-- name: InsertPendingModel :exec
+INSERT INTO models (id, domain, name, parent, status)
+VALUES ($1, $2, $3, $4, 'sampling');
+
 -- name: GetTask :one
 SELECT * FROM tasks
 WHERE id = $1 AND task_type = $2
@@ -35,6 +39,10 @@ VALUES ($1, $2, $3, $4, $5, $6);
 -- name: InsertInferenceTask :exec
 INSERT INTO tasks (id, source_model_id, task_type)
 VALUES ( $1, $2, 'inference' );
+
+-- name: InsertSampleTask :exec
+INSERT INTO tasks(id, source_model_id, output_model_id, task_type)
+VALUES ( $1, $2, $3, 'sample');
 
 -- name: InsertAsset :exec
 INSERT INTO assets (task_id, "order", prompt, image, image_url, mask, mask_url)
@@ -62,4 +70,3 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
 SELECT * FROM inferences
 LIMIT $1
 OFFSET $2;
-

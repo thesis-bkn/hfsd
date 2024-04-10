@@ -8,6 +8,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/splode/fname"
 
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
@@ -28,14 +29,16 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	// Helper
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	s3Client := s3.NewS3Client(cfg)
+	rng := fname.NewGenerator()
 
 	// Handler
 	inferenceHandler := handler.NewInferenceHandler(cfg, s3Client, client, validate)
+	finetuneHandler := handler.NewFinetuneModelHandler(validate, client, rng, cfg)
 
 	// View
 	homeView := view.NewHomeView()
 	infView := view.NewInferenceView()
-	finetuneView := view.NewFinetuneView()
+	finetuneView := view.NewFinetuneView(validate, client)
 	factoryView := view.NewFactoryView(client, cfg)
 	showcaseView := view.NewShowcaseView(client, cfg)
 
@@ -55,11 +58,12 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	// APIs
 	apiEpts := e.Group("/api")
 	apiEpts.POST("/inference", inferenceHandler.SubmitInferenceTask)
+	apiEpts.POST("/finetune/:modelID", finetuneHandler.SubmitSampleTask)
 
 	// Views ------
 	e.GET("/inference", infView.View)
 	e.GET("/factory", factoryView.View)
-	e.GET("/finetune", finetuneView.View)
+	e.GET("/finetune/:domain", finetuneView.View)
 	e.GET("/showcase", showcaseView.View)
 
 	return e

@@ -62,7 +62,7 @@ func (q *Queries) GetFirstAssetByModelID(ctx context.Context, taskID string) (As
 }
 
 const getModel = `-- name: GetModel :one
-SELECT id, domain, name, base, ckpt, parent, created_at FROM models
+SELECT id, domain, name, base, ckpt, parent, status, created_at FROM models
 WHERE id = $1 LIMIT 1
 `
 
@@ -76,6 +76,7 @@ func (q *Queries) GetModel(ctx context.Context, id string) (Model, error) {
 		&i.Base,
 		&i.Ckpt,
 		&i.Parent,
+		&i.Status,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -206,6 +207,44 @@ func (q *Queries) InsertModel(ctx context.Context, arg InsertModelParams) error 
 	return err
 }
 
+const insertPendingModel = `-- name: InsertPendingModel :exec
+INSERT INTO models (id, domain, name, parent, status)
+VALUES ($1, $2, $3, $4, 'sampling')
+`
+
+type InsertPendingModelParams struct {
+	ID     string
+	Domain string
+	Name   string
+	Parent string
+}
+
+func (q *Queries) InsertPendingModel(ctx context.Context, arg InsertPendingModelParams) error {
+	_, err := q.db.Exec(ctx, insertPendingModel,
+		arg.ID,
+		arg.Domain,
+		arg.Name,
+		arg.Parent,
+	)
+	return err
+}
+
+const insertSampleTask = `-- name: InsertSampleTask :exec
+INSERT INTO tasks(id, source_model_id, output_model_id, task_type)
+VALUES ( $1, $2, $3, 'sample')
+`
+
+type InsertSampleTaskParams struct {
+	ID            string
+	SourceModelID string
+	OutputModelID pgtype.Text
+}
+
+func (q *Queries) InsertSampleTask(ctx context.Context, arg InsertSampleTaskParams) error {
+	_, err := q.db.Exec(ctx, insertSampleTask, arg.ID, arg.SourceModelID, arg.OutputModelID)
+	return err
+}
+
 const listAllTaskWithAsset = `-- name: ListAllTaskWithAsset :many
 SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.human_prefs, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, assets.task_id, assets."order", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url
 FROM tasks
@@ -302,7 +341,7 @@ func (q *Queries) ListInferences(ctx context.Context, arg ListInferencesParams) 
 }
 
 const listModelsByDomain = `-- name: ListModelsByDomain :many
-SELECT id, domain, name, base, ckpt, parent, created_at FROM models
+SELECT id, domain, name, base, ckpt, parent, status, created_at FROM models
 WHERE domain = $1
 `
 
@@ -322,6 +361,7 @@ func (q *Queries) ListModelsByDomain(ctx context.Context, domain string) ([]Mode
 			&i.Base,
 			&i.Ckpt,
 			&i.Parent,
+			&i.Status,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err

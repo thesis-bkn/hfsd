@@ -14,10 +14,12 @@ import (
 	"fmt"
 
 	"github.com/thesis-bkn/hfsd/internal/database"
+	"github.com/thesis-bkn/hfsd/internal/entity"
 	"github.com/thesis-bkn/hfsd/templates/components"
+	"strings"
 )
 
-func FinetuneView(models []database.Model) templ.Component {
+func FinetuneView(models []database.Model, domain entity.Domain) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -58,11 +60,24 @@ func FinetuneView(models []database.Model) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" <div class=\"flex justify-center\"><ul class=\"tree\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" <div class=\"max-w-max mx-auto fixed inset-x-0 top-10 capitalize text-2xl text-gray-900 dark:text-white\"><p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = tree(graph(models)).Render(ctx, templ_7745c5c3_Buffer)
+			var templ_7745c5c3_Var3 string
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(domain.String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 19, Col: 23}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" Models</p></div><div class=\"flex overflow-x-auto justify-center mt-8\"><ul class=\"tree\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = tree(graph(models, domain)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -86,19 +101,46 @@ func FinetuneView(models []database.Model) templ.Component {
 	})
 }
 
-func swalFire(model *database.Model) string {
-	return fmt.Sprintf(
-		`
-        Swal.fire(
-            { template: '#model-%s' }
-        ).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire("Changes are not saved", "", "info");
-            } else if (result.isDenied) {
-                window.location.replace('/inference?model=%s')
-            }
-        })
-    `, model.ID, model.ID)
+func swalFire(modelID string) templ.ComponentScript {
+	return templ.ComponentScript{
+		Name: `__templ_swalFire_7646`,
+		Function: `function __templ_swalFire_7646(modelID){Swal.fire(
+        { template: ` + "`" + `#model-${modelID}` + "`" + ` }
+    ).then((result) => {
+        if (result.isConfirmed) {
+            fetch(` + "`" + `/api/finetune/${modelID}` + "`" + `, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            }).then(response => {
+                if (response.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Submit finetuning model successfully',
+                        confirmButtonText: 'Continue'
+                    }).then(_ => {
+                        window.location.reload()
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Failed to submit finetune new model.',
+                        confirmButtonText: 'Continue'
+                    });
+                }
+            })
+
+        } else if (result.isDenied) {
+            window.location.replace(` + "`" + `/inference?model=${modelID}` + "`" + `)
+        }
+    })
+}`,
+		Call:       templ.SafeScript(`__templ_swalFire_7646`, modelID),
+		CallInline: templ.SafeScriptInline(`__templ_swalFire_7646`, modelID),
+	}
 }
 
 func tree(modelM map[string]*database.Model, graphM map[string][]*database.Model, curModel string) templ.Component {
@@ -109,16 +151,42 @@ func tree(modelM map[string]*database.Model, graphM map[string][]*database.Model
 			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var3 == nil {
-			templ_7745c5c3_Var3 = templ.NopComponent
+		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var4 == nil {
+			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<li><span class=\"cursor-pointer bg-violet-500 hover:bg-violet-600 active:bg-violet-700 focus:outline-none focus:ring focus:ring-violet-300\" @click=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<li>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(swalFire(modelM[curModel])))
+		var templ_7745c5c3_Var5 = []any{"btn", "place-content-center",
+			templ.KV("btn-accent", modelM[curModel].Status == database.ModelStatusSampling),
+			templ.KV("btn-secondary", modelM[curModel].Status == database.ModelStatusRating),
+			templ.KV("btn-primary", modelM[curModel].Status == database.ModelStatusFinetuned),
+			templ.KV("btn-warning", modelM[curModel].Status == database.ModelStatusTraining)}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var5...)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_Buffer, swalFire(modelM[curModel].ID))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<button class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ.CSSClasses(templ_7745c5c3_Var5).String()))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" onClick=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var6 templ.ComponentScript = swalFire(modelM[curModel].ID)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6.Call)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -126,16 +194,16 @@ func tree(modelM map[string]*database.Model, graphM map[string][]*database.Model
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var4 string
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(modelM[curModel].Name)
+		var templ_7745c5c3_Var7 string
+		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(modelM[curModel].Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 45, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 75, Col: 26}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span> ")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</button> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -166,7 +234,7 @@ func tree(modelM map[string]*database.Model, graphM map[string][]*database.Model
 	})
 }
 
-func graph(models []database.Model) (map[string]*database.Model, map[string][]*database.Model, string) {
+func graph(models []database.Model, domain entity.Domain) (map[string]*database.Model, map[string][]*database.Model, string) {
 	graphM := make(map[string][]*database.Model)
 	modelM := make(map[string]*database.Model)
 
@@ -176,13 +244,13 @@ func graph(models []database.Model) (map[string]*database.Model, map[string][]*d
 	}
 
 	for i, model := range models {
-		if model.ID == "base" || graphM[model.Parent] == nil {
+		if strings.Contains(model.ID, "base") || graphM[model.Parent] == nil {
 			continue
 		}
 		graphM[model.Parent] = append(graphM[model.Parent], &models[i])
 	}
 
-	return modelM, graphM, "base"
+	return modelM, graphM, fmt.Sprintf("base-%s", domain.String())
 }
 
 func swalStyle(model *database.Model) templ.Component {
@@ -193,9 +261,9 @@ func swalStyle(model *database.Model) templ.Component {
 			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var5 == nil {
-			templ_7745c5c3_Var5 = templ.NopComponent
+		templ_7745c5c3_Var8 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var8 == nil {
+			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<template id=\"")
@@ -210,12 +278,12 @@ func swalStyle(model *database.Model) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var6 string
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(model.Name)
+		var templ_7745c5c3_Var9 string
+		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(model.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 79, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 109, Col: 43}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -238,12 +306,12 @@ func treeStyle() templ.Component {
 			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var7 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var7 == nil {
-			templ_7745c5c3_Var7 = templ.NopComponent
+		templ_7745c5c3_Var10 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var10 == nil {
+			templ_7745c5c3_Var10 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<style>\n        .tree,\n        .tree ul,\n        .tree li {\n            list-style: none;\n            margin: 0;\n            padding: 0;\n            position: relative;\n        }\n        .tree {\n            margin: 0 0 1em;\n            text-align: center;\n        }\n        .tree,\n        .tree ul {\n            display: table;\n        }\n        .tree ul {\n            width: 100%;\n        }\n        .tree li {\n            display: table-cell;\n            padding: .5em 0;\n            vertical-align: top;\n        }\n        .tree li:before {\n            outline: solid 1px #666;\n            content: \"\";\n            left: 0;\n            position: absolute;\n            right: 0;\n            top: 0;\n        }\n        .tree li:first-child:before {\n            left: 50%;\n        }\n        .tree li:last-child:before {\n            right: 50%;\n        }\n        .tree code,\n        .tree span {\n            border: solid .1em #666;\n            border-radius: .2em;\n            display: inline-block;\n            margin: 0 .2em .5em;\n            padding: .2em .5em;\n            position: relative;\n        }\n        .tree ul:before,\n        .tree code:before,\n        .tree span:before {\n            outline: solid 1px #666;\n            content: \"\";\n            height: .5em;\n            left: 50%;\n            position: absolute;\n        }\n        .tree ul:before {\n            top: -.5em;\n        }\n        .tree code:before,\n        .tree span:before {\n            top: -.55em;\n        }\n        .tree>li {\n            margin-top: 0;\n        }\n        .tree>li:before,\n        .tree>li:after,\n        .tree>li>code:before,\n        .tree>li>span:before {\n            outline: none;\n        }\n    </style>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<style type=\"text/css\">\n        .tree,\n        .tree ul,\n        .tree li {\n            list-style: none;\n            margin: 0;\n            padding: 0;\n            position: relative;\n        }\n        .tree {\n            margin: 0 0 1em;\n            text-align: center;\n        }\n        .tree,\n        .tree ul {\n            display: table;\n        }\n        .tree ul {\n            width: 100%;\n        }\n        .tree li {\n            display: table-cell;\n            padding: .5em 0;\n            vertical-align: top;\n        }\n        .tree li:before {\n            outline: solid 1px #666;\n            content: \"\";\n            left: 0;\n            position: absolute;\n            right: 0;\n            top: 0;\n        }\n        .tree li:first-child:before {\n            left: 50%;\n        }\n        .tree li:last-child:before {\n            right: 50%;\n        }\n        .tree code,\n        .tree button {\n            border: solid .1em #666;\n            border-radius: .2em;\n            display: inline-block;\n            margin: 0 .2em .5em;\n            padding: .2em .5em;\n            position: relative;\n        }\n        .tree ul:before,\n        .tree code:before,\n        .tree button:before {\n            outline: solid 1px #666;\n            content: \"\";\n            height: .5em;\n            left: 50%;\n            position: absolute;\n        }\n        .tree ul:before {\n            top: -.5em;\n        }\n        .tree code:before,\n        .tree button:before {\n            top: -.55em;\n        }\n        .tree>li {\n            margin-top: 0;\n        }\n        .tree>li:before,\n        .tree>li:after,\n        .tree>li>code:before,\n        .tree>li>button:before {\n            outline: none;\n        }\n    </style>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
