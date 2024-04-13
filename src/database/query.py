@@ -34,6 +34,21 @@ WHERE id = :p1 LIMIT 1
 """
 
 
+GET_RANDOM_BASE_ASSETS_BY_DOMAIN = """-- name: get_random_base_assets_by_domain \\:many
+SELECT id, image, image_url, mask, mask_url, domain FROM base_assets
+WHERE domain = :p1
+ORDER BY random()
+LIMIT :p2
+"""
+
+
+GET_SCORER = """-- name: get_scorer \\:one
+SELECT name, state_dict FROM scorers
+WHERE name = :p1
+LIMIT 1
+"""
+
+
 GET_TASK = """-- name: get_task \\:one
 SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, human_prefs, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
 WHERE id = :p1 AND task_type = :p2
@@ -217,6 +232,27 @@ class Querier:
             created_at=row[7],
         )
 
+    def get_random_base_assets_by_domain(self, *, domain: str, limit: int) -> Iterator[models.BaseAsset]:
+        result = self._conn.execute(sqlalchemy.text(GET_RANDOM_BASE_ASSETS_BY_DOMAIN), {"p1": domain, "p2": limit})
+        for row in result:
+            yield models.BaseAsset(
+                id=row[0],
+                image=row[1],
+                image_url=row[2],
+                mask=row[3],
+                mask_url=row[4],
+                domain=row[5],
+            )
+
+    def get_scorer(self, *, name: str) -> Optional[models.Scorer]:
+        row = self._conn.execute(sqlalchemy.text(GET_SCORER), {"p1": name}).first()
+        if row is None:
+            return None
+        return models.Scorer(
+            name=row[0],
+            state_dict=row[1],
+        )
+
     def get_task(self, *, id: str, task_type: models.TaskVariant) -> Optional[models.Task]:
         row = self._conn.execute(sqlalchemy.text(GET_TASK), {"p1": id, "p2": task_type}).first()
         if row is None:
@@ -391,6 +427,27 @@ class AsyncQuerier:
             parent=row[5],
             status=row[6],
             created_at=row[7],
+        )
+
+    async def get_random_base_assets_by_domain(self, *, domain: str, limit: int) -> AsyncIterator[models.BaseAsset]:
+        result = await self._conn.stream(sqlalchemy.text(GET_RANDOM_BASE_ASSETS_BY_DOMAIN), {"p1": domain, "p2": limit})
+        async for row in result:
+            yield models.BaseAsset(
+                id=row[0],
+                image=row[1],
+                image_url=row[2],
+                mask=row[3],
+                mask_url=row[4],
+                domain=row[5],
+            )
+
+    async def get_scorer(self, *, name: str) -> Optional[models.Scorer]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_SCORER), {"p1": name})).first()
+        if row is None:
+            return None
+        return models.Scorer(
+            name=row[0],
+            state_dict=row[1],
         )
 
     async def get_task(self, *, id: str, task_type: models.TaskVariant) -> Optional[models.Task]:

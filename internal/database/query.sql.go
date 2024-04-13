@@ -82,6 +82,58 @@ func (q *Queries) GetModel(ctx context.Context, id string) (Model, error) {
 	return i, err
 }
 
+const getRandomBaseAssetsByDomain = `-- name: GetRandomBaseAssetsByDomain :many
+SELECT id, image, image_url, mask, mask_url, domain FROM base_assets
+WHERE domain = $1
+ORDER BY random()
+LIMIT $2
+`
+
+type GetRandomBaseAssetsByDomainParams struct {
+	Domain string
+	Limit  int32
+}
+
+func (q *Queries) GetRandomBaseAssetsByDomain(ctx context.Context, arg GetRandomBaseAssetsByDomainParams) ([]BaseAsset, error) {
+	rows, err := q.db.Query(ctx, getRandomBaseAssetsByDomain, arg.Domain, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []BaseAsset
+	for rows.Next() {
+		var i BaseAsset
+		if err := rows.Scan(
+			&i.ID,
+			&i.Image,
+			&i.ImageUrl,
+			&i.Mask,
+			&i.MaskUrl,
+			&i.Domain,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getScorer = `-- name: GetScorer :one
+SELECT name, state_dict FROM scorers
+WHERE name = $1
+LIMIT 1
+`
+
+func (q *Queries) GetScorer(ctx context.Context, name string) (Scorer, error) {
+	row := q.db.QueryRow(ctx, getScorer, name)
+	var i Scorer
+	err := row.Scan(&i.Name, &i.StateDict)
+	return i, err
+}
+
 const getTask = `-- name: GetTask :one
 SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, human_prefs, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
 WHERE id = $1 AND task_type = $2

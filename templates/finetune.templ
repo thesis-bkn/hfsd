@@ -71,7 +71,9 @@ templ tree(modelM map[string]*database.Model, graphM map[string][]*database.Mode
                 templ.KV("btn-secondary", modelM[curModel].Status == database.ModelStatusRating),
                 templ.KV("btn-primary", modelM[curModel].Status == database.ModelStatusFinetuned),
                 templ.KV("btn-warning", modelM[curModel].Status == database.ModelStatusTraining) }
-			onClick={ swalFire(modelM[curModel].ID) }
+			if modelM[curModel].Status == database.ModelStatusFinetuned {
+				onClick={ swalFire(modelM[curModel].ID) }
+			}
 		>
 			{ modelM[curModel].Name }
 		</button>

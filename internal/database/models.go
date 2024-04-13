@@ -140,6 +140,11 @@ type Model struct {
 	CreatedAt pgtype.Timestamp
 }
 
+type Scorer struct {
+	Name      string
+	StateDict []byte
+}
+
 type Task struct {
 	ID            string
 	SourceModelID string

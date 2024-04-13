@@ -67,6 +67,12 @@ class Model:
 
 
 @dataclasses.dataclass()
+class Scorer:
+    name: str
+    state_dict: memoryview
+
+
+@dataclasses.dataclass()
 class Task:
     id: str
     source_model_id: str

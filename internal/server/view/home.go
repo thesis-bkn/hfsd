@@ -11,7 +11,7 @@ func NewHomeView() *HomeView {
 	return &HomeView{}
 }
 
-// Home implements HomeHandler.
-func (*HomeView) Home(c echo.Context) error {
+// View implements HomeHandler.
+func (*HomeView) View(c echo.Context) error {
 	return templates.Home().Render(c.Request().Context(), c.Response().Writer)
 }

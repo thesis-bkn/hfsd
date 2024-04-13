@@ -70,3 +70,14 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
 SELECT * FROM inferences
 LIMIT $1
 OFFSET $2;
+
+-- name: GetScorer :one
+SELECT * FROM scorers
+WHERE name = $1
+LIMIT 1;
+
+-- name: GetRandomBaseAssetsByDomain :many
+SELECT * FROM base_assets
+WHERE domain = $1
+ORDER BY random()
+LIMIT $2;

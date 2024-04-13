@@ -1,4 +1,5 @@
 create type model_status as enum ('finetuned', 'sampling', 'rating', 'training');
+create type task_variant as enum ('inference', 'sample', 'finetune');
 
 create table if not exists models
 (
@@ -37,7 +38,6 @@ create table if not exists base_assets
 );
 
 
-CREATE TYPE task_variant AS ENUM ('inference', 'sample', 'finetune');
 
 create table if not exists tasks
 (
@@ -69,6 +69,11 @@ create table if not exists assets
     mask      bytea     not null,
     mask_url  text      not null,
     primary key (task_id, "order")
+);
+
+create table if not exists scorers (
+    name text primary key,
+    state_dict bytea not null
 );
 
 -- Setup

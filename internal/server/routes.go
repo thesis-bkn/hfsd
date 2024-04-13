@@ -54,13 +54,13 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	e.GET("/static/*", echo.WrapHandler(fileServer))
 	e.GET("/asset/*", echo.WrapHandler(assetFile))
 
-	e.GET("/", homeView.Home)
 	// APIs
 	apiEpts := e.Group("/api")
 	apiEpts.POST("/inference", inferenceHandler.SubmitInferenceTask)
 	apiEpts.POST("/finetune/:modelID", finetuneHandler.SubmitSampleTask)
 
 	// Views ------
+    e.GET("/", homeView.View)
 	e.GET("/inference", infView.View)
 	e.GET("/factory", factoryView.View)
 	e.GET("/finetune/:domain", finetuneView.View)
