@@ -221,17 +221,12 @@ func (q *Queries) InsertBaseAsset(ctx context.Context, arg InsertBaseAssetParams
 }
 
 const insertInferenceTask = `-- name: InsertInferenceTask :exec
-INSERT INTO tasks (id, source_model_id, task_type)
-VALUES ( $1, $2, 'inference' )
+INSERT INTO tasks (source_model_id, task_type)
+VALUES ($1, 'inference')
 `
 
-type InsertInferenceTaskParams struct {
-	ID            int32
-	SourceModelID string
-}
-
-func (q *Queries) InsertInferenceTask(ctx context.Context, arg InsertInferenceTaskParams) error {
-	_, err := q.db.Exec(ctx, insertInferenceTask, arg.ID, arg.SourceModelID)
+func (q *Queries) InsertInferenceTask(ctx context.Context, sourceModelID string) error {
+	_, err := q.db.Exec(ctx, insertInferenceTask, sourceModelID)
 	return err
 }
 
@@ -282,18 +277,17 @@ func (q *Queries) InsertPendingModel(ctx context.Context, arg InsertPendingModel
 }
 
 const insertSampleTask = `-- name: InsertSampleTask :exec
-INSERT INTO tasks(id, source_model_id, output_model_id, task_type)
-VALUES ( $1, $2, $3, 'sample')
+INSERT INTO tasks(source_model_id, output_model_id, task_type)
+VALUES ($1, $2, 'sample')
 `
 
 type InsertSampleTaskParams struct {
-	ID            int32
 	SourceModelID string
 	OutputModelID pgtype.Text
 }
 
 func (q *Queries) InsertSampleTask(ctx context.Context, arg InsertSampleTaskParams) error {
-	_, err := q.db.Exec(ctx, insertSampleTask, arg.ID, arg.SourceModelID, arg.OutputModelID)
+	_, err := q.db.Exec(ctx, insertSampleTask, arg.SourceModelID, arg.OutputModelID)
 	return err
 }
 
@@ -355,11 +349,48 @@ func (q *Queries) ListAllTaskWithAsset(ctx context.Context) ([]ListAllTaskWithAs
 const listAssetByTask = `-- name: ListAssetByTask :many
 SELECT task_id, "order", pref, "group", prompt, image, image_url, mask, mask_url FROM assets
 WHERE task_id = $1
-ORDER by "group", "order"
+ORDER BY "group", "order"
 `
 
 func (q *Queries) ListAssetByTask(ctx context.Context, taskID int32) ([]Asset, error) {
 	rows, err := q.db.Query(ctx, listAssetByTask, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Asset
+	for rows.Next() {
+		var i Asset
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.Order,
+			&i.Pref,
+			&i.Group,
+			&i.Prompt,
+			&i.Image,
+			&i.ImageUrl,
+			&i.Mask,
+			&i.MaskUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listFeedbackAssetByModelID = `-- name: ListFeedbackAssetByModelID :many
+SELECT assets.task_id, assets."order", assets.pref, assets."group", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url FROM tasks
+JOIN assets ON tasks.id == assets.task_id
+WHERE source_model_id = $1
+ORDER BY "group", "order"
+`
+
+func (q *Queries) ListFeedbackAssetByModelID(ctx context.Context, sourceModelID string) ([]Asset, error) {
+	rows, err := q.db.Query(ctx, listFeedbackAssetByModelID, sourceModelID)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,125 @@
+package templates
+
+import (
+	"path"
+	"fmt"
+
+	"github.com/thesis-bkn/hfsd/templates/components"
+	"github.com/thesis-bkn/hfsd/internal/database"
+)
+
+templ FeedBackView(bucketEpt string, modelID string, assets []database.Asset) {
+	@base() {
+		@components.NavBar("finetune")
+		<form id="feedbacks">
+			<input type="hidden" id="modelID" name="modelId" value={ modelID }/>
+			<div class="flex flex-wrap m-20 space-x-4 space-y-1 ">
+				for _, asset := range assets {
+					<div class="card w-96 bg-base-100 shadow-xl">
+						<figure>
+							<img
+								src={ path.Join(bucketEpt, asset.ImageUrl) }
+								alt="Image"
+							/>
+						</figure>
+						<div class="card-body">
+							<h2 class="card-title">
+								<div>
+									<label class="label cursor-pointer">
+										<input
+											type="radio"
+											class="radio radio-accent"
+											id={ fmt.Sprintf("like-%d-%d", asset.Group.Int32, asset.Order) }
+											name={ fmt.Sprintf("pref-%d-%d", asset.Group.Int32, asset.Order) }
+											value="like"
+										/>
+										<span class="label-text ml-1">Like</span>
+									</label>
+								</div>
+								<div>
+									<label class="label cursor-pointer">
+										<input
+											type="radio"
+											class="radio radio-error"
+											id={ fmt.Sprintf("dislike-%d-%d", asset.Group.Int32, asset.Order) }
+											name={ fmt.Sprintf("pref-%d-%d", asset.Group.Int32, asset.Order) }
+											value="disklike"
+										/>
+										<span class="label-text ml-1">Dislike</span>
+									</label>
+								</div>
+							</h2>
+						</div>
+					</div>
+				}
+			</div>
+			<div class="max-w-max mx-auto fixed inset-x-0 bottom-10">
+				<button
+					type="submit"
+					class="btn btn-active btn-secondary mt-5 px-20"
+				>Submit</button>
+			</div>
+		</form>
+		@submitFeedbacks(modelID)
+	}
+}
+
+templ submitFeedbacks(modelID string) {
+	<script>
+        // Handle form submission
+        document.getElementById('feedbacks').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const modelID = document.getElementById('modelID').value; 
+            const selectedItems = [];
+
+            for (const pair of formData.entries()) {
+                elements = pair[0].split('-');
+                if (elements.length != 3 || elements[0] != 'pref') {
+                    continue;
+                }
+
+                group = elements[0]
+                order = elements[1]
+                option = pair[1] != 'like'
+
+                selectedItems.push({
+                    "group": group,
+                    "order": order,
+                    "option": option,
+                });
+            }
+
+            // Send selectedItems to server
+            fetch(`/api/feedback/${modelID}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({"items": selectedItems}) 
+            })
+            .then(response => {
+                if (response.ok) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Success upload feedbacks',
+                        icon: 'success',
+                        confirmButtonText: 'Continue'
+                    }).then((result) => {
+                        window.location.replace('/factory')
+                    })
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Failed to upload, please try again',
+                        icon: 'error',
+                        confirmButtonText: 'Continue'
+                    })
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+}

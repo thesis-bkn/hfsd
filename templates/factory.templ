@@ -2,6 +2,7 @@ package templates
 
 import "github.com/thesis-bkn/hfsd/templates/components"
 import "github.com/thesis-bkn/hfsd/internal/database"
+import "fmt"
 import "path"
 
 templ FactoryView(bucketEpt string, taskWithAssets []database.ListAllTaskWithAssetRow) {
@@ -18,7 +19,7 @@ templ FactoryView(bucketEpt string, taskWithAssets []database.ListAllTaskWithAss
 					</figure>
 					<div class="card-body">
 						<h2 class="card-title">
-							{ taskWithAsset.Task.ID }
+							{ fmt.Sprintf("%d", taskWithAsset.Task.ID) }
 							switch taskWithAsset.Task.TaskType {
 								case database.TaskVariantInference:
 									<div class="badge badge-accent">#inf</div>

@@ -1,9 +1,7 @@
 import torch
-from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion_inpaint import (
-    StableDiffusionInpaintPipeline,
-)
 from diffusers.schedulers.scheduling_ddim import DDIMScheduler
 from sqlalchemy.engine.base import Connection
+import io
 
 from src.database.models import Task
 from src.database.query import Querier
@@ -33,10 +31,11 @@ class SampleHander:
         if source_model is None:
             print("model not found")
             exit(1)
-        # if "base" not in source_model.name and source_model.ckpt is not None:
-        #     pipe.unet.load_attn_procs(
-        #         torch.load(io.BytesIO(source_model.ckpt.tobytes())), weights_only=True
-        #     )
+
+        if "base" not in source_model.name and source_model.ckpt is not None:
+            pipe.unet.load_attn_procs(
+                torch.load(io.BytesIO(source_model.ckpt.tobytes())), weights_only=True
+            )
 
         prompt, neg_prompt = utils.get_prompt(source_model.domain)  # pyright: ignore
         neg_prompt_embed = pipe.text_encoder(
@@ -77,7 +76,7 @@ class SampleHander:
             )
         )
 
-        sample_results = zip(
+        sample_results = list(
             map(
                 lambda p_embed: sample(
                     pipe,

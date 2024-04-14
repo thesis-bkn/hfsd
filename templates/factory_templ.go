@@ -12,6 +12,7 @@ import "bytes"
 
 import "github.com/thesis-bkn/hfsd/templates/components"
 import "github.com/thesis-bkn/hfsd/internal/database"
+import "fmt"
 import "path"
 
 func FactoryView(bucketEpt string, taskWithAssets []database.ListAllTaskWithAssetRow) templ.Component {
@@ -55,9 +56,9 @@ func FactoryView(bucketEpt string, taskWithAssets []database.ListAllTaskWithAsse
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
-				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(taskWithAsset.Task.ID)
+				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", taskWithAsset.Task.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/factory.templ`, Line: 20, Col: 30}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/factory.templ`, Line: 21, Col: 49}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {

@@ -71,7 +71,11 @@ class FinetuneHandler:
 
         pipe.unet.eval()
 
-        # FIXME: load lora model here
+        # load lora model
+        if "base" not in source_model.name and source_model.ckpt is not None:
+            pipe.unet.load_attn_procs(
+                torch.load(io.BytesIO(source_model.ckpt.tobytes())), weights_only=True
+            )
 
         pipe.scheduler.timesteps = np.load(io.BytesIO(task.timesteps.tobytes()))  # pyright: ignore
         pipe.scheduler.set_timesteps(NUM_STEPS, device=pipe.device)
@@ -85,7 +89,6 @@ class FinetuneHandler:
         hfs = get_hfs(grouped_assets=grouped_assets)
         samples["human_prefer"] = hfs
 
-        init_prefs = copy.deepcopy(samples)
         num_timesteps = timesteps.shape[1]
 
         assert num_timesteps == NUM_STEPS

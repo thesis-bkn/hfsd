@@ -12,11 +12,11 @@ import "bytes"
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/internal/entity"
 	"github.com/thesis-bkn/hfsd/templates/components"
-	"strings"
 )
 
 func FinetuneView(models []database.Model, domain entity.Domain) templ.Component {

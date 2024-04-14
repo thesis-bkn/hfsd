@@ -37,12 +37,12 @@ INSERT INTO base_assets (id, image, image_url, mask, mask_url, domain)
 VALUES ($1, $2, $3, $4, $5, $6);
 
 -- name: InsertInferenceTask :exec
-INSERT INTO tasks (id, source_model_id, task_type)
-VALUES ( $1, $2, 'inference' );
+INSERT INTO tasks (source_model_id, task_type)
+VALUES ($1, 'inference');
 
 -- name: InsertSampleTask :exec
-INSERT INTO tasks(id, source_model_id, output_model_id, task_type)
-VALUES ( $1, $2, $3, 'sample');
+INSERT INTO tasks(source_model_id, output_model_id, task_type)
+VALUES ($1, $2, 'sample');
 
 -- name: InsertAsset :exec
 INSERT INTO assets (task_id, "order", prompt, image, image_url, mask, mask_url)
@@ -85,4 +85,11 @@ LIMIT $2;
 -- name: ListAssetByTask :many
 SELECT * FROM assets
 WHERE task_id = $1
-ORDER by "group", "order";
+ORDER BY "group", "order";
+
+-- name: ListFeedbackAssetByModelID :many
+SELECT assets.* FROM tasks
+JOIN assets ON tasks.id == assets.task_id
+WHERE source_model_id = $1
+ORDER BY "group", "order";
+

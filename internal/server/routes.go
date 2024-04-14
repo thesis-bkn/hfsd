@@ -38,7 +38,7 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	// View
 	homeView := view.NewHomeView()
 	infView := view.NewInferenceView()
-	finetuneView := view.NewFinetuneView(validate, client)
+	finetuneView := view.NewFinetuneView(cfg, validate, client)
 	factoryView := view.NewFactoryView(client, cfg)
 	showcaseView := view.NewShowcaseView(client, cfg)
 
@@ -58,12 +58,14 @@ func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
 	apiEpts := e.Group("/api")
 	apiEpts.POST("/inference", inferenceHandler.SubmitInferenceTask)
 	apiEpts.POST("/finetune/:modelID", finetuneHandler.SubmitSampleTask)
+	apiEpts.POST("/feedback/:modelID", finetuneHandler.SubmitFinetuneTask)
 
 	// Views ------
-    e.GET("/", homeView.View)
+	e.GET("/", homeView.View)
 	e.GET("/inference", infView.View)
 	e.GET("/factory", factoryView.View)
 	e.GET("/finetune/:domain", finetuneView.View)
+	e.GET("/feedback/:modelID", finetuneView.FeedBackView)
 	e.GET("/showcase", showcaseView.View)
 
 	return e

@@ -84,10 +84,7 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 
 	query := i.client.Query().WithTx(tx)
 	order := 0
-	if err := query.InsertInferenceTask(c.Request().Context(), database.InsertInferenceTaskParams{
-		ID:            taskID,
-		SourceModelID: model,
-	}); err != nil {
+	if err := query.InsertInferenceTask(c.Request().Context(), model); err != nil {
 		return tracerr.Wrap(err)
 	}
 
@@ -102,7 +99,6 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	}
 
 	if err := query.InsertAsset(c.Request().Context(), database.InsertAssetParams{
-		TaskID:   taskID,
 		Prompt:   prompt,
 		Order:    0,
 		Image:    imageB,

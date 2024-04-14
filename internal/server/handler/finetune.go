@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -84,12 +85,7 @@ func (h *FinetuneModelHandler) SubmitSampleTask(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	taskID, err := gonanoid.Generate(modelIDsAlphabet, 5)
-	if err != nil {
-		return tracerr.Wrap(err)
-	}
 	if err := h.client.Query().InsertSampleTask(c.Request().Context(), database.InsertSampleTaskParams{
-		ID:            taskID,
 		SourceModelID: newModel.Parent,
 		OutputModelID: pgtype.Text{
 			String: newModel.ID,
@@ -101,6 +97,12 @@ func (h *FinetuneModelHandler) SubmitSampleTask(c echo.Context) error {
 
 	res.Name = newModel.Name
 	c.JSON(http.StatusOK, res)
+
+	return nil
+}
+
+func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
+	fmt.Println("hello world")
 
 	return nil
 }

@@ -90,8 +90,8 @@ class InsertBaseAssetParams:
 
 
 INSERT_INFERENCE_TASK = """-- name: insert_inference_task \\:exec
-INSERT INTO tasks (id, source_model_id, task_type)
-VALUES ( :p1, :p2, 'inference' )
+INSERT INTO tasks (source_model_id, task_type)
+VALUES (:p1, 'inference')
 """
 
 
@@ -117,8 +117,8 @@ VALUES (:p1, :p2, :p3, :p4, 'sampling')
 
 
 INSERT_SAMPLE_TASK = """-- name: insert_sample_task \\:exec
-INSERT INTO tasks(id, source_model_id, output_model_id, task_type)
-VALUES ( :p1, :p2, :p3, 'sample')
+INSERT INTO tasks(source_model_id, output_model_id, task_type)
+VALUES (:p1, :p2, 'sample')
 """
 
 
@@ -140,7 +140,15 @@ class ListAllTaskWithAssetRow:
 LIST_ASSET_BY_TASK = """-- name: list_asset_by_task \\:many
 SELECT task_id, "order", pref, "group", prompt, image, image_url, mask, mask_url FROM assets
 WHERE task_id = :p1
-ORDER by "group", "order"
+ORDER BY "group", "order"
+"""
+
+
+LIST_FEEDBACK_ASSET_BY_MODEL_ID = """-- name: list_feedback_asset_by_model_id \\:many
+SELECT assets.task_id, assets."order", assets.pref, assets."group", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url FROM tasks
+JOIN assets ON tasks.id == assets.task_id
+WHERE source_model_id = :p1
+ORDER BY "group", "order"
 """
 
 
@@ -301,8 +309,8 @@ class Querier:
             "p6": arg.domain,
         })
 
-    def insert_inference_task(self, *, id: int, source_model_id: str) -> None:
-        self._conn.execute(sqlalchemy.text(INSERT_INFERENCE_TASK), {"p1": id, "p2": source_model_id})
+    def insert_inference_task(self, *, source_model_id: str) -> None:
+        self._conn.execute(sqlalchemy.text(INSERT_INFERENCE_TASK), {"p1": source_model_id})
 
     def insert_model(self, arg: InsertModelParams) -> None:
         self._conn.execute(sqlalchemy.text(INSERT_MODEL), {
@@ -321,8 +329,8 @@ class Querier:
             "p4": parent,
         })
 
-    def insert_sample_task(self, *, id: int, source_model_id: str, output_model_id: Optional[str]) -> None:
-        self._conn.execute(sqlalchemy.text(INSERT_SAMPLE_TASK), {"p1": id, "p2": source_model_id, "p3": output_model_id})
+    def insert_sample_task(self, *, source_model_id: str, output_model_id: Optional[str]) -> None:
+        self._conn.execute(sqlalchemy.text(INSERT_SAMPLE_TASK), {"p1": source_model_id, "p2": output_model_id})
 
     def list_all_task_with_asset(self) -> Iterator[ListAllTaskWithAssetRow]:
         result = self._conn.execute(sqlalchemy.text(LIST_ALL_TASK_WITH_ASSET))
@@ -334,6 +342,21 @@ class Querier:
 
     def list_asset_by_task(self, *, task_id: int) -> Iterator[models.Asset]:
         result = self._conn.execute(sqlalchemy.text(LIST_ASSET_BY_TASK), {"p1": task_id})
+        for row in result:
+            yield models.Asset(
+                task_id=row[0],
+                order=row[1],
+                pref=row[2],
+                group=row[3],
+                prompt=row[4],
+                image=row[5],
+                image_url=row[6],
+                mask=row[7],
+                mask_url=row[8],
+            )
+
+    def list_feedback_asset_by_model_id(self, *, source_model_id: str) -> Iterator[models.Asset]:
+        result = self._conn.execute(sqlalchemy.text(LIST_FEEDBACK_ASSET_BY_MODEL_ID), {"p1": source_model_id})
         for row in result:
             yield models.Asset(
                 task_id=row[0],
@@ -513,8 +536,8 @@ class AsyncQuerier:
             "p6": arg.domain,
         })
 
-    async def insert_inference_task(self, *, id: int, source_model_id: str) -> None:
-        await self._conn.execute(sqlalchemy.text(INSERT_INFERENCE_TASK), {"p1": id, "p2": source_model_id})
+    async def insert_inference_task(self, *, source_model_id: str) -> None:
+        await self._conn.execute(sqlalchemy.text(INSERT_INFERENCE_TASK), {"p1": source_model_id})
 
     async def insert_model(self, arg: InsertModelParams) -> None:
         await self._conn.execute(sqlalchemy.text(INSERT_MODEL), {
@@ -533,8 +556,8 @@ class AsyncQuerier:
             "p4": parent,
         })
 
-    async def insert_sample_task(self, *, id: int, source_model_id: str, output_model_id: Optional[str]) -> None:
-        await self._conn.execute(sqlalchemy.text(INSERT_SAMPLE_TASK), {"p1": id, "p2": source_model_id, "p3": output_model_id})
+    async def insert_sample_task(self, *, source_model_id: str, output_model_id: Optional[str]) -> None:
+        await self._conn.execute(sqlalchemy.text(INSERT_SAMPLE_TASK), {"p1": source_model_id, "p2": output_model_id})
 
     async def list_all_task_with_asset(self) -> AsyncIterator[ListAllTaskWithAssetRow]:
         result = await self._conn.stream(sqlalchemy.text(LIST_ALL_TASK_WITH_ASSET))
@@ -546,6 +569,21 @@ class AsyncQuerier:
 
     async def list_asset_by_task(self, *, task_id: int) -> AsyncIterator[models.Asset]:
         result = await self._conn.stream(sqlalchemy.text(LIST_ASSET_BY_TASK), {"p1": task_id})
+        async for row in result:
+            yield models.Asset(
+                task_id=row[0],
+                order=row[1],
+                pref=row[2],
+                group=row[3],
+                prompt=row[4],
+                image=row[5],
+                image_url=row[6],
+                mask=row[7],
+                mask_url=row[8],
+            )
+
+    async def list_feedback_asset_by_model_id(self, *, source_model_id: str) -> AsyncIterator[models.Asset]:
+        result = await self._conn.stream(sqlalchemy.text(LIST_FEEDBACK_ASSET_BY_MODEL_ID), {"p1": source_model_id})
         async for row in result:
             yield models.Asset(
                 task_id=row[0],
