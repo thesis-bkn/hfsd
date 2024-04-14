@@ -81,3 +81,8 @@ SELECT * FROM base_assets
 WHERE domain = $1
 ORDER BY random()
 LIMIT $2;
+
+-- name: ListAssetByTask :many
+SELECT * FROM assets
+WHERE task_id = $1
+ORDER by "group", "order";

@@ -13,7 +13,7 @@ from src.database import models
 
 
 GET_EARLIEST_PENDING_TASK = """-- name: get_earliest_pending_task \\:one
-SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, human_prefs, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
+SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
 WHERE handled_at IS NULL
 ORDER BY created_at DESC
 LIMIT 1
@@ -21,7 +21,7 @@ LIMIT 1
 
 
 GET_FIRST_ASSET_BY_MODEL_ID = """-- name: get_first_asset_by_model_id \\:one
-SELECT task_id, "order", prompt, image, image_url, mask, mask_url FROM assets
+SELECT task_id, "order", pref, "group", prompt, image, image_url, mask, mask_url FROM assets
 WHERE task_id = :p1
 AND "order" = 0
 LIMIT 1
@@ -50,7 +50,7 @@ LIMIT 1
 
 
 GET_TASK = """-- name: get_task \\:one
-SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, human_prefs, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
+SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
 WHERE id = :p1 AND task_type = :p2
 LIMIT 1
 """
@@ -64,7 +64,7 @@ VALUES (:p1, :p2, :p3, :p4, :p5, :p6, :p7)
 
 @dataclasses.dataclass()
 class InsertAssetParams:
-    task_id: str
+    task_id: int
     order: int
     prompt: str
     image: memoryview
@@ -123,7 +123,7 @@ VALUES ( :p1, :p2, :p3, 'sample')
 
 
 LIST_ALL_TASK_WITH_ASSET = """-- name: list_all_task_with_asset \\:many
-SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.human_prefs, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, assets.task_id, assets."order", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url
+SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, assets.task_id, assets."order", assets.pref, assets."group", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url
 FROM tasks
 JOIN assets ON assets.task_id = tasks.id
 WHERE assets."order" = 0
@@ -135,6 +135,13 @@ ORDER BY tasks.created_at DESC
 class ListAllTaskWithAssetRow:
     tasks: Optional[Any]
     assets: Optional[Any]
+
+
+LIST_ASSET_BY_TASK = """-- name: list_asset_by_task \\:many
+SELECT task_id, "order", pref, "group", prompt, image, image_url, mask, mask_url FROM assets
+WHERE task_id = :p1
+ORDER by "group", "order"
+"""
 
 
 LIST_INFERENCES = """-- name: list_inferences \\:many
@@ -195,26 +202,27 @@ class Querier:
             created_at=row[4],
             handled_at=row[5],
             finished_at=row[6],
-            human_prefs=row[7],
-            prompt_embeds=row[8],
-            latents=row[9],
-            timesteps=row[10],
-            next_latents=row[11],
-            image_torchs=row[12],
+            prompt_embeds=row[7],
+            latents=row[8],
+            timesteps=row[9],
+            next_latents=row[10],
+            image_torchs=row[11],
         )
 
-    def get_first_asset_by_model_id(self, *, task_id: str) -> Optional[models.Asset]:
+    def get_first_asset_by_model_id(self, *, task_id: int) -> Optional[models.Asset]:
         row = self._conn.execute(sqlalchemy.text(GET_FIRST_ASSET_BY_MODEL_ID), {"p1": task_id}).first()
         if row is None:
             return None
         return models.Asset(
             task_id=row[0],
             order=row[1],
-            prompt=row[2],
-            image=row[3],
-            image_url=row[4],
-            mask=row[5],
-            mask_url=row[6],
+            pref=row[2],
+            group=row[3],
+            prompt=row[4],
+            image=row[5],
+            image_url=row[6],
+            mask=row[7],
+            mask_url=row[8],
         )
 
     def get_model(self, *, id: str) -> Optional[models.Model]:
@@ -253,7 +261,7 @@ class Querier:
             state_dict=row[1],
         )
 
-    def get_task(self, *, id: str, task_type: models.TaskVariant) -> Optional[models.Task]:
+    def get_task(self, *, id: int, task_type: models.TaskVariant) -> Optional[models.Task]:
         row = self._conn.execute(sqlalchemy.text(GET_TASK), {"p1": id, "p2": task_type}).first()
         if row is None:
             return None
@@ -265,12 +273,11 @@ class Querier:
             created_at=row[4],
             handled_at=row[5],
             finished_at=row[6],
-            human_prefs=row[7],
-            prompt_embeds=row[8],
-            latents=row[9],
-            timesteps=row[10],
-            next_latents=row[11],
-            image_torchs=row[12],
+            prompt_embeds=row[7],
+            latents=row[8],
+            timesteps=row[9],
+            next_latents=row[10],
+            image_torchs=row[11],
         )
 
     def insert_asset(self, arg: InsertAssetParams) -> None:
@@ -294,7 +301,7 @@ class Querier:
             "p6": arg.domain,
         })
 
-    def insert_inference_task(self, *, id: str, source_model_id: str) -> None:
+    def insert_inference_task(self, *, id: int, source_model_id: str) -> None:
         self._conn.execute(sqlalchemy.text(INSERT_INFERENCE_TASK), {"p1": id, "p2": source_model_id})
 
     def insert_model(self, arg: InsertModelParams) -> None:
@@ -314,7 +321,7 @@ class Querier:
             "p4": parent,
         })
 
-    def insert_sample_task(self, *, id: str, source_model_id: str, output_model_id: Optional[str]) -> None:
+    def insert_sample_task(self, *, id: int, source_model_id: str, output_model_id: Optional[str]) -> None:
         self._conn.execute(sqlalchemy.text(INSERT_SAMPLE_TASK), {"p1": id, "p2": source_model_id, "p3": output_model_id})
 
     def list_all_task_with_asset(self) -> Iterator[ListAllTaskWithAssetRow]:
@@ -323,6 +330,21 @@ class Querier:
             yield ListAllTaskWithAssetRow(
                 tasks=row[0],
                 assets=row[1],
+            )
+
+    def list_asset_by_task(self, *, task_id: int) -> Iterator[models.Asset]:
+        result = self._conn.execute(sqlalchemy.text(LIST_ASSET_BY_TASK), {"p1": task_id})
+        for row in result:
+            yield models.Asset(
+                task_id=row[0],
+                order=row[1],
+                pref=row[2],
+                group=row[3],
+                prompt=row[4],
+                image=row[5],
+                image_url=row[6],
+                mask=row[7],
+                mask_url=row[8],
             )
 
     def list_inferences(self, *, limit: int, offset: int) -> Iterator[models.Inference]:
@@ -367,7 +389,7 @@ class Querier:
             "p9": arg.from_model,
         })
 
-    def update_task_status(self, *, id: str, task_type: models.TaskVariant, handled_at: Optional[datetime.datetime], finished_at: Optional[datetime.datetime]) -> None:
+    def update_task_status(self, *, id: int, task_type: models.TaskVariant, handled_at: Optional[datetime.datetime], finished_at: Optional[datetime.datetime]) -> None:
         self._conn.execute(sqlalchemy.text(UPDATE_TASK_STATUS), {
             "p1": id,
             "p2": task_type,
@@ -392,26 +414,27 @@ class AsyncQuerier:
             created_at=row[4],
             handled_at=row[5],
             finished_at=row[6],
-            human_prefs=row[7],
-            prompt_embeds=row[8],
-            latents=row[9],
-            timesteps=row[10],
-            next_latents=row[11],
-            image_torchs=row[12],
+            prompt_embeds=row[7],
+            latents=row[8],
+            timesteps=row[9],
+            next_latents=row[10],
+            image_torchs=row[11],
         )
 
-    async def get_first_asset_by_model_id(self, *, task_id: str) -> Optional[models.Asset]:
+    async def get_first_asset_by_model_id(self, *, task_id: int) -> Optional[models.Asset]:
         row = (await self._conn.execute(sqlalchemy.text(GET_FIRST_ASSET_BY_MODEL_ID), {"p1": task_id})).first()
         if row is None:
             return None
         return models.Asset(
             task_id=row[0],
             order=row[1],
-            prompt=row[2],
-            image=row[3],
-            image_url=row[4],
-            mask=row[5],
-            mask_url=row[6],
+            pref=row[2],
+            group=row[3],
+            prompt=row[4],
+            image=row[5],
+            image_url=row[6],
+            mask=row[7],
+            mask_url=row[8],
         )
 
     async def get_model(self, *, id: str) -> Optional[models.Model]:
@@ -450,7 +473,7 @@ class AsyncQuerier:
             state_dict=row[1],
         )
 
-    async def get_task(self, *, id: str, task_type: models.TaskVariant) -> Optional[models.Task]:
+    async def get_task(self, *, id: int, task_type: models.TaskVariant) -> Optional[models.Task]:
         row = (await self._conn.execute(sqlalchemy.text(GET_TASK), {"p1": id, "p2": task_type})).first()
         if row is None:
             return None
@@ -462,12 +485,11 @@ class AsyncQuerier:
             created_at=row[4],
             handled_at=row[5],
             finished_at=row[6],
-            human_prefs=row[7],
-            prompt_embeds=row[8],
-            latents=row[9],
-            timesteps=row[10],
-            next_latents=row[11],
-            image_torchs=row[12],
+            prompt_embeds=row[7],
+            latents=row[8],
+            timesteps=row[9],
+            next_latents=row[10],
+            image_torchs=row[11],
         )
 
     async def insert_asset(self, arg: InsertAssetParams) -> None:
@@ -491,7 +513,7 @@ class AsyncQuerier:
             "p6": arg.domain,
         })
 
-    async def insert_inference_task(self, *, id: str, source_model_id: str) -> None:
+    async def insert_inference_task(self, *, id: int, source_model_id: str) -> None:
         await self._conn.execute(sqlalchemy.text(INSERT_INFERENCE_TASK), {"p1": id, "p2": source_model_id})
 
     async def insert_model(self, arg: InsertModelParams) -> None:
@@ -511,7 +533,7 @@ class AsyncQuerier:
             "p4": parent,
         })
 
-    async def insert_sample_task(self, *, id: str, source_model_id: str, output_model_id: Optional[str]) -> None:
+    async def insert_sample_task(self, *, id: int, source_model_id: str, output_model_id: Optional[str]) -> None:
         await self._conn.execute(sqlalchemy.text(INSERT_SAMPLE_TASK), {"p1": id, "p2": source_model_id, "p3": output_model_id})
 
     async def list_all_task_with_asset(self) -> AsyncIterator[ListAllTaskWithAssetRow]:
@@ -520,6 +542,21 @@ class AsyncQuerier:
             yield ListAllTaskWithAssetRow(
                 tasks=row[0],
                 assets=row[1],
+            )
+
+    async def list_asset_by_task(self, *, task_id: int) -> AsyncIterator[models.Asset]:
+        result = await self._conn.stream(sqlalchemy.text(LIST_ASSET_BY_TASK), {"p1": task_id})
+        async for row in result:
+            yield models.Asset(
+                task_id=row[0],
+                order=row[1],
+                pref=row[2],
+                group=row[3],
+                prompt=row[4],
+                image=row[5],
+                image_url=row[6],
+                mask=row[7],
+                mask_url=row[8],
             )
 
     async def list_inferences(self, *, limit: int, offset: int) -> AsyncIterator[models.Inference]:
@@ -564,7 +601,7 @@ class AsyncQuerier:
             "p9": arg.from_model,
         })
 
-    async def update_task_status(self, *, id: str, task_type: models.TaskVariant, handled_at: Optional[datetime.datetime], finished_at: Optional[datetime.datetime]) -> None:
+    async def update_task_status(self, *, id: int, task_type: models.TaskVariant, handled_at: Optional[datetime.datetime], finished_at: Optional[datetime.datetime]) -> None:
         await self._conn.execute(sqlalchemy.text(UPDATE_TASK_STATUS), {
             "p1": id,
             "p2": task_type,

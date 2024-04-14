@@ -27,25 +27,7 @@ class SampleHander:
         self.querier = Querier(self.conn)
 
     def handle(self, task: Task):
-        pipe = StableDiffusionInpaintPipeline.from_pretrained(
-            "runwayml/stable-diffusion-inpainting",
-            torch_dtype=torch.float16,
-        )
-        pipe = pipe.to("cuda")
-        pipe.vae.requires_grad_(False)
-        pipe.text_encoder.requires_grad_(False)
-        pipe.safety_checker = None
-        pipe.set_progress_bar_config(
-            disable=False,
-            position=1,
-            leave=False,
-            desc="Timestep",
-            dynamic_ncols=True,
-        )
-        pipe.unet.requires_grad_(False)
-        pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
-        pipe = utils.with_lora(pipe)
-        pipe.unet.eval()
+        pipe = utils.prepare_pipe()
 
         source_model = self.querier.get_model(id=task.source_model_id)  # pyright: ignore
         if source_model is None:
@@ -67,6 +49,7 @@ class SampleHander:
             ).input_ids.to(pipe.device)
         )[0]
 
+        pipe.unet.eval()
         sample_neg_prompt_embeds = neg_prompt_embed.repeat(BATCH_SIZE, 1, 1)
 
         # Sampling

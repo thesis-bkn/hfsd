@@ -12,7 +12,7 @@ import (
 )
 
 const getEarliestPendingTask = `-- name: GetEarliestPendingTask :one
-SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, human_prefs, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
+SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
 WHERE handled_at IS NULL
 ORDER BY created_at DESC
 LIMIT 1
@@ -29,7 +29,6 @@ func (q *Queries) GetEarliestPendingTask(ctx context.Context) (Task, error) {
 		&i.CreatedAt,
 		&i.HandledAt,
 		&i.FinishedAt,
-		&i.HumanPrefs,
 		&i.PromptEmbeds,
 		&i.Latents,
 		&i.Timesteps,
@@ -40,18 +39,20 @@ func (q *Queries) GetEarliestPendingTask(ctx context.Context) (Task, error) {
 }
 
 const getFirstAssetByModelID = `-- name: GetFirstAssetByModelID :one
-SELECT task_id, "order", prompt, image, image_url, mask, mask_url FROM assets
+SELECT task_id, "order", pref, "group", prompt, image, image_url, mask, mask_url FROM assets
 WHERE task_id = $1
 AND "order" = 0
 LIMIT 1
 `
 
-func (q *Queries) GetFirstAssetByModelID(ctx context.Context, taskID string) (Asset, error) {
+func (q *Queries) GetFirstAssetByModelID(ctx context.Context, taskID int32) (Asset, error) {
 	row := q.db.QueryRow(ctx, getFirstAssetByModelID, taskID)
 	var i Asset
 	err := row.Scan(
 		&i.TaskID,
 		&i.Order,
+		&i.Pref,
+		&i.Group,
 		&i.Prompt,
 		&i.Image,
 		&i.ImageUrl,
@@ -135,13 +136,13 @@ func (q *Queries) GetScorer(ctx context.Context, name string) (Scorer, error) {
 }
 
 const getTask = `-- name: GetTask :one
-SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, human_prefs, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
+SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
 WHERE id = $1 AND task_type = $2
 LIMIT 1
 `
 
 type GetTaskParams struct {
-	ID       string
+	ID       int32
 	TaskType TaskVariant
 }
 
@@ -156,7 +157,6 @@ func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) 
 		&i.CreatedAt,
 		&i.HandledAt,
 		&i.FinishedAt,
-		&i.HumanPrefs,
 		&i.PromptEmbeds,
 		&i.Latents,
 		&i.Timesteps,
@@ -172,7 +172,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7)
 `
 
 type InsertAssetParams struct {
-	TaskID   string
+	TaskID   int32
 	Order    int16
 	Prompt   string
 	Image    []byte
@@ -226,7 +226,7 @@ VALUES ( $1, $2, 'inference' )
 `
 
 type InsertInferenceTaskParams struct {
-	ID            string
+	ID            int32
 	SourceModelID string
 }
 
@@ -287,7 +287,7 @@ VALUES ( $1, $2, $3, 'sample')
 `
 
 type InsertSampleTaskParams struct {
-	ID            string
+	ID            int32
 	SourceModelID string
 	OutputModelID pgtype.Text
 }
@@ -298,7 +298,7 @@ func (q *Queries) InsertSampleTask(ctx context.Context, arg InsertSampleTaskPara
 }
 
 const listAllTaskWithAsset = `-- name: ListAllTaskWithAsset :many
-SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.human_prefs, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, assets.task_id, assets."order", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url
+SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, assets.task_id, assets."order", assets.pref, assets."group", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url
 FROM tasks
 JOIN assets ON assets.task_id = tasks.id
 WHERE assets."order" = 0
@@ -327,7 +327,6 @@ func (q *Queries) ListAllTaskWithAsset(ctx context.Context) ([]ListAllTaskWithAs
 			&i.Task.CreatedAt,
 			&i.Task.HandledAt,
 			&i.Task.FinishedAt,
-			&i.Task.HumanPrefs,
 			&i.Task.PromptEmbeds,
 			&i.Task.Latents,
 			&i.Task.Timesteps,
@@ -335,11 +334,49 @@ func (q *Queries) ListAllTaskWithAsset(ctx context.Context) ([]ListAllTaskWithAs
 			&i.Task.ImageTorchs,
 			&i.Asset.TaskID,
 			&i.Asset.Order,
+			&i.Asset.Pref,
+			&i.Asset.Group,
 			&i.Asset.Prompt,
 			&i.Asset.Image,
 			&i.Asset.ImageUrl,
 			&i.Asset.Mask,
 			&i.Asset.MaskUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAssetByTask = `-- name: ListAssetByTask :many
+SELECT task_id, "order", pref, "group", prompt, image, image_url, mask, mask_url FROM assets
+WHERE task_id = $1
+ORDER by "group", "order"
+`
+
+func (q *Queries) ListAssetByTask(ctx context.Context, taskID int32) ([]Asset, error) {
+	rows, err := q.db.Query(ctx, listAssetByTask, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Asset
+	for rows.Next() {
+		var i Asset
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.Order,
+			&i.Pref,
+			&i.Group,
+			&i.Prompt,
+			&i.Image,
+			&i.ImageUrl,
+			&i.Mask,
+			&i.MaskUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -468,7 +505,7 @@ DO UPDATE SET
 `
 
 type UpdateTaskStatusParams struct {
-	ID         string
+	ID         int32
 	TaskType   TaskVariant
 	HandledAt  pgtype.Timestamp
 	FinishedAt pgtype.Timestamp

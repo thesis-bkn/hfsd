@@ -99,8 +99,10 @@ func (ns NullTaskVariant) Value() (driver.Value, error) {
 }
 
 type Asset struct {
-	TaskID   string
+	TaskID   int32
 	Order    int16
+	Pref     pgtype.Int4
+	Group    pgtype.Int4
 	Prompt   string
 	Image    []byte
 	ImageUrl string
@@ -146,14 +148,13 @@ type Scorer struct {
 }
 
 type Task struct {
-	ID            string
+	ID            int32
 	SourceModelID string
 	OutputModelID pgtype.Text
 	TaskType      TaskVariant
 	CreatedAt     pgtype.Timestamp
 	HandledAt     pgtype.Timestamp
 	FinishedAt    pgtype.Timestamp
-	HumanPrefs    []byte
 	PromptEmbeds  []byte
 	Latents       []byte
 	Timesteps     []byte

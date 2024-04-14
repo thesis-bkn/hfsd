@@ -7,12 +7,37 @@ from diffusers.models.attention_processor import LoRAAttnProcessor
 from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion_inpaint import (
     StableDiffusionInpaintPipeline,
 )
+from diffusers.schedulers.scheduling_ddim import DDIMScheduler
 from PIL import Image
-from transformers.models.esm.openfold_utils.protein import string
-from src import database
-from src.database.query import Querier
 
+from src.database.query import Querier
 from src.handlers.score import AestheticScorer
+
+
+def prepare_pipe() -> StableDiffusionInpaintPipeline:
+    pipe = StableDiffusionInpaintPipeline.from_pretrained(
+        "runwayml/stable-diffusion-inpainting",
+        torch_dtype=torch.float16,
+    )
+    pipe = pipe.to("cuda")
+    pipe.vae.requires_grad_(False)
+    pipe.text_encoder.requires_grad_(False)
+    pipe.unet.requires_grad_(False)
+    pipe.safety_checker = None
+    pipe.set_progress_bar_config(
+        position=1,
+        leave=False,
+        desc="Timestep",
+        dynamic_ncols=True,
+    )
+    pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
+    inference_dtype = torch.float16
+    pipe.vae.to("cuda", dtype=inference_dtype)
+    pipe.text_encoder.to("cuda", dtype=inference_dtype)
+    pipe.unet.to("cuda", dtype=inference_dtype)
+    pipe = with_lora(pipeline=pipe)
+
+    return pipe
 
 
 def with_lora(
@@ -55,6 +80,7 @@ LEARNING_RATE = 3e-5
 
 def prepare_optimizer(pipeline: StableDiffusionInpaintPipeline):
     trainable_layers = AttnProcsLayers(pipeline.unet.attn_processors)
+    trainable_layers.backward()
 
     return torch.optim.AdamW(
         trainable_layers.parameters(),
@@ -119,3 +145,5 @@ def get_prompt(domain: str) -> tuple[str, str]:
             return "pedunculated", "sessile"
 
     exit(1)
+
+

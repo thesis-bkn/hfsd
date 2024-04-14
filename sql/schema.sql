@@ -1,5 +1,5 @@
-create type model_status as enum ('finetuned', 'sampling', 'rating', 'training');
-create type task_variant as enum ('inference', 'sample', 'finetune');
+create type model_status    as enum ('finetuned', 'sampling', 'rating', 'training');
+create type task_variant    as enum ('inference', 'sample', 'finetune');
 
 create table if not exists models
 (
@@ -37,38 +37,37 @@ create table if not exists base_assets
     domain    text  not null
 );
 
-
-
 create table if not exists tasks
 (
-    id              text,
+    id              serial primary key,
     source_model_id text not null,
     output_model_id text,
     task_type       task_variant not null,
     created_at      timestamp default now(),
     handled_at      timestamp,
     finished_at     timestamp,
-    human_prefs     jsonb,
     prompt_embeds   bytea,
     latents         bytea,
     timesteps       bytea,
     next_latents    bytea,
     image_torchs    bytea,
-    primary key (id, task_type),
     foreign key (source_model_id) references models (id),
     foreign key (output_model_id) references models (id)
 );
 
 create table if not exists assets
 (
-    task_id   text,
+    task_id   int,
     "order"   smallint,
-    prompt    text      not null,
-    image     bytea     not null,
-    image_url text      not null,
-    mask      bytea     not null,
-    mask_url  text      not null,
-    primary key (task_id, "order")
+    pref      int,
+    "group"   int,
+    prompt    text  not null,
+    image     bytea not null,
+    image_url text  not null,
+    mask      bytea not null,
+    mask_url  text  not null,
+    primary key (task_id, "order"),
+    foreign key (task_id) references tasks (id)
 );
 
 create table if not exists scorers (

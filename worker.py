@@ -10,6 +10,8 @@ from src.config import ConfigReader
 from src.database import Querier
 from src.database.models import Task, TaskVariant
 from src.handlers import InferenceHandler
+from src.handlers.finetune import FinetuneHandler
+from src.handlers.sample import SampleHander
 from src.s3 import ImageUploader
 
 
@@ -33,6 +35,8 @@ class CronJob:
         )
 
         self.inf_handler = InferenceHandler(conn=self.conn, uploader=self.uploader)
+        self.sample_handler = SampleHander(conn=self.conn, uploader=self.uploader)
+        self.finetune_handler = FinetuneHandler(conn=self.conn, uploader=self.uploader)
 
     def run_job(self):
         # Define the job to be executed
@@ -48,9 +52,9 @@ class CronJob:
             case TaskVariant.INFERENCE:
                 self.inf_handler.handle(task=pending_task)
             case TaskVariant.FINETUNE:
-                print("fine tune task")
+                self.sample_handler.handle(task=pending_task)
             case TaskVariant.SAMPLE:
-                print("sample task")
+                self.finetune_handler.handle(task=pending_task)
 
         # mark that this task is being handled
         self.querier.update_task_status(

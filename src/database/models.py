@@ -4,7 +4,7 @@
 import dataclasses
 import datetime
 import enum
-from typing import Any, Optional
+from typing import Optional
 
 
 class ModelStatus(str, enum.Enum):
@@ -22,8 +22,10 @@ class TaskVariant(str, enum.Enum):
 
 @dataclasses.dataclass()
 class Asset:
-    task_id: str
+    task_id: int
     order: int
+    pref: Optional[int]
+    group: Optional[int]
     prompt: str
     image: memoryview
     image_url: str
@@ -74,14 +76,13 @@ class Scorer:
 
 @dataclasses.dataclass()
 class Task:
-    id: str
+    id: int
     source_model_id: str
     output_model_id: Optional[str]
     task_type: TaskVariant
     created_at: Optional[datetime.datetime]
     handled_at: Optional[datetime.datetime]
     finished_at: Optional[datetime.datetime]
-    human_prefs: Optional[Any]
     prompt_embeds: Optional[memoryview]
     latents: Optional[memoryview]
     timesteps: Optional[memoryview]
