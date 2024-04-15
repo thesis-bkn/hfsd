@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/ztrue/tracerr"
@@ -99,12 +100,16 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	}
 
 	if err := query.InsertAsset(c.Request().Context(), database.InsertAssetParams{
-		Prompt:   prompt,
+		TaskID:   0,
 		Order:    0,
+		Prompt:   prompt,
 		Image:    imageB,
 		ImageUrl: imageURL,
 		Mask:     maskB,
-		MaskUrl:  maskUrl,
+		MaskUrl: pgtype.Text{
+			String: maskUrl,
+			Valid:  true,
+		},
 	}); err != nil {
 		return tracerr.Wrap(err)
 	}
