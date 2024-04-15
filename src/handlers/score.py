@@ -10,8 +10,6 @@ from transformers import CLIPModel, CLIPProcessor
 
 from src.database.query import Querier
 
-ASSETS_PATH = resources.files("d3po_pytorch.assets")
-
 
 class MLP(nn.Module):
     def __init__(self):

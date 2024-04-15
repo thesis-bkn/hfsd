@@ -51,15 +51,14 @@ class CronJob:
         match pending_task.task_type:
             case TaskVariant.INFERENCE:
                 self.inf_handler.handle(task=pending_task)
-            case TaskVariant.FINETUNE:
-                self.sample_handler.handle(task=pending_task)
             case TaskVariant.SAMPLE:
+                self.sample_handler.handle(task=pending_task)
+            case TaskVariant.FINETUNE:
                 self.finetune_handler.handle(task=pending_task)
 
         # mark that this task is being handled
         self.querier.update_task_status(
             id=pending_task.id,
-            task_type=pending_task.task_type,
             handled_at=datetime.datetime.now(datetime.UTC),
             finished_at=None,
         )

@@ -178,7 +178,7 @@ type InsertAssetParams struct {
 	Image    []byte
 	ImageUrl string
 	Mask     []byte
-	MaskUrl  string
+	MaskUrl  pgtype.Text
 }
 
 func (q *Queries) InsertAsset(ctx context.Context, arg InsertAssetParams) error {
@@ -542,10 +542,69 @@ func (q *Queries) SaveInference(ctx context.Context, arg SaveInferenceParams) er
 	return err
 }
 
+const saveSampleAsset = `-- name: SaveSampleAsset :exec
+INSERT INTO assets(
+    task_id, "order", "group",
+    image, image_url, prompt)
+VALUES ($1, $2, $3, $4, $5, $6)
+`
+
+type SaveSampleAssetParams struct {
+	TaskID   int32
+	Order    int16
+	Group    pgtype.Int4
+	Image    []byte
+	ImageUrl string
+	Prompt   string
+}
+
+func (q *Queries) SaveSampleAsset(ctx context.Context, arg SaveSampleAssetParams) error {
+	_, err := q.db.Exec(ctx, saveSampleAsset,
+		arg.TaskID,
+		arg.Order,
+		arg.Group,
+		arg.Image,
+		arg.ImageUrl,
+		arg.Prompt,
+	)
+	return err
+}
+
+const updateSampleTasks = `-- name: UpdateSampleTasks :exec
+UPDATE tasks
+SET latents = $2,
+    timesteps = $3,
+    next_latents = $4,
+    image_torchs = $5,
+    prompt_embeds = $6
+WHERE id = $1
+`
+
+type UpdateSampleTasksParams struct {
+	ID           int32
+	Latents      []byte
+	Timesteps    []byte
+	NextLatents  []byte
+	ImageTorchs  []byte
+	PromptEmbeds []byte
+}
+
+func (q *Queries) UpdateSampleTasks(ctx context.Context, arg UpdateSampleTasksParams) error {
+	_, err := q.db.Exec(ctx, updateSampleTasks,
+		arg.ID,
+		arg.Latents,
+		arg.Timesteps,
+		arg.NextLatents,
+		arg.ImageTorchs,
+		arg.PromptEmbeds,
+	)
+	return err
+}
+
 const updateTaskStatus = `-- name: UpdateTaskStatus :exec
-INSERT INTO tasks (id, source_model_id, task_type, handled_at, finished_at)
-VALUES ($1, '', $2, $3, $4)
-ON CONFLICT (id, task_type)
+INSERT INTO tasks (id, task_type, source_model_id, handled_at, finished_at)
+VALUES ($1, 'sample', '', $2, $3)
+ON CONFLICT (id)
 DO UPDATE SET
     handled_at = COALESCE(tasks.handled_at, EXCLUDED.handled_at),
     finished_at = COALESCE(tasks.finished_at, EXCLUDED.finished_at)
@@ -553,17 +612,11 @@ DO UPDATE SET
 
 type UpdateTaskStatusParams struct {
 	ID         int32
-	TaskType   TaskVariant
 	HandledAt  pgtype.Timestamp
 	FinishedAt pgtype.Timestamp
 }
 
 func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) error {
-	_, err := q.db.Exec(ctx, updateTaskStatus,
-		arg.ID,
-		arg.TaskType,
-		arg.HandledAt,
-		arg.FinishedAt,
-	)
+	_, err := q.db.Exec(ctx, updateTaskStatus, arg.ID, arg.HandledAt, arg.FinishedAt)
 	return err
 }

@@ -69,8 +69,8 @@ class InsertAssetParams:
     prompt: str
     image: memoryview
     image_url: str
-    mask: memoryview
-    mask_url: str
+    mask: Optional[memoryview]
+    mask_url: Optional[str]
 
 
 INSERT_BASE_ASSET = """-- name: insert_base_asset \\:exec
@@ -190,10 +190,49 @@ class SaveInferenceParams:
     from_model: str
 
 
+SAVE_SAMPLE_ASSET = """-- name: save_sample_asset \\:exec
+INSERT INTO assets(
+    task_id, "order", "group",
+    image, image_url, prompt)
+VALUES (:p1, :p2, :p3, :p4, :p5, :p6)
+"""
+
+
+@dataclasses.dataclass()
+class SaveSampleAssetParams:
+    task_id: int
+    order: int
+    group: Optional[int]
+    image: memoryview
+    image_url: str
+    prompt: str
+
+
+UPDATE_SAMPLE_TASKS = """-- name: update_sample_tasks \\:exec
+UPDATE tasks
+SET latents = :p2,
+    timesteps = :p3,
+    next_latents = :p4,
+    image_torchs = :p5,
+    prompt_embeds = :p6
+WHERE id = :p1
+"""
+
+
+@dataclasses.dataclass()
+class UpdateSampleTasksParams:
+    id: int
+    latents: Optional[memoryview]
+    timesteps: Optional[memoryview]
+    next_latents: Optional[memoryview]
+    image_torchs: Optional[memoryview]
+    prompt_embeds: Optional[memoryview]
+
+
 UPDATE_TASK_STATUS = """-- name: update_task_status \\:exec
-INSERT INTO tasks (id, source_model_id, task_type, handled_at, finished_at)
-VALUES (:p1, '', :p2, :p3, :p4)
-ON CONFLICT (id, task_type)
+INSERT INTO tasks (id, task_type, source_model_id, handled_at, finished_at)
+VALUES (:p1, 'sample', '', :p2, :p3)
+ON CONFLICT (id)
 DO UPDATE SET
     handled_at = COALESCE(tasks.handled_at, EXCLUDED.handled_at),
     finished_at = COALESCE(tasks.finished_at, EXCLUDED.finished_at)
@@ -421,13 +460,28 @@ class Querier:
             "p9": arg.from_model,
         })
 
-    def update_task_status(self, *, id: int, task_type: models.TaskVariant, handled_at: Optional[datetime.datetime], finished_at: Optional[datetime.datetime]) -> None:
-        self._conn.execute(sqlalchemy.text(UPDATE_TASK_STATUS), {
-            "p1": id,
-            "p2": task_type,
-            "p3": handled_at,
-            "p4": finished_at,
+    def save_sample_asset(self, arg: SaveSampleAssetParams) -> None:
+        self._conn.execute(sqlalchemy.text(SAVE_SAMPLE_ASSET), {
+            "p1": arg.task_id,
+            "p2": arg.order,
+            "p3": arg.group,
+            "p4": arg.image,
+            "p5": arg.image_url,
+            "p6": arg.prompt,
         })
+
+    def update_sample_tasks(self, arg: UpdateSampleTasksParams) -> None:
+        self._conn.execute(sqlalchemy.text(UPDATE_SAMPLE_TASKS), {
+            "p1": arg.id,
+            "p2": arg.latents,
+            "p3": arg.timesteps,
+            "p4": arg.next_latents,
+            "p5": arg.image_torchs,
+            "p6": arg.prompt_embeds,
+        })
+
+    def update_task_status(self, *, id: int, handled_at: Optional[datetime.datetime], finished_at: Optional[datetime.datetime]) -> None:
+        self._conn.execute(sqlalchemy.text(UPDATE_TASK_STATUS), {"p1": id, "p2": handled_at, "p3": finished_at})
 
 
 class AsyncQuerier:
@@ -651,10 +705,25 @@ class AsyncQuerier:
             "p9": arg.from_model,
         })
 
-    async def update_task_status(self, *, id: int, task_type: models.TaskVariant, handled_at: Optional[datetime.datetime], finished_at: Optional[datetime.datetime]) -> None:
-        await self._conn.execute(sqlalchemy.text(UPDATE_TASK_STATUS), {
-            "p1": id,
-            "p2": task_type,
-            "p3": handled_at,
-            "p4": finished_at,
+    async def save_sample_asset(self, arg: SaveSampleAssetParams) -> None:
+        await self._conn.execute(sqlalchemy.text(SAVE_SAMPLE_ASSET), {
+            "p1": arg.task_id,
+            "p2": arg.order,
+            "p3": arg.group,
+            "p4": arg.image,
+            "p5": arg.image_url,
+            "p6": arg.prompt,
         })
+
+    async def update_sample_tasks(self, arg: UpdateSampleTasksParams) -> None:
+        await self._conn.execute(sqlalchemy.text(UPDATE_SAMPLE_TASKS), {
+            "p1": arg.id,
+            "p2": arg.latents,
+            "p3": arg.timesteps,
+            "p4": arg.next_latents,
+            "p5": arg.image_torchs,
+            "p6": arg.prompt_embeds,
+        })
+
+    async def update_task_status(self, *, id: int, handled_at: Optional[datetime.datetime], finished_at: Optional[datetime.datetime]) -> None:
+        await self._conn.execute(sqlalchemy.text(UPDATE_TASK_STATUS), {"p1": id, "p2": handled_at, "p3": finished_at})

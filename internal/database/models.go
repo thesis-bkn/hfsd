@@ -107,7 +107,7 @@ type Asset struct {
 	Image    []byte
 	ImageUrl string
 	Mask     []byte
-	MaskUrl  string
+	MaskUrl  pgtype.Text
 }
 
 type BaseAsset struct {

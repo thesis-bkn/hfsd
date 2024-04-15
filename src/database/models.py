@@ -29,8 +29,8 @@ class Asset:
     prompt: str
     image: memoryview
     image_url: str
-    mask: memoryview
-    mask_url: str
+    mask: Optional[memoryview]
+    mask_url: Optional[str]
 
 
 @dataclasses.dataclass()

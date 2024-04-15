@@ -126,7 +126,7 @@ def prepare_mask_and_masked_image(
             mask = [mask]
 
         if isinstance(mask, list) and isinstance(mask[0], Image):  # pyright: ignore
-            mask = [i.resize((width, height), resample=Image.LANCZOS) for i in mask]  # pyright: ignore
+            mask = [i.resize((width, height), resample=PIL.Image.LANCZOS) for i in mask]  # pyright: ignore
             mask = np.concatenate(
                 [np.array(m.convert("L"))[None, None, :] for m in mask], axis=0
             )
