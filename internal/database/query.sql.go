@@ -494,6 +494,22 @@ func (q *Queries) ListModelsByDomain(ctx context.Context, domain string) ([]Mode
 	return items, nil
 }
 
+const saveHumanPref = `-- name: SaveHumanPref :exec
+UPDATE assets SET pref = $3
+WHERE "group" = $1 AND "order" = $2
+`
+
+type SaveHumanPrefParams struct {
+	Group pgtype.Int4
+	Order int16
+	Pref  pgtype.Int4
+}
+
+func (q *Queries) SaveHumanPref(ctx context.Context, arg SaveHumanPrefParams) error {
+	_, err := q.db.Exec(ctx, saveHumanPref, arg.Group, arg.Order, arg.Pref)
+	return err
+}
+
 const saveInference = `-- name: SaveInference :exec
 INSERT INTO inferences (id, prompt, image, image_url, mask, mask_url, output, output_url, from_model)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)

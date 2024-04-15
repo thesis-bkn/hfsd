@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -41,6 +40,7 @@ func (h *FinetuneModelHandler) SubmitSampleTask(c echo.Context) error {
 	var req struct {
 		ModelID string `param:"modelID" validate:"required"`
 	}
+
 	var res struct {
 		Name string `json:"name"`
 	}
@@ -101,8 +101,56 @@ func (h *FinetuneModelHandler) SubmitSampleTask(c echo.Context) error {
 	return nil
 }
 
-func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
-	fmt.Println("hello world")
+type fineTuneTaskRequest struct {
+	Items []fineTuneTaskItem `json:"items"`
+}
 
-	return nil
+type fineTuneTaskItem struct {
+	Group  int  `json:"group"`
+	Order  int  `json:"order"`
+	Option bool `json:"option"`
+}
+
+func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
+	var req fineTuneTaskRequest
+	if err := c.Bind(&req); err != nil {
+		return errors.ErrBadRequest
+	}
+
+	if err := h.validate.Struct(req); err != nil {
+		return tracerr.Wrap(err)
+	}
+
+	tx, err := h.client.Conn().Begin(c.Request().Context())
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(c.Request().Context())
+
+	for _, item := range req.Items {
+		var pref int32
+		if item.Option {
+			pref = 0
+		} else {
+			pref = 1
+		}
+
+		if err := h.client.Query().SaveHumanPref(
+			c.Request().Context(),
+			database.SaveHumanPrefParams{
+				Group: pgtype.Int4{
+					Int32: int32(item.Group),
+					Valid: true,
+				},
+				Order: 0,
+				Pref: pgtype.Int4{
+					Int32: pref,
+					Valid: true,
+				},
+			}); err != nil {
+			return tracerr.Wrap(err)
+		}
+	}
+
+	return tx.Commit(c.Request().Context())
 }

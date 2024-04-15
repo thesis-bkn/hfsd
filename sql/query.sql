@@ -93,3 +93,9 @@ JOIN assets ON tasks.id == assets.task_id
 WHERE source_model_id = $1
 ORDER BY "group", "order";
 
+-- name: SaveHumanPref :exec
+UPDATE assets SET pref = $3
+WHERE "group" = $1 AND "order" = $2;
+
+
+

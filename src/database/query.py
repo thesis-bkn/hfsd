@@ -165,6 +165,12 @@ WHERE domain = :p1
 """
 
 
+SAVE_HUMAN_PREF = """-- name: save_human_pref \\:exec
+UPDATE assets SET pref = :p3
+WHERE "group" = :p1 AND "order" = :p2
+"""
+
+
 SAVE_INFERENCE = """-- name: save_inference \\:exec
 INSERT INTO inferences (id, prompt, image, image_url, mask, mask_url, output, output_url, from_model)
 VALUES (:p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8, :p9)
@@ -399,6 +405,9 @@ class Querier:
                 created_at=row[7],
             )
 
+    def save_human_pref(self, *, group: Optional[int], order: int, pref: Optional[int]) -> None:
+        self._conn.execute(sqlalchemy.text(SAVE_HUMAN_PREF), {"p1": group, "p2": order, "p3": pref})
+
     def save_inference(self, arg: SaveInferenceParams) -> None:
         self._conn.execute(sqlalchemy.text(SAVE_INFERENCE), {
             "p1": arg.id,
@@ -625,6 +634,9 @@ class AsyncQuerier:
                 status=row[6],
                 created_at=row[7],
             )
+
+    async def save_human_pref(self, *, group: Optional[int], order: int, pref: Optional[int]) -> None:
+        await self._conn.execute(sqlalchemy.text(SAVE_HUMAN_PREF), {"p1": group, "p2": order, "p3": pref})
 
     async def save_inference(self, arg: SaveInferenceParams) -> None:
         await self._conn.execute(sqlalchemy.text(SAVE_INFERENCE), {
