@@ -1,5 +1,6 @@
 import torch
 from diffusers.schedulers.scheduling_ddim import DDIMScheduler
+from PIL import Image
 from sqlalchemy.engine.base import Connection
 import io
 
@@ -54,7 +55,10 @@ class SampleHander:
         # Sampling
         images, masks = zip(
             map(
-                lambda base_asset: (base_asset.image, base_asset.mask),
+                lambda base_asset: (
+                    mem_to_pil(base_asset.image),
+                    mem_to_pil(base_asset.mask),
+                ),
                 self.querier.get_random_base_assets_by_domain(
                     domain=source_model.domain, limit=BATCH_SIZE
                 ),
@@ -121,3 +125,7 @@ def sample(pipe, prompt_embed, neg_prompt_embed, input_images, input_masks):
     latents = torch.stack(latents, dim=1).cpu().detach()  # pyright: ignore
 
     return images, latents, mask, masklatents
+
+
+def mem_to_pil(x: memoryview):
+    return Image.open(io.BytesIO(x.tobytes()))

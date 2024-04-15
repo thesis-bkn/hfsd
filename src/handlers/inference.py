@@ -58,7 +58,7 @@ class InferenceHandler:
         image_bytes.seek(0)  # Rewind to the beginning of the BytesIO buffer
         output_bytes = image_bytes.getvalue()
 
-        key = os.path.join("output", task.id)
+        key = os.path.join("output", str(task.id))
         self.uploader.upload_image(
             output_bytes,
             s3_key=key,
@@ -66,7 +66,7 @@ class InferenceHandler:
 
         self.querier.save_inference(
             SaveInferenceParams(
-                id=task.id,
+                id="inference" + str(task.id),
                 prompt=asset.prompt,
                 image=memoryview(asset.image),
                 image_url=asset.image_url,

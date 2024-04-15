@@ -22,6 +22,7 @@ psycopg2 = "^2.9.9"
 schedule = "^1.2.1"
 jupyter = "^1.0.0"
 dm-tree = "^0.1.8"
+pillow = "^10.3.0"
 
 [build-system]
 requires = ["poetry-core"]
