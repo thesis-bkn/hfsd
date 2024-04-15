@@ -1,4 +1,5 @@
 import torch
+import datetime
 import os
 from PIL import Image
 from sqlalchemy.engine.base import Connection
@@ -13,10 +14,10 @@ from src.s3 import ImageUploader
 NUMSTEPS = 2
 TIMESTEP_FRACTION = 1.0
 NUM_STEPS = 20
-BATCH_SIZE = 2
+BATCH_SIZE = 10
 GUIDANCE_SCALE = 5.0
 ETA = 1.0
-NUM_PER_PROMPT = 2
+NUM_PER_PROMPT = 1
 
 
 class SampleHander:
@@ -92,11 +93,13 @@ class SampleHander:
         post_latents = []
         post_masks = []
         post_mask_latents = []
+        # FIXME: Handle shape this
         for result in sample_results:
-            post_images.append(result[0])
-            post_latents.append(result[0])
-            post_masks.append(result[0])
-            post_mask_latents.append(result[0])
+            post_images = result[0]
+            post_latents = result[1]
+            post_masks = result[2]
+            post_mask_latents = (result[3])
+
 
         # mask_latents = torch.stack(post_mask_latents, dim=1)
         image_torchs = torch.stack(post_images, dim=1)
@@ -144,6 +147,12 @@ class SampleHander:
                     prompt=prompt,
                 ))
 
+        self.querier.update_task_status(
+            id=task.id,
+            handled_at=None,
+            finished_at=datetime.datetime.now(datetime.UTC),
+        )
+        self.conn.commit()
         self.conn.commit()
 
 

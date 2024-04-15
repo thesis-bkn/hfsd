@@ -47,6 +47,14 @@ class CronJob:
         if pending_task is None:
             return
 
+        # mark that this task is being handled
+        self.querier.update_task_status(
+            id=pending_task.id,
+            handled_at=datetime.datetime.now(datetime.UTC),
+            finished_at=None,
+        )
+        self.conn.commit()
+
         # Specify what task is this
         match pending_task.task_type:
             case TaskVariant.INFERENCE:
@@ -56,12 +64,6 @@ class CronJob:
             case TaskVariant.FINETUNE:
                 self.finetune_handler.handle(task=pending_task)
 
-        # mark that this task is being handled
-        self.querier.update_task_status(
-            id=pending_task.id,
-            handled_at=datetime.datetime.now(datetime.UTC),
-            finished_at=None,
-        )
 
     def start(self):
         # Start the scheduler
