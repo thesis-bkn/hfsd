@@ -146,8 +146,8 @@ ORDER BY "group", "order"
 
 LIST_FEEDBACK_ASSET_BY_MODEL_ID = """-- name: list_feedback_asset_by_model_id \\:many
 SELECT assets.task_id, assets."order", assets.pref, assets."group", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url FROM tasks
-JOIN assets ON tasks.id == assets.task_id
-WHERE source_model_id = :p1
+JOIN assets ON tasks.id = assets.task_id
+WHERE output_model_id = :p1
 ORDER BY "group", "order"
 """
 
@@ -400,8 +400,8 @@ class Querier:
                 mask_url=row[8],
             )
 
-    def list_feedback_asset_by_model_id(self, *, source_model_id: str) -> Iterator[models.Asset]:
-        result = self._conn.execute(sqlalchemy.text(LIST_FEEDBACK_ASSET_BY_MODEL_ID), {"p1": source_model_id})
+    def list_feedback_asset_by_model_id(self, *, output_model_id: Optional[str]) -> Iterator[models.Asset]:
+        result = self._conn.execute(sqlalchemy.text(LIST_FEEDBACK_ASSET_BY_MODEL_ID), {"p1": output_model_id})
         for row in result:
             yield models.Asset(
                 task_id=row[0],
@@ -645,8 +645,8 @@ class AsyncQuerier:
                 mask_url=row[8],
             )
 
-    async def list_feedback_asset_by_model_id(self, *, source_model_id: str) -> AsyncIterator[models.Asset]:
-        result = await self._conn.stream(sqlalchemy.text(LIST_FEEDBACK_ASSET_BY_MODEL_ID), {"p1": source_model_id})
+    async def list_feedback_asset_by_model_id(self, *, output_model_id: Optional[str]) -> AsyncIterator[models.Asset]:
+        result = await self._conn.stream(sqlalchemy.text(LIST_FEEDBACK_ASSET_BY_MODEL_ID), {"p1": output_model_id})
         async for row in result:
             yield models.Asset(
                 task_id=row[0],

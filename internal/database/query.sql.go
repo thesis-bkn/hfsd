@@ -384,13 +384,13 @@ func (q *Queries) ListAssetByTask(ctx context.Context, taskID int32) ([]Asset, e
 
 const listFeedbackAssetByModelID = `-- name: ListFeedbackAssetByModelID :many
 SELECT assets.task_id, assets."order", assets.pref, assets."group", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url FROM tasks
-JOIN assets ON tasks.id == assets.task_id
-WHERE source_model_id = $1
+JOIN assets ON tasks.id = assets.task_id
+WHERE output_model_id = $1
 ORDER BY "group", "order"
 `
 
-func (q *Queries) ListFeedbackAssetByModelID(ctx context.Context, sourceModelID string) ([]Asset, error) {
-	rows, err := q.db.Query(ctx, listFeedbackAssetByModelID, sourceModelID)
+func (q *Queries) ListFeedbackAssetByModelID(ctx context.Context, outputModelID pgtype.Text) ([]Asset, error) {
+	rows, err := q.db.Query(ctx, listFeedbackAssetByModelID, outputModelID)
 	if err != nil {
 		return nil, err
 	}

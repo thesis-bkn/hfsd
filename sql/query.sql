@@ -104,8 +104,8 @@ ORDER BY "group", "order";
 
 -- name: ListFeedbackAssetByModelID :many
 SELECT assets.* FROM tasks
-JOIN assets ON tasks.id == assets.task_id
-WHERE source_model_id = $1
+JOIN assets ON tasks.id = assets.task_id
+WHERE output_model_id = $1
 ORDER BY "group", "order";
 
 -- name: SaveHumanPref :exec
