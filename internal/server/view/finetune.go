@@ -2,6 +2,7 @@ package view
 
 import (
 	"github.com/go-playground/validator/v10"
+	"github.com/jackc/pgx/v5/pgtype"
 	echo "github.com/labstack/echo/v4"
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
@@ -69,7 +70,10 @@ func (v *FinetuneView) FeedBackView(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	assets, err := v.client.Query().ListFeedbackAssetByModelID(c.Request().Context(), req.ModelID)
+	assets, err := v.client.Query().ListFeedbackAssetByModelID(c.Request().Context(), pgtype.Text{
+		String: req.ModelID,
+		Valid:  true,
+	})
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
