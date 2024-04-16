@@ -48,12 +48,12 @@ class CronJob:
             return
 
         # mark that this task is being handled
-        self.querier.update_task_status(
-            id=pending_task.id,
-            handled_at=datetime.datetime.now(datetime.UTC),
-            finished_at=None,
-        )
-        self.conn.commit()
+        # self.querier.update_task_status(
+        #     id=pending_task.id,
+        #     handled_at=datetime.datetime.now(datetime.UTC),
+        #     finished_at=None,
+        # )
+        # self.conn.commit()
 
         # Specify what task is this
         match pending_task.task_type:

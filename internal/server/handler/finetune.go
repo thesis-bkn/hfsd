@@ -136,7 +136,6 @@ func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	var taskID int32
 	for _, item := range req.Items {
 		var pref int32
 		if item.Option {
@@ -159,7 +158,7 @@ func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
 		}
 	}
 
-	if err := h.client.Query().UpdateSampleToFineTuneTask(c.Request().Context(), taskID); err != nil {
+	if err := h.client.Query().UpdateSampleToFineTuneTask(c.Request().Context(), task.ID); err != nil {
 		return tracerr.Wrap(err)
 	}
 

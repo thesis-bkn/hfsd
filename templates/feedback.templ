@@ -32,6 +32,7 @@ templ FeedBackView(bucketEpt string, modelID string, assets []database.Asset) {
 											class="radio radio-accent"
 											id={ fmt.Sprintf("like-%d-%d", asset.Group.Int32, asset.Order) }
 											name={ fmt.Sprintf("pref-%d-%d", asset.Group.Int32, asset.Order) }
+                                            checked
 											value="like"
 										/>
 										<span class="label-text ml-1">Like</span>

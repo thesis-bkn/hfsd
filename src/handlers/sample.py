@@ -14,10 +14,10 @@ from src.s3 import ImageUploader
 NUMSTEPS = 2
 TIMESTEP_FRACTION = 1.0
 NUM_STEPS = 20
-BATCH_SIZE = 10
+BATCH_SIZE = 2
 GUIDANCE_SCALE = 5.0
 ETA = 1.0
-NUM_PER_PROMPT = 7
+NUM_PER_PROMPT = 3
 
 
 class SampleHander:

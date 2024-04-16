@@ -104,6 +104,8 @@ class FinetuneHandler:
         )
 
         for key in ["latents", "next_latents"]:
+            print(samples[key].shape)
+            exit(1)
             tmp = samples[key].permute(0, 2, 3, 4, 5, 1)[
                 torch.arange(total_batch_size)[:, None], perms
             ]
