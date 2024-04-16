@@ -143,6 +143,16 @@ func swalFire(modelID string) templ.ComponentScript {
 	}
 }
 
+func redirectTo(url string) templ.ComponentScript {
+	return templ.ComponentScript{
+		Name: `__templ_redirectTo_047d`,
+		Function: `function __templ_redirectTo_047d(url){window.location.replace(url)
+}`,
+		Call:       templ.SafeScript(`__templ_redirectTo_047d`, url),
+		CallInline: templ.SafeScriptInline(`__templ_redirectTo_047d`, url),
+	}
+}
+
 func tree(modelM map[string]*database.Model, graphM map[string][]*database.Model, curModel string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
@@ -169,7 +179,7 @@ func tree(modelM map[string]*database.Model, graphM map[string][]*database.Model
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_Buffer, swalFire(modelM[curModel].ID))
+		templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_Buffer, swalFire(modelM[curModel].ID), redirectTo(fmt.Sprintf("/feedback/%s", modelM[curModel].ID)))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -200,16 +210,31 @@ func tree(modelM map[string]*database.Model, graphM map[string][]*database.Model
 				return templ_7745c5c3_Err
 			}
 		}
+		if modelM[curModel].Status == database.ModelStatusRating {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" onClick=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var7 templ.ComponentScript = redirectTo(fmt.Sprintf("/feedback/%s", modelM[curModel].ID))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7.Call)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var7 string
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(modelM[curModel].Name)
+		var templ_7745c5c3_Var8 string
+		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(modelM[curModel].Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 77, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 84, Col: 26}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -271,9 +296,9 @@ func swalStyle(model *database.Model) templ.Component {
 			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var8 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var8 == nil {
-			templ_7745c5c3_Var8 = templ.NopComponent
+		templ_7745c5c3_Var9 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var9 == nil {
+			templ_7745c5c3_Var9 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<template id=\"")
@@ -288,12 +313,12 @@ func swalStyle(model *database.Model) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var9 string
-		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(model.Name)
+		var templ_7745c5c3_Var10 string
+		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(model.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 111, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 118, Col: 43}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -316,9 +341,9 @@ func treeStyle() templ.Component {
 			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var10 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var10 == nil {
-			templ_7745c5c3_Var10 = templ.NopComponent
+		templ_7745c5c3_Var11 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var11 == nil {
+			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<style type=\"text/css\">\n        .tree,\n        .tree ul,\n        .tree li {\n            list-style: none;\n            margin: 0;\n            padding: 0;\n            position: relative;\n        }\n        .tree {\n            margin: 0 0 1em;\n            text-align: center;\n        }\n        .tree,\n        .tree ul {\n            display: table;\n        }\n        .tree ul {\n            width: 100%;\n        }\n        .tree li {\n            display: table-cell;\n            padding: .5em 0;\n            vertical-align: top;\n        }\n        .tree li:before {\n            outline: solid 1px #666;\n            content: \"\";\n            left: 0;\n            position: absolute;\n            right: 0;\n            top: 0;\n        }\n        .tree li:first-child:before {\n            left: 50%;\n        }\n        .tree li:last-child:before {\n            right: 50%;\n        }\n        .tree code,\n        .tree button {\n            border: solid .1em #666;\n            border-radius: .2em;\n            display: inline-block;\n            margin: 0 .2em .5em;\n            padding: .2em .5em;\n            position: relative;\n        }\n        .tree ul:before,\n        .tree code:before,\n        .tree button:before {\n            outline: solid 1px #666;\n            content: \"\";\n            height: .5em;\n            left: 50%;\n            position: absolute;\n        }\n        .tree ul:before {\n            top: -.5em;\n        }\n        .tree code:before,\n        .tree button:before {\n            top: -.55em;\n        }\n        .tree>li {\n            margin-top: 0;\n        }\n        .tree>li:before,\n        .tree>li:after,\n        .tree>li>code:before,\n        .tree>li>button:before {\n            outline: none;\n        }\n    </style>")

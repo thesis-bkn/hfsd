@@ -13,6 +13,7 @@ templ FeedBackView(bucketEpt string, modelID string, assets []database.Asset) {
 		@components.NavBar("finetune")
 		<form id="feedbacks">
 			<input type="hidden" id="modelID" name="modelId" value={ modelID }/>
+			<input type="hidden" id="optionsLen" name="optionsLen" value={ fmt.Sprintf("%d", len(assets)) }/>
 			<div class="flex flex-wrap m-20 space-x-4 space-y-1 ">
 				for _, asset := range assets {
 					<div class="card w-96 bg-base-100 shadow-xl">
@@ -71,6 +72,7 @@ templ submitFeedbacks(modelID string) {
             event.preventDefault();
             const formData = new FormData(this);
             const modelID = document.getElementById('modelID').value; 
+            const optionsLen = parseInt(document.getElementById('optionsLen').value);
             const selectedItems = [];
 
             for (const pair of formData.entries()) {
@@ -79,15 +81,26 @@ templ submitFeedbacks(modelID string) {
                     continue;
                 }
 
-                group = elements[0]
-                order = elements[1]
-                option = pair[1] != 'like'
+                _group = elements[1]
+                order = elements[2]
+                option = pair[0] != 'like'
 
                 selectedItems.push({
-                    "group": group,
-                    "order": order,
+                    "order": parseInt(order),
                     "option": option,
                 });
+            }
+
+
+            if (selectedItems.length != optionsLen) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please select an option for each radio group',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+
+                return;
             }
 
             // Send selectedItems to server
@@ -96,7 +109,10 @@ templ submitFeedbacks(modelID string) {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({"items": selectedItems}) 
+                body: JSON.stringify({
+                    "modelID": modelID,
+                    "items": selectedItems
+                })
             })
             .then(response => {
                 if (response.ok) {

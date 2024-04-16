@@ -63,6 +63,10 @@ script swalFire(modelID string) {
     })
 }
 
+script redirectTo(url string) {
+    window.location.replace(url)
+}
+
 templ tree(modelM map[string]*database.Model, graphM map[string][]*database.Model, curModel string) {
 	<li>
 		<button
@@ -73,6 +77,9 @@ templ tree(modelM map[string]*database.Model, graphM map[string][]*database.Mode
                 templ.KV("btn-warning", modelM[curModel].Status == database.ModelStatusTraining) }
 			if modelM[curModel].Status == database.ModelStatusFinetuned {
 				onClick={ swalFire(modelM[curModel].ID) }
+			}
+			if modelM[curModel].Status == database.ModelStatusRating {
+				onClick={ redirectTo(fmt.Sprintf("/feedback/%s", modelM[curModel].ID)) }
 			}
 		>
 			{ modelM[curModel].Name }

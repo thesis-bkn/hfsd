@@ -135,19 +135,14 @@ func (q *Queries) GetScorer(ctx context.Context, name string) (Scorer, error) {
 	return i, err
 }
 
-const getTask = `-- name: GetTask :one
+const getTaskByOutputModel = `-- name: GetTaskByOutputModel :one
 SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
-WHERE id = $1 AND task_type = $2
+WHERE output_model_id = $1
 LIMIT 1
 `
 
-type GetTaskParams struct {
-	ID       int32
-	TaskType TaskVariant
-}
-
-func (q *Queries) GetTask(ctx context.Context, arg GetTaskParams) (Task, error) {
-	row := q.db.QueryRow(ctx, getTask, arg.ID, arg.TaskType)
+func (q *Queries) GetTaskByOutputModel(ctx context.Context, outputModelID pgtype.Text) (Task, error) {
+	row := q.db.QueryRow(ctx, getTaskByOutputModel, outputModelID)
 	var i Task
 	err := row.Scan(
 		&i.ID,
@@ -495,18 +490,19 @@ func (q *Queries) ListModelsByDomain(ctx context.Context, domain string) ([]Mode
 }
 
 const saveHumanPref = `-- name: SaveHumanPref :exec
-UPDATE assets SET pref = $3
-WHERE "group" = $1 AND "order" = $2
+UPDATE assets
+SET pref = $3
+WHERE task_id = $1 AND "order" = $2
 `
 
 type SaveHumanPrefParams struct {
-	Group pgtype.Int4
-	Order int16
-	Pref  pgtype.Int4
+	TaskID int32
+	Order  int16
+	Pref   pgtype.Int4
 }
 
 func (q *Queries) SaveHumanPref(ctx context.Context, arg SaveHumanPrefParams) error {
-	_, err := q.db.Exec(ctx, saveHumanPref, arg.Group, arg.Order, arg.Pref)
+	_, err := q.db.Exec(ctx, saveHumanPref, arg.TaskID, arg.Order, arg.Pref)
 	return err
 }
 
@@ -570,6 +566,22 @@ func (q *Queries) SaveSampleAsset(ctx context.Context, arg SaveSampleAssetParams
 	return err
 }
 
+const updateModelStatus = `-- name: UpdateModelStatus :exec
+UPDATE models
+SET status = $2
+WHERE id = $1
+`
+
+type UpdateModelStatusParams struct {
+	ID     string
+	Status ModelStatus
+}
+
+func (q *Queries) UpdateModelStatus(ctx context.Context, arg UpdateModelStatusParams) error {
+	_, err := q.db.Exec(ctx, updateModelStatus, arg.ID, arg.Status)
+	return err
+}
+
 const updateSampleTasks = `-- name: UpdateSampleTasks :exec
 UPDATE tasks
 SET latents = $2,
@@ -598,6 +610,19 @@ func (q *Queries) UpdateSampleTasks(ctx context.Context, arg UpdateSampleTasksPa
 		arg.ImageTorchs,
 		arg.PromptEmbeds,
 	)
+	return err
+}
+
+const updateSampleToFineTuneTask = `-- name: UpdateSampleToFineTuneTask :exec
+UPDATE tasks
+SET task_type = 'finetune',
+    handled_at = NULL,
+    finished_at = NULL
+WHERE id = $1
+`
+
+func (q *Queries) UpdateSampleToFineTuneTask(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, updateSampleToFineTuneTask, id)
 	return err
 }
 

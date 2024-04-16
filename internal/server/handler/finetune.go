@@ -102,11 +102,11 @@ func (h *FinetuneModelHandler) SubmitSampleTask(c echo.Context) error {
 }
 
 type fineTuneTaskRequest struct {
-	Items []fineTuneTaskItem `json:"items"`
+	ModelID string             `json:"modelID" validate:"required"`
+	Items   []fineTuneTaskItem `json:"items"   validate:"gte=0"`
 }
 
 type fineTuneTaskItem struct {
-	Group  int  `json:"group"`
 	Order  int  `json:"order"`
 	Option bool `json:"option"`
 }
@@ -127,22 +127,29 @@ func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
 	}
 	defer tx.Rollback(c.Request().Context())
 
+	// get task
+	task, err := h.client.Query().GetTaskByOutputModel(c.Request().Context(), pgtype.Text{
+		String: req.ModelID,
+		Valid:  true,
+	})
+	if err != nil {
+		return tracerr.Wrap(err)
+	}
+
+	var taskID int32
 	for _, item := range req.Items {
 		var pref int32
 		if item.Option {
 			pref = 0
 		} else {
-			pref = 1
+			pref = -1
 		}
 
-		if err := h.client.Query().SaveHumanPref(
+		if err = h.client.Query().SaveHumanPref(
 			c.Request().Context(),
 			database.SaveHumanPrefParams{
-				Group: pgtype.Int4{
-					Int32: int32(item.Group),
-					Valid: true,
-				},
-				Order: 0,
+				TaskID: task.ID,
+				Order:  int16(item.Order),
 				Pref: pgtype.Int4{
 					Int32: pref,
 					Valid: true,
@@ -150,6 +157,17 @@ func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
 			}); err != nil {
 			return tracerr.Wrap(err)
 		}
+	}
+
+	if err := h.client.Query().UpdateSampleToFineTuneTask(c.Request().Context(), taskID); err != nil {
+		return tracerr.Wrap(err)
+	}
+
+	if err := h.client.Query().UpdateModelStatus(c.Request().Context(), database.UpdateModelStatusParams{
+		ID:     task.OutputModelID.String,
+		Status: database.ModelStatusTraining,
+	}); err != nil {
+		return tracerr.Wrap(err)
 	}
 
 	return tx.Commit(c.Request().Context())

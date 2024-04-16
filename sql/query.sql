@@ -27,9 +27,14 @@ VALUES ($1, $2, $3, $4, $5);
 INSERT INTO models (id, domain, name, parent, status)
 VALUES ($1, $2, $3, $4, 'sampling');
 
--- name: GetTask :one
+-- name: UpdateModelStatus :exec
+UPDATE models
+SET status = $2
+WHERE id = $1;
+
+-- name: GetTaskByOutputModel :one
 SELECT * FROM tasks
-WHERE id = $1 AND task_type = $2
+WHERE output_model_id = $1
 LIMIT 1;
 
 -- name: InsertBaseAsset :exec
@@ -43,6 +48,13 @@ VALUES ($1, 'inference');
 -- name: InsertSampleTask :exec
 INSERT INTO tasks(source_model_id, output_model_id, task_type)
 VALUES ($1, $2, 'sample');
+
+-- name: UpdateSampleToFineTuneTask :exec
+UPDATE tasks
+SET task_type = 'finetune',
+    handled_at = NULL,
+    finished_at = NULL
+WHERE id = $1;
 
 -- name: InsertAsset :exec
 INSERT INTO assets (task_id, "order", prompt, image, image_url, mask, mask_url)
@@ -109,8 +121,7 @@ WHERE output_model_id = $1
 ORDER BY "group", "order";
 
 -- name: SaveHumanPref :exec
-UPDATE assets SET pref = $3
-WHERE "group" = $1 AND "order" = $2;
-
-
+UPDATE assets
+SET pref = $3
+WHERE task_id = $1 AND "order" = $2;
 

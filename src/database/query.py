@@ -49,9 +49,9 @@ LIMIT 1
 """
 
 
-GET_TASK = """-- name: get_task \\:one
+GET_TASK_BY_OUTPUT_MODEL = """-- name: get_task_by_output_model \\:one
 SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
-WHERE id = :p1 AND task_type = :p2
+WHERE output_model_id = :p1
 LIMIT 1
 """
 
@@ -166,8 +166,9 @@ WHERE domain = :p1
 
 
 SAVE_HUMAN_PREF = """-- name: save_human_pref \\:exec
-UPDATE assets SET pref = :p3
-WHERE "group" = :p1 AND "order" = :p2
+UPDATE assets
+SET pref = :p3
+WHERE task_id = :p1 AND "order" = :p2
 """
 
 
@@ -208,6 +209,13 @@ class SaveSampleAssetParams:
     prompt: str
 
 
+UPDATE_MODEL_STATUS = """-- name: update_model_status \\:exec
+UPDATE models
+SET status = :p2
+WHERE id = :p1
+"""
+
+
 UPDATE_SAMPLE_TASKS = """-- name: update_sample_tasks \\:exec
 UPDATE tasks
 SET latents = :p2,
@@ -227,6 +235,15 @@ class UpdateSampleTasksParams:
     next_latents: Optional[memoryview]
     image_torchs: Optional[memoryview]
     prompt_embeds: Optional[memoryview]
+
+
+UPDATE_SAMPLE_TO_FINE_TUNE_TASK = """-- name: update_sample_to_fine_tune_task \\:exec
+UPDATE tasks
+SET task_type = 'finetune',
+    handled_at = NULL,
+    finished_at = NULL
+WHERE id = :p1
+"""
 
 
 UPDATE_TASK_STATUS = """-- name: update_task_status \\:exec
@@ -314,8 +331,8 @@ class Querier:
             state_dict=row[1],
         )
 
-    def get_task(self, *, id: int, task_type: models.TaskVariant) -> Optional[models.Task]:
-        row = self._conn.execute(sqlalchemy.text(GET_TASK), {"p1": id, "p2": task_type}).first()
+    def get_task_by_output_model(self, *, output_model_id: Optional[str]) -> Optional[models.Task]:
+        row = self._conn.execute(sqlalchemy.text(GET_TASK_BY_OUTPUT_MODEL), {"p1": output_model_id}).first()
         if row is None:
             return None
         return models.Task(
@@ -444,8 +461,8 @@ class Querier:
                 created_at=row[7],
             )
 
-    def save_human_pref(self, *, group: Optional[int], order: int, pref: Optional[int]) -> None:
-        self._conn.execute(sqlalchemy.text(SAVE_HUMAN_PREF), {"p1": group, "p2": order, "p3": pref})
+    def save_human_pref(self, *, task_id: int, order: int, pref: Optional[int]) -> None:
+        self._conn.execute(sqlalchemy.text(SAVE_HUMAN_PREF), {"p1": task_id, "p2": order, "p3": pref})
 
     def save_inference(self, arg: SaveInferenceParams) -> None:
         self._conn.execute(sqlalchemy.text(SAVE_INFERENCE), {
@@ -470,6 +487,9 @@ class Querier:
             "p6": arg.prompt,
         })
 
+    def update_model_status(self, *, id: str, status: models.ModelStatus) -> None:
+        self._conn.execute(sqlalchemy.text(UPDATE_MODEL_STATUS), {"p1": id, "p2": status})
+
     def update_sample_tasks(self, arg: UpdateSampleTasksParams) -> None:
         self._conn.execute(sqlalchemy.text(UPDATE_SAMPLE_TASKS), {
             "p1": arg.id,
@@ -479,6 +499,9 @@ class Querier:
             "p5": arg.image_torchs,
             "p6": arg.prompt_embeds,
         })
+
+    def update_sample_to_fine_tune_task(self, *, id: int) -> None:
+        self._conn.execute(sqlalchemy.text(UPDATE_SAMPLE_TO_FINE_TUNE_TASK), {"p1": id})
 
     def update_task_status(self, *, id: int, handled_at: Optional[datetime.datetime], finished_at: Optional[datetime.datetime]) -> None:
         self._conn.execute(sqlalchemy.text(UPDATE_TASK_STATUS), {"p1": id, "p2": handled_at, "p3": finished_at})
@@ -559,8 +582,8 @@ class AsyncQuerier:
             state_dict=row[1],
         )
 
-    async def get_task(self, *, id: int, task_type: models.TaskVariant) -> Optional[models.Task]:
-        row = (await self._conn.execute(sqlalchemy.text(GET_TASK), {"p1": id, "p2": task_type})).first()
+    async def get_task_by_output_model(self, *, output_model_id: Optional[str]) -> Optional[models.Task]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_TASK_BY_OUTPUT_MODEL), {"p1": output_model_id})).first()
         if row is None:
             return None
         return models.Task(
@@ -689,8 +712,8 @@ class AsyncQuerier:
                 created_at=row[7],
             )
 
-    async def save_human_pref(self, *, group: Optional[int], order: int, pref: Optional[int]) -> None:
-        await self._conn.execute(sqlalchemy.text(SAVE_HUMAN_PREF), {"p1": group, "p2": order, "p3": pref})
+    async def save_human_pref(self, *, task_id: int, order: int, pref: Optional[int]) -> None:
+        await self._conn.execute(sqlalchemy.text(SAVE_HUMAN_PREF), {"p1": task_id, "p2": order, "p3": pref})
 
     async def save_inference(self, arg: SaveInferenceParams) -> None:
         await self._conn.execute(sqlalchemy.text(SAVE_INFERENCE), {
@@ -715,6 +738,9 @@ class AsyncQuerier:
             "p6": arg.prompt,
         })
 
+    async def update_model_status(self, *, id: str, status: models.ModelStatus) -> None:
+        await self._conn.execute(sqlalchemy.text(UPDATE_MODEL_STATUS), {"p1": id, "p2": status})
+
     async def update_sample_tasks(self, arg: UpdateSampleTasksParams) -> None:
         await self._conn.execute(sqlalchemy.text(UPDATE_SAMPLE_TASKS), {
             "p1": arg.id,
@@ -724,6 +750,9 @@ class AsyncQuerier:
             "p5": arg.image_torchs,
             "p6": arg.prompt_embeds,
         })
+
+    async def update_sample_to_fine_tune_task(self, *, id: int) -> None:
+        await self._conn.execute(sqlalchemy.text(UPDATE_SAMPLE_TO_FINE_TUNE_TASK), {"p1": id})
 
     async def update_task_status(self, *, id: int, handled_at: Optional[datetime.datetime], finished_at: Optional[datetime.datetime]) -> None:
         await self._conn.execute(sqlalchemy.text(UPDATE_TASK_STATUS), {"p1": id, "p2": handled_at, "p3": finished_at})
