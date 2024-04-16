@@ -140,7 +140,7 @@ def aesthetic_score(querier: Querier):
 def get_prompt(domain: str) -> tuple[str, str]:
     match domain:
         case "sessile":
-            return "sessile", "pedunculated"
+            return "polyps,sessile", "pedunculated"
         case "pedunculated":
             return "pedunculated", "sessile"
 

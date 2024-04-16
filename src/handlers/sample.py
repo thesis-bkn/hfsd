@@ -17,7 +17,7 @@ NUM_STEPS = 20
 BATCH_SIZE = 10
 GUIDANCE_SCALE = 5.0
 ETA = 1.0
-NUM_PER_PROMPT = 1
+NUM_PER_PROMPT = 7
 
 
 class SampleHander:
@@ -93,12 +93,11 @@ class SampleHander:
         post_latents = []
         post_masks = []
         post_mask_latents = []
-        # FIXME: Handle shape this
         for result in sample_results:
-            post_images = result[0]
-            post_latents = result[1]
-            post_masks = result[2]
-            post_mask_latents = (result[3])
+            post_images.append(result[0])
+            post_latents.append(result[1])
+            post_masks.append(result[2])
+            post_mask_latents.append(result[3])
 
 
         # mask_latents = torch.stack(post_mask_latents, dim=1)
@@ -125,23 +124,21 @@ class SampleHander:
             image_torchs=memoryview(image_torchs_b),
         ))
 
-        group = 0
         for order, image in enumerate(post_images):
-            group += 1
-            for k in range(NUM_PER_PROMPT):
+            for k in range(BATCH_SIZE):
                 pil = Image.fromarray(
                     (image[k].cpu().numpy().transpose(1, 2, 0) * 255).astype("uint8"), "RGB",
                 )
                 img_byte_arr = io.BytesIO()
                 pil.save(img_byte_arr, format='PNG')
                 img_bytes = img_byte_arr.getvalue()
-                image_url = os.path.join("sample", "task_{}_group_{}_order_{}".format(task.id, group, order))
+                image_url = os.path.join("sample", "task_{}_group_{}_order_{}".format(task.id, k, order + k * NUM_PER_PROMPT))
 
                 self.uploader.upload_image(img_bytes, image_url)
                 self.querier.save_sample_asset(SaveSampleAssetParams(
                     task_id=task.id,
-                    order=order * NUM_PER_PROMPT + k,
-                    group=group,
+                    order=order + k * NUM_PER_PROMPT,
+                    group=k,
                     image=memoryview(img_byte_arr.getvalue()),
                     image_url=image_url,
                     prompt=prompt,
