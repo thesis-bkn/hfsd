@@ -1,6 +1,7 @@
 package handler
 
 import (
+    "fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -128,7 +129,7 @@ func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
 	defer tx.Rollback(c.Request().Context())
 
 	// get task
-	task, err := h.client.Query().GetTaskByOutputModel(c.Request().Context(), pgtype.Text{
+	task, err := h.client.Query().GetTaskWithoutWeight(c.Request().Context(), pgtype.Text{
 		String: req.ModelID,
 		Valid:  true,
 	})
@@ -143,6 +144,7 @@ func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
 		} else {
 			pref = -1
 		}
+        fmt.Println("pref %v", item.Option)
 
 		if err = h.client.Query().SaveHumanPref(
 			c.Request().Context(),

@@ -161,6 +161,26 @@ func (q *Queries) GetTaskByOutputModel(ctx context.Context, outputModelID pgtype
 	return i, err
 }
 
+const getTaskWithoutWeight = `-- name: GetTaskWithoutWeight :one
+SELECT id, source_model_id, output_model_id
+FROM tasks
+WHERE output_model_id = $1
+LIMIT 1
+`
+
+type GetTaskWithoutWeightRow struct {
+	ID            int32
+	SourceModelID string
+	OutputModelID pgtype.Text
+}
+
+func (q *Queries) GetTaskWithoutWeight(ctx context.Context, outputModelID pgtype.Text) (GetTaskWithoutWeightRow, error) {
+	row := q.db.QueryRow(ctx, getTaskWithoutWeight, outputModelID)
+	var i GetTaskWithoutWeightRow
+	err := row.Scan(&i.ID, &i.SourceModelID, &i.OutputModelID)
+	return i, err
+}
+
 const insertAsset = `-- name: InsertAsset :exec
 INSERT INTO assets (task_id, "order", prompt, image, image_url, mask, mask_url)
 VALUES ($1, $2, $3, $4, $5, $6, $7)

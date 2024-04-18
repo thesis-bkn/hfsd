@@ -56,6 +56,21 @@ LIMIT 1
 """
 
 
+GET_TASK_WITHOUT_WEIGHT = """-- name: get_task_without_weight \\:one
+SELECT id, source_model_id, output_model_id
+FROM tasks
+WHERE output_model_id = :p1
+LIMIT 1
+"""
+
+
+@dataclasses.dataclass()
+class GetTaskWithoutWeightRow:
+    id: int
+    source_model_id: str
+    output_model_id: Optional[str]
+
+
 INSERT_ASSET = """-- name: insert_asset \\:exec
 INSERT INTO assets (task_id, "order", prompt, image, image_url, mask, mask_url)
 VALUES (:p1, :p2, :p3, :p4, :p5, :p6, :p7)
@@ -350,6 +365,16 @@ class Querier:
             image_torchs=row[11],
         )
 
+    def get_task_without_weight(self, *, output_model_id: Optional[str]) -> Optional[GetTaskWithoutWeightRow]:
+        row = self._conn.execute(sqlalchemy.text(GET_TASK_WITHOUT_WEIGHT), {"p1": output_model_id}).first()
+        if row is None:
+            return None
+        return GetTaskWithoutWeightRow(
+            id=row[0],
+            source_model_id=row[1],
+            output_model_id=row[2],
+        )
+
     def insert_asset(self, arg: InsertAssetParams) -> None:
         self._conn.execute(sqlalchemy.text(INSERT_ASSET), {
             "p1": arg.task_id,
@@ -599,6 +624,16 @@ class AsyncQuerier:
             timesteps=row[9],
             next_latents=row[10],
             image_torchs=row[11],
+        )
+
+    async def get_task_without_weight(self, *, output_model_id: Optional[str]) -> Optional[GetTaskWithoutWeightRow]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_TASK_WITHOUT_WEIGHT), {"p1": output_model_id})).first()
+        if row is None:
+            return None
+        return GetTaskWithoutWeightRow(
+            id=row[0],
+            source_model_id=row[1],
+            output_model_id=row[2],
         )
 
     async def insert_asset(self, arg: InsertAssetParams) -> None:

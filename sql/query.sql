@@ -37,6 +37,12 @@ SELECT * FROM tasks
 WHERE output_model_id = $1
 LIMIT 1;
 
+-- name: GetTaskWithoutWeight :one
+SELECT id, source_model_id, output_model_id
+FROM tasks
+WHERE output_model_id = $1
+LIMIT 1;
+
 -- name: InsertBaseAsset :exec
 INSERT INTO base_assets (id, image, image_url, mask, mask_url, domain)
 VALUES ($1, $2, $3, $4, $5, $6);

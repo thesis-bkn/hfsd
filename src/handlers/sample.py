@@ -10,14 +10,7 @@ from src.database.query import Querier, UpdateSampleTasksParams, SaveSampleAsset
 from src.handlers import utils
 from src.handlers.pipeline import pipeline_with_logprob_inpaint
 from src.s3 import ImageUploader
-
-NUMSTEPS = 2
-TIMESTEP_FRACTION = 1.0
-NUM_STEPS = 20
-BATCH_SIZE = 2
-GUIDANCE_SCALE = 5.0
-ETA = 1.0
-NUM_PER_PROMPT = 3
+from src.handlers import consts
 
 
 class SampleHander:
@@ -51,11 +44,11 @@ class SampleHander:
         )[0]
 
         pipe.unet.eval()
-        sample_neg_prompt_embeds = neg_prompt_embed.repeat(BATCH_SIZE, 1, 1)
+        sample_neg_prompt_embeds = neg_prompt_embed.repeat(consts.BATCH_SIZE, 1, 1)
 
         # Sampling
         random_base_assets = self.querier.get_random_base_assets_by_domain(
-            domain=source_model.domain, limit=BATCH_SIZE
+            domain=source_model.domain, limit=consts.BATCH_SIZE
         )
         images = []
         masks = []
@@ -74,7 +67,7 @@ class SampleHander:
                         max_length=pipe.tokenizer.model_max_length,
                     ).input_ids.to(pipe.device)
                 )[0],
-                [[prompt] * BATCH_SIZE] * NUM_PER_PROMPT,
+                [[prompt] * consts.BATCH_SIZE] * consts.NUM_PER_PROMPT,
             )
         )
 
@@ -107,7 +100,7 @@ class SampleHander:
         prompt_embeds = torch.stack(prompts_embeds, dim=1)
         next_latents = latents[:, :, 1:]
         timesteps = pipe.scheduler.timesteps.repeat(
-            BATCH_SIZE, 1
+            consts.BATCH_SIZE, 1
         )  # (batch_size, num_steps)
 
         image_torchs_b = torch_to_bytes(image_torchs)
@@ -116,6 +109,7 @@ class SampleHander:
         next_latents_b = torch_to_bytes(next_latents)
         timesteps_b = torch_to_bytes(timesteps)
 
+        print("[sample] latents shape: ", latents.shape)
         self.querier.update_sample_tasks(
             UpdateSampleTasksParams(
                 id=task.id,
@@ -128,7 +122,7 @@ class SampleHander:
         )
 
         for order, image in enumerate(post_images):
-            for k in range(BATCH_SIZE):
+            for k in range(consts.BATCH_SIZE):
                 pil = Image.fromarray(
                     (image[k].cpu().numpy().transpose(1, 2, 0) * 255).astype("uint8"),
                     "RGB",
@@ -139,7 +133,7 @@ class SampleHander:
                 image_url = os.path.join(
                     "sample",
                     "task_{}_group_{}_order_{}".format(
-                        task.id, k, order + k * NUM_PER_PROMPT
+                        task.id, k, order + k * consts.NUM_PER_PROMPT
                     ),
                 )
 
@@ -147,7 +141,7 @@ class SampleHander:
                 self.querier.save_sample_asset(
                     SaveSampleAssetParams(
                         task_id=task.id,
-                        order=order + k * NUM_PER_PROMPT,
+                        order=order + k * consts.NUM_PER_PROMPT,
                         group=k,
                         image=memoryview(img_byte_arr.getvalue()),
                         image_url=image_url,
@@ -160,6 +154,7 @@ class SampleHander:
             handled_at=None,
             finished_at=datetime.datetime.now(datetime.UTC),
         )
+
         self.querier.update_model_status(
             id=task.output_model_id, # pyright: ignore
             status=ModelStatus.RATING
@@ -174,9 +169,9 @@ def sample(pipe, prompt_embed, neg_prompt_embed, input_images, input_masks):
         mask_image=input_masks,
         prompt_embeds=prompt_embed,
         negative_prompt_embeds=neg_prompt_embed,
-        num_inference_steps=NUM_STEPS,
-        guidance_scale=GUIDANCE_SCALE,
-        eta=ETA,
+        num_inference_steps=consts.NUM_STEPS,
+        guidance_scale=consts.GUIDANCE_SCALE,
+        eta=consts.ETA,
         output_type="pt",
     )
     masklatents = torch.stack(masklatents, dim=1)
