@@ -433,7 +433,7 @@ def pipeline_with_logprob_inpaint(
     num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
 
     all_latents = [latents]
-    all_masked = [mask_image]
+    all_masked = [mask]
     all_masked_latents = [masked_image_latents]
     all_log_probs = []
 

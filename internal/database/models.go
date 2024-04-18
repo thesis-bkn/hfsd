@@ -160,4 +160,6 @@ type Task struct {
 	Timesteps     []byte
 	NextLatents   []byte
 	ImageTorchs   []byte
+	Masks         []byte
+	MaskLatents   []byte
 }

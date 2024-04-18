@@ -97,6 +97,8 @@ class SampleHander:
         # mask_latents = torch.stack(post_mask_latents, dim=1)
         image_torchs = torch.stack(post_images, dim=1)
         latents = torch.stack(post_latents, dim=1)
+        mask_torch = torch.stack(post_masks, dim=1)
+        mask_latents = torch.stack(post_mask_latents, dim=1)
         prompt_embeds = torch.stack(prompts_embeds, dim=1)
         next_latents = latents[:, :, 1:]
         timesteps = pipe.scheduler.timesteps.repeat(
@@ -108,8 +110,9 @@ class SampleHander:
         prompt_embeds_b = torch_to_bytes(prompt_embeds)
         next_latents_b = torch_to_bytes(next_latents)
         timesteps_b = torch_to_bytes(timesteps)
+        mask_b = torch_to_bytes(mask_torch)
+        mask_latents_b = torch_to_bytes(mask_latents)
 
-        print("[sample] latents shape: ", latents.shape)
         self.querier.update_sample_tasks(
             UpdateSampleTasksParams(
                 id=task.id,
@@ -118,6 +121,8 @@ class SampleHander:
                 next_latents=memoryview(next_latents_b),
                 timesteps=memoryview(timesteps_b),
                 image_torchs=memoryview(image_torchs_b),
+                masks=memoryview(mask_b),
+                mask_latents=memoryview(mask_latents_b),
             )
         )
 
@@ -174,9 +179,10 @@ def sample(pipe, prompt_embed, neg_prompt_embed, input_images, input_masks):
         eta=consts.ETA,
         output_type="pt",
     )
-    masklatents = torch.stack(masklatents, dim=1)
     images = images.cpu().detach()  # pyright: ignore
     latents = torch.stack(latents, dim=1).cpu().detach()  # pyright: ignore
+    masklatents = torch.stack(masklatents, dim=1).cpu().detach()
+    mask = torch.stack(mask, dim=1).cpu().detach()
 
     return images, latents, mask, masklatents
 

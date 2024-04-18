@@ -88,7 +88,7 @@ def prepare_optimizer(pipeline: StableDiffusionInpaintPipeline):
         betas=(ADAM_BETA1, ADAM_BETA2),
         weight_decay=ADAM_WEIGHT_DECAY,
         eps=ADAM_EPSILON,
-    )
+    ), trainable_layers
 
 
 def light_reward():

@@ -13,7 +13,7 @@ from src.database import models
 
 
 GET_EARLIEST_PENDING_TASK = """-- name: get_earliest_pending_task \\:one
-SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
+SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs, masks, mask_latents FROM tasks
 WHERE handled_at IS NULL
 ORDER BY created_at DESC
 LIMIT 1
@@ -50,7 +50,7 @@ LIMIT 1
 
 
 GET_TASK_BY_OUTPUT_MODEL = """-- name: get_task_by_output_model \\:one
-SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
+SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs, masks, mask_latents FROM tasks
 WHERE output_model_id = :p1
 LIMIT 1
 """
@@ -138,7 +138,7 @@ VALUES (:p1, :p2, 'sample')
 
 
 LIST_ALL_TASK_WITH_ASSET = """-- name: list_all_task_with_asset \\:many
-SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, assets.task_id, assets."order", assets.pref, assets."group", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url
+SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, tasks.masks, tasks.mask_latents, assets.task_id, assets."order", assets.pref, assets."group", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url
 FROM tasks
 JOIN assets ON assets.task_id = tasks.id
 WHERE assets."order" = 0
@@ -237,7 +237,9 @@ SET latents = :p2,
     timesteps = :p3,
     next_latents = :p4,
     image_torchs = :p5,
-    prompt_embeds = :p6
+    prompt_embeds = :p6,
+    masks = :p7,
+    mask_latents = :p8
 WHERE id = :p1
 """
 
@@ -250,6 +252,8 @@ class UpdateSampleTasksParams:
     next_latents: Optional[memoryview]
     image_torchs: Optional[memoryview]
     prompt_embeds: Optional[memoryview]
+    masks: Optional[memoryview]
+    mask_latents: Optional[memoryview]
 
 
 UPDATE_SAMPLE_TO_FINE_TUNE_TASK = """-- name: update_sample_to_fine_tune_task \\:exec
@@ -292,6 +296,8 @@ class Querier:
             timesteps=row[9],
             next_latents=row[10],
             image_torchs=row[11],
+            masks=row[12],
+            mask_latents=row[13],
         )
 
     def get_first_asset_by_model_id(self, *, task_id: int) -> Optional[models.Asset]:
@@ -363,6 +369,8 @@ class Querier:
             timesteps=row[9],
             next_latents=row[10],
             image_torchs=row[11],
+            masks=row[12],
+            mask_latents=row[13],
         )
 
     def get_task_without_weight(self, *, output_model_id: Optional[str]) -> Optional[GetTaskWithoutWeightRow]:
@@ -523,6 +531,8 @@ class Querier:
             "p4": arg.next_latents,
             "p5": arg.image_torchs,
             "p6": arg.prompt_embeds,
+            "p7": arg.masks,
+            "p8": arg.mask_latents,
         })
 
     def update_sample_to_fine_tune_task(self, *, id: int) -> None:
@@ -553,6 +563,8 @@ class AsyncQuerier:
             timesteps=row[9],
             next_latents=row[10],
             image_torchs=row[11],
+            masks=row[12],
+            mask_latents=row[13],
         )
 
     async def get_first_asset_by_model_id(self, *, task_id: int) -> Optional[models.Asset]:
@@ -624,6 +636,8 @@ class AsyncQuerier:
             timesteps=row[9],
             next_latents=row[10],
             image_torchs=row[11],
+            masks=row[12],
+            mask_latents=row[13],
         )
 
     async def get_task_without_weight(self, *, output_model_id: Optional[str]) -> Optional[GetTaskWithoutWeightRow]:
@@ -784,6 +798,8 @@ class AsyncQuerier:
             "p4": arg.next_latents,
             "p5": arg.image_torchs,
             "p6": arg.prompt_embeds,
+            "p7": arg.masks,
+            "p8": arg.mask_latents,
         })
 
     async def update_sample_to_fine_tune_task(self, *, id: int) -> None:

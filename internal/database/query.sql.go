@@ -12,7 +12,7 @@ import (
 )
 
 const getEarliestPendingTask = `-- name: GetEarliestPendingTask :one
-SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
+SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs, masks, mask_latents FROM tasks
 WHERE handled_at IS NULL
 ORDER BY created_at DESC
 LIMIT 1
@@ -34,6 +34,8 @@ func (q *Queries) GetEarliestPendingTask(ctx context.Context) (Task, error) {
 		&i.Timesteps,
 		&i.NextLatents,
 		&i.ImageTorchs,
+		&i.Masks,
+		&i.MaskLatents,
 	)
 	return i, err
 }
@@ -136,7 +138,7 @@ func (q *Queries) GetScorer(ctx context.Context, name string) (Scorer, error) {
 }
 
 const getTaskByOutputModel = `-- name: GetTaskByOutputModel :one
-SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs FROM tasks
+SELECT id, source_model_id, output_model_id, task_type, created_at, handled_at, finished_at, prompt_embeds, latents, timesteps, next_latents, image_torchs, masks, mask_latents FROM tasks
 WHERE output_model_id = $1
 LIMIT 1
 `
@@ -157,6 +159,8 @@ func (q *Queries) GetTaskByOutputModel(ctx context.Context, outputModelID pgtype
 		&i.Timesteps,
 		&i.NextLatents,
 		&i.ImageTorchs,
+		&i.Masks,
+		&i.MaskLatents,
 	)
 	return i, err
 }
@@ -307,7 +311,7 @@ func (q *Queries) InsertSampleTask(ctx context.Context, arg InsertSampleTaskPara
 }
 
 const listAllTaskWithAsset = `-- name: ListAllTaskWithAsset :many
-SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, assets.task_id, assets."order", assets.pref, assets."group", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url
+SELECT tasks.id, tasks.source_model_id, tasks.output_model_id, tasks.task_type, tasks.created_at, tasks.handled_at, tasks.finished_at, tasks.prompt_embeds, tasks.latents, tasks.timesteps, tasks.next_latents, tasks.image_torchs, tasks.masks, tasks.mask_latents, assets.task_id, assets."order", assets.pref, assets."group", assets.prompt, assets.image, assets.image_url, assets.mask, assets.mask_url
 FROM tasks
 JOIN assets ON assets.task_id = tasks.id
 WHERE assets."order" = 0
@@ -341,6 +345,8 @@ func (q *Queries) ListAllTaskWithAsset(ctx context.Context) ([]ListAllTaskWithAs
 			&i.Task.Timesteps,
 			&i.Task.NextLatents,
 			&i.Task.ImageTorchs,
+			&i.Task.Masks,
+			&i.Task.MaskLatents,
 			&i.Asset.TaskID,
 			&i.Asset.Order,
 			&i.Asset.Pref,
@@ -608,7 +614,9 @@ SET latents = $2,
     timesteps = $3,
     next_latents = $4,
     image_torchs = $5,
-    prompt_embeds = $6
+    prompt_embeds = $6,
+    masks = $7,
+    mask_latents = $8
 WHERE id = $1
 `
 
@@ -619,6 +627,8 @@ type UpdateSampleTasksParams struct {
 	NextLatents  []byte
 	ImageTorchs  []byte
 	PromptEmbeds []byte
+	Masks        []byte
+	MaskLatents  []byte
 }
 
 func (q *Queries) UpdateSampleTasks(ctx context.Context, arg UpdateSampleTasksParams) error {
@@ -629,6 +639,8 @@ func (q *Queries) UpdateSampleTasks(ctx context.Context, arg UpdateSampleTasksPa
 		arg.NextLatents,
 		arg.ImageTorchs,
 		arg.PromptEmbeds,
+		arg.Masks,
+		arg.MaskLatents,
 	)
 	return err
 }

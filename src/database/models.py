@@ -88,3 +88,5 @@ class Task:
     timesteps: Optional[memoryview]
     next_latents: Optional[memoryview]
     image_torchs: Optional[memoryview]
+    masks: Optional[memoryview]
+    mask_latents: Optional[memoryview]

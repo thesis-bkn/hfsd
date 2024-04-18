@@ -33,10 +33,14 @@ class FinetuneHandler:
         prompt_embeds = torch.load(io.BytesIO(task.prompt_embeds.tobytes()))  # pyright: ignore
         latents = torch.load(io.BytesIO(task.latents.tobytes()))  # pyright: ignore
         next_latents = torch.load(io.BytesIO(task.next_latents.tobytes()))  # pyright: ignore
+        masks = torch.load(io.BytesIO(task.masks.tobytes()))
+        mask_latents = torch.load(io.BytesIO(task.mask_latents.tobytes()))
         src_samples = {
             "timesteps": timesteps,
             "prompt_embeds": prompt_embeds,
             "latents": latents,
+            "masks": masks,
+            "mask_latents": mask_latents,
             "next_latents": next_latents,
         }
 
@@ -66,7 +70,7 @@ class FinetuneHandler:
                 torch.load(io.BytesIO(source_model.ckpt.tobytes())), weights_only=True
             )
 
-        optimizer = utils.prepare_optimizer(pipe)
+        optimizer, trainable_parameters = utils.prepare_optimizer(pipe)
 
         pipe.scheduler.timesteps = np.load(io.BytesIO(task.timesteps.tobytes()))  # pyright: ignore
         pipe.scheduler.set_timesteps(consts.NUM_STEPS, device=pipe.device)
@@ -96,7 +100,7 @@ class FinetuneHandler:
             [torch.randperm(num_timesteps) for _ in range(total_batch_size)]
         )
 
-        for key in ["latents", "next_latents"]:
+        for key in ["latents", "next_latents", "masks", "mask_latents"]:
             tmp = samples[key].permute(0, 2, 3, 4, 5, 1)[
                 torch.arange(total_batch_size)[:, None], perms
             ]
@@ -147,7 +151,10 @@ class FinetuneHandler:
                     leave=False,
                 ):
                     noise_pred_0 = pipe.unet(
-                        torch.cat([sample_0["latents"][:, j]] * 2),  # pyright: ignore
+                        torch.cat(
+                            (torch.cat([sample_0["latents"][:, j]] * 2),
+                             torch.cat([sample_0["masks"][:, j]]*2),
+                             torch.cat([sample_0["mask_latents"][:, j]]*2)), dim=1),  # pyright: ignore
                         torch.cat([sample_0["timesteps"][:, j]] * 2),  # pyright: ignore
                         embeds_0,
                     ).sample
@@ -160,7 +167,10 @@ class FinetuneHandler:
                     )
 
                     noise_ref_pred_0 = ref(
-                        torch.cat([sample_0["latents"][:, j]] * 2),  # pyright: ignore
+                        torch.cat(
+                            (torch.cat([sample_0["latents"][:, j]] * 2),
+                             torch.cat([sample_0["masks"][:, j]]*2),
+                             torch.cat([sample_0["mask_latents"][:, j]]*2)), dim=1),  # pyright: ignore
                         torch.cat([sample_0["timesteps"][:, j]] * 2),  # pyright: ignore
                         embeds_0,
                     ).sample
@@ -173,7 +183,10 @@ class FinetuneHandler:
                     )
 
                     noise_pred_1 = pipe.unet(
-                        torch.cat([sample_1["latents"][:, j]] * 2),  # pyright: ignore
+                        torch.cat(
+                            (torch.cat([sample_1["latents"][:, j]] * 2),
+                             torch.cat([sample_1["masks"][:, j]]*2),
+                             torch.cat([sample_1["mask_latents"][:, j]]*2)), dim=1),  # pyright: ignore
                         torch.cat([sample_1["timesteps"][:, j]] * 2),  # pyright: ignore
                         embeds_1,
                     ).sample
@@ -186,7 +199,10 @@ class FinetuneHandler:
                     )
 
                     noise_ref_pred_1 = ref(
-                        torch.cat([sample_1["latents"][:, j]] * 2),  # pyright: ignore
+                        torch.cat(
+                            (torch.cat([sample_1["latents"][:, j]] * 2),
+                             torch.cat([sample_1["masks"][:, j]]*2),
+                             torch.cat([sample_1["mask_latents"][:, j]]*2)), dim=1),  # pyright: ignore
                         torch.cat([sample_1["timesteps"][:, j]] * 2),  # pyright: ignore
                         embeds_1,
                     ).sample
@@ -251,7 +267,7 @@ class FinetuneHandler:
                     ).mean()
 
                     # backward pass
-                    pipe.backward(loss)
+                    trainable_parameters.parameters().backward(loss)
                     optimizer.step()
                     optimizer.zero_grad()
 

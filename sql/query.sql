@@ -90,7 +90,9 @@ SET latents = $2,
     timesteps = $3,
     next_latents = $4,
     image_torchs = $5,
-    prompt_embeds = $6
+    prompt_embeds = $6,
+    masks = $7,
+    mask_latents = $8
 WHERE id = $1;
 
 -- name: SaveSampleAsset :exec

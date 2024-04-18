@@ -51,6 +51,8 @@ create table if not exists tasks
     timesteps       bytea,
     next_latents    bytea,
     image_torchs    bytea,
+    masks           bytea,
+    mask_latents    bytea,
     foreign key (source_model_id) references models (id),
     foreign key (output_model_id) references models (id)
 );
