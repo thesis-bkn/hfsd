@@ -70,7 +70,7 @@ class FinetuneHandler:
                 torch.load(io.BytesIO(source_model.ckpt.tobytes())), weights_only=True
             )
 
-        optimizer, trainable_parameters = utils.prepare_optimizer(pipe)
+        optimizer = utils.prepare_optimizer(pipe)
 
         pipe.scheduler.timesteps = np.load(io.BytesIO(task.timesteps.tobytes()))  # pyright: ignore
         pipe.scheduler.set_timesteps(consts.NUM_STEPS, device=pipe.device)
@@ -267,7 +267,7 @@ class FinetuneHandler:
                     ).mean()
 
                     # backward pass
-                    trainable_parameters.parameters().backward(loss)
+                    loss.backward()
                     optimizer.step()
                     optimizer.zero_grad()
 
