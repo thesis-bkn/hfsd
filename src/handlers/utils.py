@@ -1,8 +1,9 @@
 import io
+from typing import Dict
 
 import numpy as np
 import torch
-from diffusers.loaders import AttnProcsLayers
+from diffusers.loaders.utils import AttnProcsLayers
 from diffusers.models.attention_processor import LoRAAttnProcessor
 from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion_inpaint import (
     StableDiffusionInpaintPipeline,
@@ -70,6 +71,15 @@ def with_lora(
     pipeline.unet.to(pipeline.device)
 
     return pipeline
+
+
+def get_lora_state_dict(
+    pipe: StableDiffusionInpaintPipeline,
+) -> Dict[str, torch.Tensor]:
+    model_to_save = AttnProcsLayers(pipe.unet.attn_processors)
+    state_dict = model_to_save.state_dict()
+
+    return state_dict
 
 
 ADAM_BETA1 = 0.9
@@ -147,3 +157,7 @@ def get_prompt(domain: str) -> tuple[str, str]:
     exit(1)
 
 
+def torch_to_bytes(t):
+    buff = io.BytesIO()
+    torch.save(t, buff)
+    return buff.getvalue()

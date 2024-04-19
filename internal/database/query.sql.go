@@ -564,6 +564,22 @@ func (q *Queries) SaveInference(ctx context.Context, arg SaveInferenceParams) er
 	return err
 }
 
+const saveModelCkpt = `-- name: SaveModelCkpt :exec
+UPDATE models
+SET ckpt = $2
+WHERE id = $1
+`
+
+type SaveModelCkptParams struct {
+	ID   string
+	Ckpt []byte
+}
+
+func (q *Queries) SaveModelCkpt(ctx context.Context, arg SaveModelCkptParams) error {
+	_, err := q.db.Exec(ctx, saveModelCkpt, arg.ID, arg.Ckpt)
+	return err
+}
+
 const saveSampleAsset = `-- name: SaveSampleAsset :exec
 INSERT INTO assets(
     task_id, "order", "group",

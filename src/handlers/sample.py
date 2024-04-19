@@ -105,13 +105,13 @@ class SampleHander:
             consts.BATCH_SIZE, 1
         )  # (batch_size, num_steps)
 
-        image_torchs_b = torch_to_bytes(image_torchs)
-        latents_b = torch_to_bytes(latents)
-        prompt_embeds_b = torch_to_bytes(prompt_embeds)
-        next_latents_b = torch_to_bytes(next_latents)
-        timesteps_b = torch_to_bytes(timesteps)
-        mask_b = torch_to_bytes(mask_torch)
-        mask_latents_b = torch_to_bytes(mask_latents)
+        image_torchs_b = utils.torch_to_bytes(image_torchs)
+        latents_b = utils.torch_to_bytes(latents)
+        prompt_embeds_b = utils.torch_to_bytes(prompt_embeds)
+        next_latents_b = utils.torch_to_bytes(next_latents)
+        timesteps_b = utils.torch_to_bytes(timesteps)
+        mask_b = utils.torch_to_bytes(mask_torch)
+        mask_latents_b = utils.torch_to_bytes(mask_latents)
 
         self.querier.update_sample_tasks(
             UpdateSampleTasksParams(
@@ -161,8 +161,8 @@ class SampleHander:
         )
 
         self.querier.update_model_status(
-            id=task.output_model_id, # pyright: ignore
-            status=ModelStatus.RATING
+            id=task.output_model_id,  # pyright: ignore
+            status=ModelStatus.RATING,
         )
         self.conn.commit()
 
@@ -190,9 +190,3 @@ def sample(pipe, prompt_embed, neg_prompt_embed, input_images, input_masks):
 def mem_to_pil(x: memoryview):
     image = Image.open(io.BytesIO(x.tobytes()))
     return image
-
-
-def torch_to_bytes(t):
-    buff = io.BytesIO()
-    torch.save(t, buff)
-    return buff.getvalue()

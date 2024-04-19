@@ -133,3 +133,8 @@ UPDATE assets
 SET pref = $3
 WHERE task_id = $1 AND "order" = $2;
 
+-- name: SaveModelCkpt :exec
+UPDATE models
+SET ckpt = $2
+WHERE id = $1;
+

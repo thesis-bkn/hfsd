@@ -206,6 +206,13 @@ class SaveInferenceParams:
     from_model: str
 
 
+SAVE_MODEL_CKPT = """-- name: save_model_ckpt \\:exec
+UPDATE models
+SET ckpt = :p2
+WHERE id = :p1
+"""
+
+
 SAVE_SAMPLE_ASSET = """-- name: save_sample_asset \\:exec
 INSERT INTO assets(
     task_id, "order", "group",
@@ -510,6 +517,9 @@ class Querier:
             "p9": arg.from_model,
         })
 
+    def save_model_ckpt(self, *, id: str, ckpt: Optional[memoryview]) -> None:
+        self._conn.execute(sqlalchemy.text(SAVE_MODEL_CKPT), {"p1": id, "p2": ckpt})
+
     def save_sample_asset(self, arg: SaveSampleAssetParams) -> None:
         self._conn.execute(sqlalchemy.text(SAVE_SAMPLE_ASSET), {
             "p1": arg.task_id,
@@ -776,6 +786,9 @@ class AsyncQuerier:
             "p8": arg.output_url,
             "p9": arg.from_model,
         })
+
+    async def save_model_ckpt(self, *, id: str, ckpt: Optional[memoryview]) -> None:
+        await self._conn.execute(sqlalchemy.text(SAVE_MODEL_CKPT), {"p1": id, "p2": ckpt})
 
     async def save_sample_asset(self, arg: SaveSampleAssetParams) -> None:
         await self._conn.execute(sqlalchemy.text(SAVE_SAMPLE_ASSET), {

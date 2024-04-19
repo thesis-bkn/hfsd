@@ -1,8 +1,8 @@
+import datetime
 import io
 import os
 
 import torch
-import datetime
 from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion_inpaint import (
     StableDiffusionInpaintPipeline,
 )
@@ -30,24 +30,24 @@ class InferenceHandler:
         pipe.text_encoder.requires_grad_(False)
         pipe.unet.requires_grad_(False)
 
-        # if task.source_model_id != "base":
-        #     self.ckpt = self.querier.get_model(id=task.source_model_id)
-        #     if self.ckpt is None:
-        #         raise Exception("model can not be found")
-        #     # bytes_io = io.BytesIO()
-        #     # bytes_io.write(self.ckpt.ckpt.tobytes())
-        #     state_dict = torch.load(
-        #         io.BytesIO(self.ckpt.ckpt.tobytes()), weights_only=False
-        #     )
-        #
-        #     self.pipe.load_lora_weights(state_dict)
+        if "base" not in task.source_model_id:
+            model = self.querier.get_model(id=task.source_model_id)
+            if model is None:
+                exit("cannot find model OMG")
+
+            state_dict = torch.load(
+                io.BytesIO(model.ckpt.tobytes()),  # pyright: ignore
+                weights_only=False,
+            )
+
+            pipe.load_lora_weights(state_dict)
 
         # get image
         asset = self.querier.get_first_asset_by_model_id(task_id=task.id)
         if asset is None:
             raise Exception("can not find asset to inference")
         image = Image.open(io.BytesIO(asset.image.tobytes()))
-        mask = Image.open(io.BytesIO(asset.mask.tobytes()))
+        mask = Image.open(io.BytesIO(asset.mask.tobytes()))  # pyright: ignore
         output = pipe(prompt=asset.prompt, image=image, mask_image=mask).images[0]
 
         # upload output image to cloudfly
@@ -70,7 +70,7 @@ class InferenceHandler:
                 prompt=asset.prompt,
                 image=memoryview(asset.image),
                 image_url=asset.image_url,
-                mask=memoryview(asset.mask),
+                mask=memoryview(asset.mask),  # pyright: ignore
                 mask_url=asset.mask_url,
                 output=memoryview(output_bytes),
                 output_url=key,
@@ -80,7 +80,6 @@ class InferenceHandler:
 
         self.querier.update_task_status(
             id=task.id,
-            task_type=task.task_type,
             handled_at=None,
             finished_at=datetime.datetime.now(datetime.UTC),
         )
