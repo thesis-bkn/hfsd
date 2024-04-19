@@ -47,9 +47,10 @@ LIMIT 1;
 INSERT INTO base_assets (id, image, image_url, mask, mask_url, domain)
 VALUES ($1, $2, $3, $4, $5, $6);
 
--- name: InsertInferenceTask :exec
+-- name: InsertInferenceTask :one
 INSERT INTO tasks (source_model_id, task_type)
-VALUES ($1, 'inference');
+VALUES ($1, 'inference')
+RETURNING id;
 
 -- name: InsertSampleTask :exec
 INSERT INTO tasks(source_model_id, output_model_id, task_type)
@@ -135,6 +136,7 @@ WHERE task_id = $1 AND "order" = $2;
 
 -- name: SaveModelCkpt :exec
 UPDATE models
-SET ckpt = $2
+SET ckpt = $2,
+    status = 'finetuned'
 WHERE id = $1;
 

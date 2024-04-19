@@ -104,9 +104,10 @@ class InsertBaseAssetParams:
     domain: str
 
 
-INSERT_INFERENCE_TASK = """-- name: insert_inference_task \\:exec
+INSERT_INFERENCE_TASK = """-- name: insert_inference_task \\:one
 INSERT INTO tasks (source_model_id, task_type)
 VALUES (:p1, 'inference')
+RETURNING id
 """
 
 
@@ -208,7 +209,8 @@ class SaveInferenceParams:
 
 SAVE_MODEL_CKPT = """-- name: save_model_ckpt \\:exec
 UPDATE models
-SET ckpt = :p2
+SET ckpt = :p2,
+    status = 'finetuned'
 WHERE id = :p1
 """
 
@@ -411,8 +413,11 @@ class Querier:
             "p6": arg.domain,
         })
 
-    def insert_inference_task(self, *, source_model_id: str) -> None:
-        self._conn.execute(sqlalchemy.text(INSERT_INFERENCE_TASK), {"p1": source_model_id})
+    def insert_inference_task(self, *, source_model_id: str) -> Optional[int]:
+        row = self._conn.execute(sqlalchemy.text(INSERT_INFERENCE_TASK), {"p1": source_model_id}).first()
+        if row is None:
+            return None
+        return row[0]
 
     def insert_model(self, arg: InsertModelParams) -> None:
         self._conn.execute(sqlalchemy.text(INSERT_MODEL), {
@@ -681,8 +686,11 @@ class AsyncQuerier:
             "p6": arg.domain,
         })
 
-    async def insert_inference_task(self, *, source_model_id: str) -> None:
-        await self._conn.execute(sqlalchemy.text(INSERT_INFERENCE_TASK), {"p1": source_model_id})
+    async def insert_inference_task(self, *, source_model_id: str) -> Optional[int]:
+        row = (await self._conn.execute(sqlalchemy.text(INSERT_INFERENCE_TASK), {"p1": source_model_id})).first()
+        if row is None:
+            return None
+        return row[0]
 
     async def insert_model(self, arg: InsertModelParams) -> None:
         await self._conn.execute(sqlalchemy.text(INSERT_MODEL), {

@@ -182,7 +182,14 @@ class FinetuneHandler:
                     )
 
                     noise_pred_0 = pipe.unet(
-                        input_sample_0,
+                        torch.cat(
+                            (
+                                torch.cat([sample_0["latents"][:, j]] * 2),  # pyright: ignore
+                                torch.cat([sample_0["masks"][:, j]] * 2),  # pyright: ignore
+                                torch.cat([sample_0["mask_latents"][:, j]] * 2),  # pyright: ignore
+                            ),
+                            dim=1,
+                        ),
                         torch.cat([sample_0["timesteps"][:, j]] * 2),  # pyright: ignore
                         embeds_0,
                     ).sample
@@ -195,7 +202,14 @@ class FinetuneHandler:
                     )
 
                     noise_ref_pred_0 = ref(
-                        input_sample_0,
+                        torch.cat(
+                            (
+                                torch.cat([sample_0["latents"][:, j]] * 2),  # pyright: ignore
+                                torch.cat([sample_0["masks"][:, j]] * 2),  # pyright: ignore
+                                torch.cat([sample_0["mask_latents"][:, j]] * 2),  # pyright: ignore
+                            ),
+                            dim=1,
+                        ),
                         torch.cat([sample_0["timesteps"][:, j]] * 2),  # pyright: ignore
                         embeds_0,
                     ).sample
@@ -210,7 +224,14 @@ class FinetuneHandler:
                     )
 
                     noise_pred_1 = pipe.unet(
-                        input_sample_1,
+                        torch.cat(
+                            (
+                                torch.cat([sample_1["latents"][:, j]] * 2),  # pyright: ignore
+                                torch.cat([sample_1["masks"][:, j]] * 2),  # pyright: ignore
+                                torch.cat([sample_1["mask_latents"][:, j]] * 2),  # pyright: ignore
+                            ),
+                            dim=1,
+                        ),
                         torch.cat([sample_1["timesteps"][:, j]] * 2),  # pyright: ignore
                         embeds_1,
                     ).sample
@@ -223,7 +244,14 @@ class FinetuneHandler:
                     )
 
                     noise_ref_pred_1 = ref(
-                        input_sample_1,
+                        torch.cat(
+                            (
+                                torch.cat([sample_1["latents"][:, j]] * 2),  # pyright: ignore
+                                torch.cat([sample_1["masks"][:, j]] * 2),  # pyright: ignore
+                                torch.cat([sample_1["mask_latents"][:, j]] * 2),  # pyright: ignore
+                            ),
+                            dim=1,
+                        ),
                         torch.cat([sample_1["timesteps"][:, j]] * 2),  # pyright: ignore
                         embeds_1,
                     ).sample

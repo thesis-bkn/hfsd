@@ -75,8 +75,8 @@ templ textInput(label string, name string, placeholder string, disable bool) {
 				type="text"
 				name={ name }
 				placeholder={ placeholder }
+                value={ placeholder }
 				class="input input-bordered w-full max-w-xs"
-				disabled
 			/>
 		} else {
 			<input

@@ -239,14 +239,17 @@ func (q *Queries) InsertBaseAsset(ctx context.Context, arg InsertBaseAssetParams
 	return err
 }
 
-const insertInferenceTask = `-- name: InsertInferenceTask :exec
+const insertInferenceTask = `-- name: InsertInferenceTask :one
 INSERT INTO tasks (source_model_id, task_type)
 VALUES ($1, 'inference')
+RETURNING id
 `
 
-func (q *Queries) InsertInferenceTask(ctx context.Context, sourceModelID string) error {
-	_, err := q.db.Exec(ctx, insertInferenceTask, sourceModelID)
-	return err
+func (q *Queries) InsertInferenceTask(ctx context.Context, sourceModelID string) (int32, error) {
+	row := q.db.QueryRow(ctx, insertInferenceTask, sourceModelID)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
 }
 
 const insertModel = `-- name: InsertModel :exec
@@ -566,7 +569,8 @@ func (q *Queries) SaveInference(ctx context.Context, arg SaveInferenceParams) er
 
 const saveModelCkpt = `-- name: SaveModelCkpt :exec
 UPDATE models
-SET ckpt = $2
+SET ckpt = $2,
+    status = 'finetuned'
 WHERE id = $1
 `
 

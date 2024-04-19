@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/ztrue/tracerr"
 
 	"github.com/thesis-bkn/hfsd/internal/config"
@@ -66,11 +65,6 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	taskID, err := gonanoid.Generate(modelIDsAlphabet, 5)
-	if err != nil {
-		return tracerr.Wrap(err)
-	}
-
 	tx, err := i.client.Conn().BeginTx(c.Request().Context(), pgx.TxOptions{})
 	if err != nil {
 		return tracerr.Wrap(err)
@@ -85,12 +79,13 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 
 	query := i.client.Query().WithTx(tx)
 	order := 0
-	if err := query.InsertInferenceTask(c.Request().Context(), model); err != nil {
+    var taskID int32
+	if taskID, err = query.InsertInferenceTask(c.Request().Context(), model); err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	imageURL := path.Join(i.cfg.ImagePath, fmt.Sprintf("%d-%s", order, taskID))
-	maskUrl := path.Join(i.cfg.MaskPath, fmt.Sprintf("%d-%s", order, taskID))
+	imageURL := path.Join(i.cfg.ImagePath, fmt.Sprintf("%d-%d", order, taskID))
+	maskUrl := path.Join(i.cfg.MaskPath, fmt.Sprintf("%d-%d", order, taskID))
 
 	if err := i.s3Client.UploadImage(imageB, imageURL); err != nil {
 		return tracerr.Wrap(err)
@@ -100,7 +95,7 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	}
 
 	if err := query.InsertAsset(c.Request().Context(), database.InsertAssetParams{
-		TaskID:   0,
+		TaskID:   taskID,
 		Order:    0,
 		Prompt:   prompt,
 		Image:    imageB,

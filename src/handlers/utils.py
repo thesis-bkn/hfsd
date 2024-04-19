@@ -3,7 +3,7 @@ from typing import Dict
 
 import numpy as np
 import torch
-from diffusers.loaders.utils import AttnProcsLayers
+from diffusers.loaders import AttnProcsLayers
 from diffusers.models.attention_processor import LoRAAttnProcessor
 from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion_inpaint import (
     StableDiffusionInpaintPipeline,

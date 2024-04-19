@@ -27,7 +27,7 @@ class SampleHander:
             print("model not found")
             exit(1)
 
-        if "base" not in source_model.name and source_model.ckpt is not None:
+        if "base" not in source_model.id and source_model.ckpt is not None:
             pipe.unet.load_attn_procs(
                 torch.load(io.BytesIO(source_model.ckpt.tobytes())), weights_only=True
             )

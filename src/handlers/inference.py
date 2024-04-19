@@ -35,12 +35,9 @@ class InferenceHandler:
             if model is None:
                 exit("cannot find model OMG")
 
-            state_dict = torch.load(
-                io.BytesIO(model.ckpt.tobytes()),  # pyright: ignore
-                weights_only=False,
+            pipe.unet.load_attn_procs(
+                torch.load(io.BytesIO(model.ckpt.tobytes())), weights_only=True
             )
-
-            pipe.load_lora_weights(state_dict)
 
         # get image
         asset = self.querier.get_first_asset_by_model_id(task_id=task.id)
