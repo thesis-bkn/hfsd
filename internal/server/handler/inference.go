@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"path"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
@@ -42,28 +44,33 @@ func NewInferenceHandler(
 	}
 }
 
+type maskObject struct {
+	X float32 `json:"x"`
+	Y float32 `json:"y"`
+	R float32 `json:"r"`
+}
+
+type inferRequest struct {
+	Model  string        `json:"model"`
+	Prompt string        `json:"prompt"`
+	Image  string        `json:"image"`
+	Mask   []*maskObject `json:"mask"`
+}
+
 func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
-	model := c.FormValue("model")
-	prompt := c.FormValue("prompt")
-
-	image, err := c.FormFile("image")
-	if err != nil {
+	var req inferRequest
+	if err := c.Bind(&req); err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	mask, err := c.FormFile("mask")
+	b64 := req.Image[strings.IndexByte(req.Image, ',')+1:]
+	image, err := base64.StdEncoding.DecodeString(b64)
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	imageB, err := readAll(image)
-	if err != nil {
-		return tracerr.Wrap(err)
-	}
-	maskB, err := readAll(mask)
-	if err != nil {
-		return tracerr.Wrap(err)
-	}
+	// FIXME: use req.Masks to create mask image
+	mask := image
 
 	tx, err := i.client.Conn().BeginTx(c.Request().Context(), pgx.TxOptions{})
 	if err != nil {
@@ -79,28 +86,28 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 
 	query := i.client.Query().WithTx(tx)
 	order := 0
-    var taskID int32
-	if taskID, err = query.InsertInferenceTask(c.Request().Context(), model); err != nil {
+	var taskID int32
+	if taskID, err = query.InsertInferenceTask(c.Request().Context(), req.Model); err != nil {
 		return tracerr.Wrap(err)
 	}
 
 	imageURL := path.Join(i.cfg.ImagePath, fmt.Sprintf("%d-%d", order, taskID))
 	maskUrl := path.Join(i.cfg.MaskPath, fmt.Sprintf("%d-%d", order, taskID))
 
-	if err := i.s3Client.UploadImage(imageB, imageURL); err != nil {
+	if err := i.s3Client.UploadImage(image, imageURL); err != nil {
 		return tracerr.Wrap(err)
 	}
-	if err := i.s3Client.UploadImage(maskB, maskUrl); err != nil {
+	if err := i.s3Client.UploadImage(mask, maskUrl); err != nil {
 		return tracerr.Wrap(err)
 	}
 
 	if err := query.InsertAsset(c.Request().Context(), database.InsertAssetParams{
 		TaskID:   taskID,
 		Order:    0,
-		Prompt:   prompt,
-		Image:    imageB,
+		Prompt:   req.Prompt,
+		Image:    image,
 		ImageUrl: imageURL,
-		Mask:     maskB,
+		Mask:     mask,
 		MaskUrl: pgtype.Text{
 			String: maskUrl,
 			Valid:  true,

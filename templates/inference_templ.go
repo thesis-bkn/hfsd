@@ -35,34 +35,30 @@ func InferenceView(model *string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" <div class=\"flex justify-center mb-20\"><div><h2 class=\"text-xl font-semibold\">Create mask with your image</h2><div class=\"divider\"></div><iframe src=\"https://stevhliu-inpaint-mask-maker.hf.space\" frameborder=\"0\" width=\"850\" height=\"450\"></iframe><h2 class=\"text-xl font-semibold mt-5\">Upload your image and mask image</h2><div class=\"divider\"></div><form class=\"flex flex-col items-center\" hx-post=\"/api/inference\" hx-encoding=\"multipart/form-data\" hx-disabled-elt=\"input[type=&#39;text&#39;], input[type=&#39;file&#39;], button\" @htmx:after-request.window=\"\n                        if ($event.detail.successful == true) {\n                            console.log(&#39;succesfull submit task&#39;)\n                            Swal.fire({\n                                title: &#39;Success!&#39;,\n                                text: &#39;Success upload inference task&#39;,\n                                icon: &#39;success&#39;,\n                                confirmButtonText: &#39;Continue&#39;\n                            }).then((result) =&gt; {\n                                window.location.replace(&#39;/factory&#39;)\n                            })\n                        } else {\n                            Swal.fire({\n                                title: &#39;Error!&#39;,\n                                text: &#39;Failed to upload, please try again&#39;,\n                                icon: &#39;error&#39;,\n                                confirmButtonText: &#39;Continue&#39;\n                            })\n                        }\n                    \">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" <div class=\"flex justify-center mb-20\"><div><h2 class=\"text-xl font-semibold mt-5\">Upload your image and mask image</h2><input type=\"file\" class=\"file-input mb-2 w-full max-w-xs\" id=\"uploadInput\" accept=\"image/*\"><form class=\"flex flex-col items-center\"><input type=\"range\" class=\"range\" min=\"1\" max=\"50\" value=\"10\" id=\"brushSizeSlider\"><canvas class=\"border-2 border-solid\" id=\"imageCanvas\"></canvas>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = fileInput("Image", "image").Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = fileInput("Mask image", "mask").Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = textInput("Prompt", "prompt", "Type here", false).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = textInput("Prompt", "prompt", "prompt", "Type here", false).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if model != nil {
-				templ_7745c5c3_Err = textInput("Model", "model", *model, true).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = textInput("Model", "model", "model", *model, true).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = textInput("Model", "model", "Type here", false).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = textInput("Model", "model", "model", "Type here", false).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<button type=\"submit\" class=\"btn btn-active btn-secondary mt-5 px-20\">Inference</button></form></div></div>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<button type=\"submit\" id=\"submitButton\" class=\"btn btn-active btn-secondary mt-5 px-20\">Inference</button></form></div></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = drawMask().Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -82,7 +78,7 @@ func InferenceView(model *string) templ.Component {
 	})
 }
 
-func fileInput(label string, name string) templ.Component {
+func textInput(label, id, name, placeholder string, disable bool) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -102,54 +98,9 @@ func fileInput(label string, name string) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/inference.templ`, Line: 61, Col: 35}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/inference.templ`, Line: 31, Col: 35}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span></div><input type=\"file\" name=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(name))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" accept=\"image/*\" class=\"file-input file-input-bordered w-full max-w-xs\"></label>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if !templ_7745c5c3_IsBuffer {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteTo(templ_7745c5c3_W)
-		}
-		return templ_7745c5c3_Err
-	})
-}
-
-func textInput(label string, name string, placeholder string, disable bool) templ.Component {
-	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
-		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
-		if !templ_7745c5c3_IsBuffer {
-			templ_7745c5c3_Buffer = templ.GetBuffer()
-			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
-		}
-		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var5 == nil {
-			templ_7745c5c3_Var5 = templ.NopComponent
-		}
-		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<label class=\"form-control w-full max-w-xs\"><div class=\"label\"><span class=\"label-text\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var6 string
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(label)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/inference.templ`, Line: 70, Col: 35}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -163,6 +114,14 @@ func textInput(label string, name string, placeholder string, disable bool) temp
 				return templ_7745c5c3_Err
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(name))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" id=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(id))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -195,6 +154,14 @@ func textInput(label string, name string, placeholder string, disable bool) temp
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" id=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(id))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" placeholder=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -217,4 +184,178 @@ func textInput(label string, name string, placeholder string, disable bool) temp
 		}
 		return templ_7745c5c3_Err
 	})
+}
+
+func drawMask() templ.ComponentScript {
+	return templ.ComponentScript{
+		Name: `__templ_drawMask_32d3`,
+		Function: `function __templ_drawMask_32d3(){let imageCanvas;
+    let imageCtx;
+    let imageData;
+    let isDrawing = false;
+    let brushSize = 10; // Initial brush size
+    let originalImage = null;
+    let masks = [];
+
+    // Function to handle image upload
+    function handleImageUpload(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+                // Store the original image for later use
+                originalImage = e.target.result;
+
+                // Calculate the scaling factor to fit the image within the 512x512 canvas
+                const maxDimension = 512;
+                const scaleFactor = Math.min(maxDimension / img.width, maxDimension / img.height);
+
+                // Calculate the scaled dimensions
+                const scaledWidth = img.width * scaleFactor;
+                const scaledHeight = img.height * scaleFactor;
+
+                // Clear previous drawings on the canvas
+                imageCtx.clearRect(0, 0, 512, 512);
+
+                // Draw the image onto the canvas with scaled dimensions
+                const offsetX = (512 - scaledWidth) / 2;
+                const offsetY = (512 - scaledHeight) / 2;
+                imageData = imageCanvas.toDataURL('image/jpeg');
+                imageCtx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+            };
+            img.src = e.target.result;
+        };
+
+        reader.readAsDataURL(file);
+    }
+
+
+    // Function to handle drawing on the image canvas
+    function handleImageDraw(event) {
+        if (isDrawing) {
+            const rect = imageCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            // Set global composite operation to 'source-over' to draw normally
+            imageCtx.globalCompositeOperation = 'source-over';
+
+            // Draw a semi-transparent grey color to mask the image
+            imageCtx.fillStyle = 'rgba(128, 128, 128, 0.5)'; // Grey color with 50% opacity
+            imageCtx.beginPath();
+            imageCtx.arc(x, y, brushSize / 2, 0, 2 * Math.PI);
+            masks.push({
+                "x": x,
+                "y": y,
+                "r": brushSize / 2
+            });
+            imageCtx.fill();
+        }
+    }
+
+    // Function to toggle drawing state
+    function setDrawingState(state) {
+        isDrawing = state;
+    }
+
+    // Function to handle brush size change
+    function changeBrushSize(size) {
+        brushSize = size;
+    }
+
+    // Function to extract mask (drawn areas) from the canvas
+    function extractMask() {
+        const imageData = imageCtx.getImageData(0, 0, 512, 512);
+        return imageData;
+    }
+
+    // Function to extract the original image data URL
+    function extractOriginalImage() {
+        return originalImage;
+    }
+
+    function submitImagesToServer(event) {
+        event.preventDefault();
+
+        const originalImageDataURL = extractOriginalImage();
+        const prompt = document.getElementById('prompt').value;
+        const model = document.getElementById('model').value;
+
+        fetch('/api/inference', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                'image': imageData,
+                'mask': masks,
+                'model': model,
+                'prompt': prompt
+            })
+        })
+        .then(response => {
+            if (response.status == 200) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Success upload inference task',
+                    icon: 'success',
+                    confirmButtonText: 'Continue'
+                }).then((result) => {
+                    window.location.replace('/factory')
+                })
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to upload, please try again',
+                    icon: 'error',
+                    confirmButtonText: 'Continue'
+                })
+            }
+        });
+
+        return false;
+    }
+
+    // Initialize the canvas and context variables
+    document.addEventListener('DOMContentLoaded', () => {
+        imageCanvas = document.getElementById('imageCanvas');
+        imageCtx = imageCanvas.getContext('2d');
+
+        // Set the canvas size to 512x512 pixels
+        imageCanvas.width = 512;
+        imageCanvas.height = 512;
+
+        // Event listener for image upload
+        const uploadInput = document.getElementById('uploadInput');
+        uploadInput.addEventListener('change', handleImageUpload);
+
+        // Event listeners for drawing on the image canvas
+        imageCanvas.addEventListener('mousedown', (event) => {
+            setDrawingState(true);
+            handleImageDraw(event); // Draw immediately on mousedown
+        });
+
+        imageCanvas.addEventListener('mousemove', handleImageDraw);
+
+        imageCanvas.addEventListener('mouseup', () => {
+            setDrawingState(false);
+        });
+
+        const submitButton = document.getElementById('submitButton');
+        submitButton.addEventListener('click', submitImagesToServer);
+
+        // Add a slider for brush size control
+        const brushSizeSlider = document.getElementById('brushSizeSlider');
+        brushSizeSlider.value = brushSize; // Set initial value
+        brushSizeSlider.addEventListener('input', (event) => {
+            const newSize = event.target.value;
+            changeBrushSize(newSize);
+        });
+    });
+}`,
+		Call:       templ.SafeScript(`__templ_drawMask_32d3`),
+		CallInline: templ.SafeScriptInline(`__templ_drawMask_32d3`),
+	}
 }

@@ -7,65 +7,26 @@ templ InferenceView(model *string) {
 		@components.NavBar("inference")
 		<div class="flex justify-center mb-20">
 			<div>
-				<h2 class="text-xl font-semibold">Create mask with your image</h2>
-				<div class="divider"></div>
-				<iframe src="https://stevhliu-inpaint-mask-maker.hf.space" frameborder="0" width="850" height="450"></iframe>
 				<h2 class="text-xl font-semibold mt-5">Upload your image and mask image</h2>
-				<div class="divider"></div>
-				<form
-					class="flex flex-col items-center"
-					hx-post="/api/inference"
-					hx-encoding="multipart/form-data"
-					hx-disabled-elt="input[type='text'], input[type='file'], button"
-					@htmx:after-request.window="
-                        if ($event.detail.successful == true) {
-                            console.log('succesfull submit task')
-                            Swal.fire({
-                                title: 'Success!',
-                                text: 'Success upload inference task',
-                                icon: 'success',
-                                confirmButtonText: 'Continue'
-                            }).then((result) => {
-                                window.location.replace('/factory')
-                            })
-                        } else {
-                            Swal.fire({
-                                title: 'Error!',
-                                text: 'Failed to upload, please try again',
-                                icon: 'error',
-                                confirmButtonText: 'Continue'
-                            })
-                        }
-                    "
-				>
-					@fileInput("Image", "image")
-					@fileInput("Mask image", "mask")
-					@textInput("Prompt", "prompt", "Type here", false)
+				<input type="file" class="file-input mb-2 w-full max-w-xs" id="uploadInput" accept="image/*"/>
+				<form class="flex flex-col items-center">
+					<input type="range" class="range" min="1" max="50" value="10" id="brushSizeSlider"/>
+					<canvas class="border-2 border-solid" id="imageCanvas"></canvas>
+					@textInput("Prompt", "prompt", "prompt", "Type here", false)
 					if model != nil {
-						@textInput("Model", "model", *model, true)
+						@textInput("Model", "model", "model", *model, true)
 					} else {
-						@textInput("Model", "model", "Type here", false)
+						@textInput("Model", "model", "model", "Type here", false)
 					}
-					<button
-						type="submit"
-						class="btn btn-active btn-secondary mt-5 px-20"
-					>Inference</button>
+					<button type="submit" id="submitButton" class="btn btn-active btn-secondary mt-5 px-20">Inference</button>
 				</form>
 			</div>
 		</div>
+		@drawMask()
 	}
 }
 
-templ fileInput(label string, name string) {
-	<label class="form-control w-full max-w-xs">
-		<div class="label">
-			<span class="label-text">{ label }</span>
-		</div>
-		<input type="file" name={ name } accept="image/*" class="file-input file-input-bordered w-full max-w-xs"/>
-	</label>
-}
-
-templ textInput(label string, name string, placeholder string, disable bool) {
+templ textInput(label, id, name, placeholder string, disable bool) {
 	<label class="form-control w-full max-w-xs">
 		<div class="label">
 			<span class="label-text">{ label }</span>
@@ -74,17 +35,187 @@ templ textInput(label string, name string, placeholder string, disable bool) {
 			<input
 				type="text"
 				name={ name }
+				id={ id }
 				placeholder={ placeholder }
-                value={ placeholder }
+				value={ placeholder }
 				class="input input-bordered w-full max-w-xs"
 			/>
 		} else {
 			<input
 				type="text"
 				name={ name }
+				id={ id }
 				placeholder={ placeholder }
 				class="input input-bordered w-full max-w-xs"
 			/>
 		}
 	</label>
+}
+
+script drawMask() {
+    let imageCanvas;
+    let imageCtx;
+    let imageData;
+    let isDrawing = false;
+    let brushSize = 10; // Initial brush size
+    let originalImage = null;
+    let masks = [];
+
+    // Function to handle image upload
+    function handleImageUpload(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+                // Store the original image for later use
+                originalImage = e.target.result;
+
+                // Calculate the scaling factor to fit the image within the 512x512 canvas
+                const maxDimension = 512;
+                const scaleFactor = Math.min(maxDimension / img.width, maxDimension / img.height);
+
+                // Calculate the scaled dimensions
+                const scaledWidth = img.width * scaleFactor;
+                const scaledHeight = img.height * scaleFactor;
+
+                // Clear previous drawings on the canvas
+                imageCtx.clearRect(0, 0, 512, 512);
+
+                // Draw the image onto the canvas with scaled dimensions
+                const offsetX = (512 - scaledWidth) / 2;
+                const offsetY = (512 - scaledHeight) / 2;
+                imageData = imageCanvas.toDataURL('image/jpeg');
+                imageCtx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+            };
+            img.src = e.target.result;
+        };
+
+        reader.readAsDataURL(file);
+    }
+
+
+    // Function to handle drawing on the image canvas
+    function handleImageDraw(event) {
+        if (isDrawing) {
+            const rect = imageCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            // Set global composite operation to 'source-over' to draw normally
+            imageCtx.globalCompositeOperation = 'source-over';
+
+            // Draw a semi-transparent grey color to mask the image
+            imageCtx.fillStyle = 'rgba(128, 128, 128, 0.5)'; // Grey color with 50% opacity
+            imageCtx.beginPath();
+            imageCtx.arc(x, y, brushSize / 2, 0, 2 * Math.PI);
+            masks.push({
+                "x": x,
+                "y": y,
+                "r": brushSize / 2
+            });
+            imageCtx.fill();
+        }
+    }
+
+    // Function to toggle drawing state
+    function setDrawingState(state) {
+        isDrawing = state;
+    }
+
+    // Function to handle brush size change
+    function changeBrushSize(size) {
+        brushSize = size;
+    }
+
+    // Function to extract mask (drawn areas) from the canvas
+    function extractMask() {
+        const imageData = imageCtx.getImageData(0, 0, 512, 512);
+        return imageData;
+    }
+
+    // Function to extract the original image data URL
+    function extractOriginalImage() {
+        return originalImage;
+    }
+
+    function submitImagesToServer(event) {
+        event.preventDefault();
+
+        const originalImageDataURL = extractOriginalImage();
+        const prompt = document.getElementById('prompt').value;
+        const model = document.getElementById('model').value;
+
+        fetch('/api/inference', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                'image': imageData,
+                'mask': masks,
+                'model': model,
+                'prompt': prompt
+            })
+        })
+        .then(response => {
+            if (response.status == 200) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Success upload inference task',
+                    icon: 'success',
+                    confirmButtonText: 'Continue'
+                }).then((result) => {
+                    window.location.replace('/factory')
+                })
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to upload, please try again',
+                    icon: 'error',
+                    confirmButtonText: 'Continue'
+                })
+            }
+        });
+
+        return false;
+    }
+
+    // Initialize the canvas and context variables
+    document.addEventListener('DOMContentLoaded', () => {
+        imageCanvas = document.getElementById('imageCanvas');
+        imageCtx = imageCanvas.getContext('2d');
+
+        // Set the canvas size to 512x512 pixels
+        imageCanvas.width = 512;
+        imageCanvas.height = 512;
+
+        // Event listener for image upload
+        const uploadInput = document.getElementById('uploadInput');
+        uploadInput.addEventListener('change', handleImageUpload);
+
+        // Event listeners for drawing on the image canvas
+        imageCanvas.addEventListener('mousedown', (event) => {
+            setDrawingState(true);
+            handleImageDraw(event); // Draw immediately on mousedown
+        });
+
+        imageCanvas.addEventListener('mousemove', handleImageDraw);
+
+        imageCanvas.addEventListener('mouseup', () => {
+            setDrawingState(false);
+        });
+
+        const submitButton = document.getElementById('submitButton');
+        submitButton.addEventListener('click', submitImagesToServer);
+
+        // Add a slider for brush size control
+        const brushSizeSlider = document.getElementById('brushSizeSlider');
+        brushSizeSlider.value = brushSize; // Set initial value
+        brushSizeSlider.addEventListener('input', (event) => {
+            const newSize = event.target.value;
+            changeBrushSize(newSize);
+        });
+    });
 }
