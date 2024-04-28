@@ -86,8 +86,8 @@ script drawMask() {
                 // Draw the image onto the canvas with scaled dimensions
                 const offsetX = (512 - scaledWidth) / 2;
                 const offsetY = (512 - scaledHeight) / 2;
-                imageData = imageCanvas.toDataURL('image/jpeg');
                 imageCtx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+                imageData = imageCanvas.toDataURL('image/jpeg');
             };
             img.src = e.target.result;
         };

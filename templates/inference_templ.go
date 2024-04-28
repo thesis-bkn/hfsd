@@ -188,8 +188,8 @@ func textInput(label, id, name, placeholder string, disable bool) templ.Componen
 
 func drawMask() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_drawMask_32d3`,
-		Function: `function __templ_drawMask_32d3(){let imageCanvas;
+		Name: `__templ_drawMask_6bdd`,
+		Function: `function __templ_drawMask_6bdd(){let imageCanvas;
     let imageCtx;
     let imageData;
     let isDrawing = false;
@@ -222,8 +222,8 @@ func drawMask() templ.ComponentScript {
                 // Draw the image onto the canvas with scaled dimensions
                 const offsetX = (512 - scaledWidth) / 2;
                 const offsetY = (512 - scaledHeight) / 2;
-                imageData = imageCanvas.toDataURL('image/jpeg');
                 imageCtx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+                imageData = imageCanvas.toDataURL('image/jpeg');
             };
             img.src = e.target.result;
         };
@@ -355,7 +355,7 @@ func drawMask() templ.ComponentScript {
         });
     });
 }`,
-		Call:       templ.SafeScript(`__templ_drawMask_32d3`),
-		CallInline: templ.SafeScriptInline(`__templ_drawMask_32d3`),
+		Call:       templ.SafeScript(`__templ_drawMask_6bdd`),
+		CallInline: templ.SafeScriptInline(`__templ_drawMask_6bdd`),
 	}
 }
