@@ -1,8 +1,13 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
+	"image"
+	"image/color"
+	"image/draw"
+	"image/jpeg"
 	"io"
 	"mime/multipart"
 	"path"
@@ -45,9 +50,9 @@ func NewInferenceHandler(
 }
 
 type maskObject struct {
-	X float32 `json:"x"`
-	Y float32 `json:"y"`
-	R float32 `json:"r"`
+	X int `json:"x"`
+	Y int `json:"y"`
+	R int `json:"r"`
 }
 
 type inferRequest struct {
@@ -64,13 +69,22 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	}
 
 	b64 := req.Image[strings.IndexByte(req.Image, ',')+1:]
-	image, err := base64.StdEncoding.DecodeString(b64)
+	imageB, err := base64.StdEncoding.DecodeString(b64)
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	// FIXME: use req.Masks to create mask image
-	mask := image
+	mask := image.NewRGBA(image.Rect(0, 0, 512, 512))
+	draw.Draw(mask, mask.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
+	for _, obj := range req.Mask {
+		drawCircle(mask, obj.X, obj.Y, obj.R, color.White)
+	}
+
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, mask, nil); err != nil {
+		return tracerr.Wrap(err)
+	}
+	maskB := buf.Bytes()
 
 	tx, err := i.client.Conn().BeginTx(c.Request().Context(), pgx.TxOptions{})
 	if err != nil {
@@ -94,10 +108,10 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	imageURL := path.Join(i.cfg.ImagePath, fmt.Sprintf("%d-%d", order, taskID))
 	maskUrl := path.Join(i.cfg.MaskPath, fmt.Sprintf("%d-%d", order, taskID))
 
-	if err := i.s3Client.UploadImage(image, imageURL); err != nil {
+	if err := i.s3Client.UploadImage(imageB, imageURL); err != nil {
 		return tracerr.Wrap(err)
 	}
-	if err := i.s3Client.UploadImage(mask, maskUrl); err != nil {
+	if err := i.s3Client.UploadImage(maskB, maskUrl); err != nil {
 		return tracerr.Wrap(err)
 	}
 
@@ -105,9 +119,9 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 		TaskID:   taskID,
 		Order:    0,
 		Prompt:   req.Prompt,
-		Image:    image,
+		Image:    imageB,
 		ImageUrl: imageURL,
-		Mask:     mask,
+		Mask:     maskB,
 		MaskUrl: pgtype.Text{
 			String: maskUrl,
 			Valid:  true,
@@ -133,4 +147,14 @@ func readAll(f *multipart.FileHeader) ([]byte, error) {
 		return nil, tracerr.Wrap(err)
 	}
 	return fileData, nil
+}
+
+func drawCircle(img draw.Image, x, y, r int, c color.Color) {
+	for dx := -r; dx < r; dx++ {
+		for dy := -r; dy < r; dy++ {
+			if dx*dx+dy*dy < r*r {
+				img.Set(x+dx, y+dy, c)
+			}
+		}
+	}
 }
