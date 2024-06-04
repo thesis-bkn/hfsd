@@ -1,0 +1,3 @@
+[submodule "d3po"]
+	path = d3po
+	url = git@github.com:thesis-bkn/d3po

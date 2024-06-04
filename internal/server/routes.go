@@ -16,10 +16,15 @@ import (
 	"github.com/thesis-bkn/hfsd/internal/server/handler"
 	appmw "github.com/thesis-bkn/hfsd/internal/server/middleware"
 	"github.com/thesis-bkn/hfsd/internal/server/view"
+	"github.com/thesis-bkn/hfsd/internal/worker"
 	"github.com/thesis-bkn/hfsd/templates"
 )
 
-func registerRoutes(cfg *config.Config, client database.Client) *echo.Echo {
+func registerRoutes(
+	cfg *config.Config,
+	client database.Client,
+	w *worker.Worker,
+) *echo.Echo {
 	e := echo.New()
 	e.Server.Addr = fmt.Sprintf(":%d", cfg.Port)
 	e.Server.IdleTimeout = time.Minute
