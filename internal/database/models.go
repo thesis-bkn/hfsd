@@ -5,161 +5,37 @@
 package database
 
 import (
-	"database/sql/driver"
-	"fmt"
-
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type ModelStatus string
-
-const (
-	ModelStatusFinetuned ModelStatus = "finetuned"
-	ModelStatusSampling  ModelStatus = "sampling"
-	ModelStatusRating    ModelStatus = "rating"
-	ModelStatusTraining  ModelStatus = "training"
-)
-
-func (e *ModelStatus) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = ModelStatus(s)
-	case string:
-		*e = ModelStatus(s)
-	default:
-		return fmt.Errorf("unsupported scan type for ModelStatus: %T", src)
-	}
-	return nil
-}
-
-type NullModelStatus struct {
-	ModelStatus ModelStatus
-	Valid       bool // Valid is true if ModelStatus is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullModelStatus) Scan(value interface{}) error {
-	if value == nil {
-		ns.ModelStatus, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.ModelStatus.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullModelStatus) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.ModelStatus), nil
-}
-
-type TaskVariant string
-
-const (
-	TaskVariantInference TaskVariant = "inference"
-	TaskVariantSample    TaskVariant = "sample"
-	TaskVariantFinetune  TaskVariant = "finetune"
-)
-
-func (e *TaskVariant) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = TaskVariant(s)
-	case string:
-		*e = TaskVariant(s)
-	default:
-		return fmt.Errorf("unsupported scan type for TaskVariant: %T", src)
-	}
-	return nil
-}
-
-type NullTaskVariant struct {
-	TaskVariant TaskVariant
-	Valid       bool // Valid is true if TaskVariant is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullTaskVariant) Scan(value interface{}) error {
-	if value == nil {
-		ns.TaskVariant, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.TaskVariant.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullTaskVariant) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.TaskVariant), nil
-}
-
-type Asset struct {
-	TaskID   int32
-	Order    int16
-	Pref     pgtype.Int4
-	Group    pgtype.Int4
-	Prompt   string
-	Image    []byte
-	ImageUrl string
-	Mask     []byte
-	MaskUrl  pgtype.Text
-}
-
-type BaseAsset struct {
-	ID       string
-	Image    []byte
-	ImageUrl string
-	Mask     []byte
-	MaskUrl  string
-	Domain   string
-}
-
 type Inference struct {
-	ID        string
-	Prompt    pgtype.Text
-	Image     []byte
-	ImageUrl  string
-	Mask      []byte
-	MaskUrl   string
-	Output    []byte
-	OutputUrl string
-	FromModel string
+	OutputPath pgtype.Timestamptz
+	ResumeFrom pgtype.Timestamptz
+	ImagePath  string
+	MaskPath   string
+	Prompt     string
+	NegPrompt  string
+	FinishedAt pgtype.Timestamptz
 }
 
-type Model struct {
-	ID        string
-	Domain    string
-	Name      string
-	Base      string
-	Ckpt      []byte
-	Parent    string
-	Status    ModelStatus
-	CreatedAt pgtype.Timestamp
+type Rating struct {
+	JsonPath  pgtype.Timestamptz
+	SampleID  pgtype.Timestamptz
+	CreatedAt pgtype.Timestamptz
 }
 
-type Scorer struct {
-	Name      string
-	StateDict []byte
+type Sample struct {
+	SaveDir    pgtype.Timestamptz
+	ResumeFrom pgtype.Timestamptz
+	ImageFn    string
+	PromptFn   string
+	CreatedAt  pgtype.Timestamptz
+	FinishedAt pgtype.Timestamptz
 }
 
-type Task struct {
-	ID            int32
-	SourceModelID string
-	OutputModelID pgtype.Text
-	TaskType      TaskVariant
-	CreatedAt     pgtype.Timestamp
-	HandledAt     pgtype.Timestamp
-	FinishedAt    pgtype.Timestamp
-	PromptEmbeds  []byte
-	Latents       []byte
-	Timesteps     []byte
-	NextLatents   []byte
-	ImageTorchs   []byte
-	Masks         []byte
-	MaskLatents   []byte
+type Train struct {
+	LogPath    pgtype.Timestamptz
+	RatingID   pgtype.Timestamptz
+	CreatedAt  pgtype.Timestamptz
+	FinishedAt pgtype.Timestamptz
 }

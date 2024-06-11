@@ -3,90 +3,40 @@
 #   sqlc v1.26.0
 import dataclasses
 import datetime
-import enum
 from typing import Optional
-
-
-class ModelStatus(str, enum.Enum):
-    FINETUNED = "finetuned"
-    SAMPLING = "sampling"
-    RATING = "rating"
-    TRAINING = "training"
-
-
-class TaskVariant(str, enum.Enum):
-    INFERENCE = "inference"
-    SAMPLE = "sample"
-    FINETUNE = "finetune"
-
-
-@dataclasses.dataclass()
-class Asset:
-    task_id: int
-    order: int
-    pref: Optional[int]
-    group: Optional[int]
-    prompt: str
-    image: memoryview
-    image_url: str
-    mask: Optional[memoryview]
-    mask_url: Optional[str]
-
-
-@dataclasses.dataclass()
-class BaseAsset:
-    id: str
-    image: memoryview
-    image_url: str
-    mask: memoryview
-    mask_url: str
-    domain: str
 
 
 @dataclasses.dataclass()
 class Inference:
-    id: str
-    prompt: Optional[str]
-    image: memoryview
-    image_url: str
-    mask: memoryview
-    mask_url: str
-    output: memoryview
-    output_url: str
-    from_model: str
-
-
-@dataclasses.dataclass()
-class Model:
-    id: str
-    domain: str
-    name: str
-    base: str
-    ckpt: Optional[memoryview]
-    parent: str
-    status: ModelStatus
-    created_at: Optional[datetime.datetime]
-
-
-@dataclasses.dataclass()
-class Scorer:
-    name: str
-    state_dict: memoryview
-
-
-@dataclasses.dataclass()
-class Task:
-    id: int
-    source_model_id: str
-    output_model_id: Optional[str]
-    task_type: TaskVariant
-    created_at: Optional[datetime.datetime]
-    handled_at: Optional[datetime.datetime]
+    output_path: datetime.datetime
+    resume_from: Optional[datetime.datetime]
+    image_path: str
+    mask_path: str
+    prompt: str
+    neg_prompt: str
     finished_at: Optional[datetime.datetime]
-    prompt_embeds: Optional[memoryview]
-    latents: Optional[memoryview]
-    timesteps: Optional[memoryview]
-    next_latents: Optional[memoryview]
-    image_torchs: Optional[memoryview]
-    masks: Optional[memoryview]
-    mask_latents: Optional[memoryview]
+
+
+@dataclasses.dataclass()
+class Rating:
+    json_path: datetime.datetime
+    sample_id: Optional[datetime.datetime]
+    created_at: datetime.datetime
+
+
+@dataclasses.dataclass()
+class Sample:
+    save_dir: datetime.datetime
+    resume_from: Optional[datetime.datetime]
+    image_fn: str
+    prompt_fn: str
+    created_at: datetime.datetime
+    finished_at: Optional[datetime.datetime]
+
+
+@dataclasses.dataclass()
+class Train:
+    log_path: datetime.datetime
+    rating_id: Optional[datetime.datetime]
+    created_at: datetime.datetime
+    finished_at: Optional[datetime.datetime]
