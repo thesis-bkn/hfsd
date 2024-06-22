@@ -4,3 +4,25 @@ package entity
 
 // ENUM(outpaint, sessile, pedunculated)
 type Domain int
+
+func (d Domain) ImageFn() string {
+	switch d {
+	case DomainSessile:
+		return "sessile_imgs"
+	case DomainPedunculated:
+		return "penduculated_imgs"
+	}
+
+	panic("not found domain")
+}
+
+func (d Domain) PromptFn() string {
+	switch d {
+	case DomainSessile:
+		return "sessile_prompt"
+	case DomainPedunculated:
+		return "penduculated_imgs"
+	}
+
+	panic("not found domain")
+}

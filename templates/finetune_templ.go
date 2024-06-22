@@ -12,14 +12,28 @@ import "bytes"
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/internal/entity"
 	"github.com/thesis-bkn/hfsd/templates/components"
 )
 
-func FinetuneView(models []database.Model, domain entity.Domain) templ.Component {
+type modelStatus int
+
+const (
+	Sampling modelStatus = iota
+	Rating
+	Finetuned
+	Training
+)
+
+type ModelNode struct {
+	ID     string
+	Name   string
+	Status modelStatus
+	Parent *string
+}
+
+func FinetuneView(models []ModelNode, domain entity.Domain) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -67,7 +81,7 @@ func FinetuneView(models []database.Model, domain entity.Domain) templ.Component
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(domain.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 19, Col: 23}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 33, Col: 23}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -153,7 +167,7 @@ func redirectTo(url string) templ.ComponentScript {
 	}
 }
 
-func tree(modelM map[string]*database.Model, graphM map[string][]*database.Model, curModel string) templ.Component {
+func tree(modelM map[string]*ModelNode, graphM map[string][]*ModelNode, curModel string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -171,10 +185,10 @@ func tree(modelM map[string]*database.Model, graphM map[string][]*database.Model
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 = []any{"btn", "place-content-center",
-			templ.KV("btn-accent", modelM[curModel].Status == database.ModelStatusSampling),
-			templ.KV("btn-secondary", modelM[curModel].Status == database.ModelStatusRating),
-			templ.KV("btn-primary", modelM[curModel].Status == database.ModelStatusFinetuned),
-			templ.KV("btn-warning", modelM[curModel].Status == database.ModelStatusTraining)}
+			templ.KV("btn-accent", modelM[curModel].Status == Sampling),
+			templ.KV("btn-secondary", modelM[curModel].Status == Rating),
+			templ.KV("btn-primary", modelM[curModel].Status == Finetuned),
+			templ.KV("btn-warning", modelM[curModel].Status == Training)}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var5...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
@@ -195,7 +209,7 @@ func tree(modelM map[string]*database.Model, graphM map[string][]*database.Model
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if modelM[curModel].Status == database.ModelStatusFinetuned {
+		if modelM[curModel].Status == Finetuned {
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" onClick=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -210,7 +224,7 @@ func tree(modelM map[string]*database.Model, graphM map[string][]*database.Model
 				return templ_7745c5c3_Err
 			}
 		}
-		if modelM[curModel].Status == database.ModelStatusRating {
+		if modelM[curModel].Status == Rating {
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" onClick=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -232,7 +246,7 @@ func tree(modelM map[string]*database.Model, graphM map[string][]*database.Model
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(modelM[curModel].Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 84, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 98, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -269,26 +283,27 @@ func tree(modelM map[string]*database.Model, graphM map[string][]*database.Model
 	})
 }
 
-func graph(models []database.Model, domain entity.Domain) (map[string]*database.Model, map[string][]*database.Model, string) {
-	graphM := make(map[string][]*database.Model)
-	modelM := make(map[string]*database.Model)
+func graph(models []ModelNode, domain entity.Domain) (map[string]*ModelNode, map[string][]*ModelNode, string) {
+	graphM := make(map[string][]*ModelNode)
+	modelM := make(map[string]*ModelNode)
 
 	for i := range models {
-		graphM[models[i].ID] = []*database.Model{}
+		graphM[models[i].ID] = []*ModelNode{}
 		modelM[models[i].ID] = &models[i]
 	}
 
 	for i, model := range models {
-		if strings.Contains(model.ID, "base") || graphM[model.Parent] == nil {
+		if model.Parent == nil || graphM[*model.Parent] == nil {
 			continue
 		}
-		graphM[model.Parent] = append(graphM[model.Parent], &models[i])
+
+		graphM[*model.Parent] = append(graphM[*model.Parent], &models[i])
 	}
 
 	return modelM, graphM, fmt.Sprintf("base-%s", domain.String())
 }
 
-func swalStyle(model *database.Model) templ.Component {
+func swalStyle(model *ModelNode) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -316,7 +331,7 @@ func swalStyle(model *database.Model) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(model.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 118, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 133, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {

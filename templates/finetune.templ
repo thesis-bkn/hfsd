@@ -2,14 +2,28 @@ package templates
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/thesis-bkn/hfsd/templates/components"
-	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/internal/entity"
 )
 
-templ FinetuneView(models []database.Model, domain entity.Domain) {
+type modelStatus int
+
+const (
+	Sampling modelStatus = iota
+	Rating
+	Finetuned
+	Training
+)
+
+type ModelNode struct {
+	ID     string
+	Name   string
+	Status modelStatus
+    Parent *string
+}
+
+templ FinetuneView(models []ModelNode, domain entity.Domain) {
 	@base() {
 		@components.NavBar("finetune")
 		@treeStyle()
@@ -67,18 +81,18 @@ script redirectTo(url string) {
     window.location.replace(url)
 }
 
-templ tree(modelM map[string]*database.Model, graphM map[string][]*database.Model, curModel string) {
+templ tree(modelM map[string]*ModelNode, graphM map[string][]*ModelNode, curModel string) {
 	<li>
 		<button
 			class={ "btn", "place-content-center",
-                templ.KV("btn-accent", modelM[curModel].Status == database.ModelStatusSampling),
-                templ.KV("btn-secondary", modelM[curModel].Status == database.ModelStatusRating),
-                templ.KV("btn-primary", modelM[curModel].Status == database.ModelStatusFinetuned),
-                templ.KV("btn-warning", modelM[curModel].Status == database.ModelStatusTraining) }
-			if modelM[curModel].Status == database.ModelStatusFinetuned {
+                templ.KV("btn-accent", modelM[curModel].Status == Sampling),
+                templ.KV("btn-secondary", modelM[curModel].Status == Rating),
+                templ.KV("btn-primary", modelM[curModel].Status == Finetuned),
+                templ.KV("btn-warning", modelM[curModel].Status == Training) }
+			if modelM[curModel].Status == Finetuned {
 				onClick={ swalFire(modelM[curModel].ID) }
 			}
-			if modelM[curModel].Status == database.ModelStatusRating {
+			if modelM[curModel].Status == Rating {
 				onClick={ redirectTo(fmt.Sprintf("/feedback/%s", modelM[curModel].ID)) }
 			}
 		>
@@ -94,26 +108,27 @@ templ tree(modelM map[string]*database.Model, graphM map[string][]*database.Mode
 	</li>
 }
 
-func graph(models []database.Model, domain entity.Domain) (map[string]*database.Model, map[string][]*database.Model, string) {
-	graphM := make(map[string][]*database.Model)
-	modelM := make(map[string]*database.Model)
+func graph(models []ModelNode, domain entity.Domain) (map[string]*ModelNode, map[string][]*ModelNode, string) {
+	graphM := make(map[string][]*ModelNode)
+	modelM := make(map[string]*ModelNode)
 
 	for i := range models {
-		graphM[models[i].ID] = []*database.Model{}
+		graphM[models[i].ID] = []*ModelNode{}
 		modelM[models[i].ID] = &models[i]
 	}
 
 	for i, model := range models {
-		if strings.Contains(model.ID, "base") || graphM[model.Parent] == nil {
-			continue
-		}
-		graphM[model.Parent] = append(graphM[model.Parent], &models[i])
+        if model.Parent == nil || graphM[*model.Parent] == nil {
+            continue
+        }
+
+		graphM[*model.Parent] = append(graphM[*model.Parent], &models[i])
 	}
 
 	return modelM, graphM, fmt.Sprintf("base-%s", domain.String())
 }
 
-templ swalStyle(model *database.Model) {
+templ swalStyle(model *ModelNode) {
 	<template id={ fmt.Sprintf("model-%s", model.ID) }>
 		<swal-title>
 			<span class="text-blue-600">{ model.Name }</span>

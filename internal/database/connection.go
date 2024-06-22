@@ -18,6 +18,10 @@ type client struct {
 	conn    *pgx.Conn
 }
 
+type QuerierT[T any] interface {
+	New(db pgx.Conn) *T
+}
+
 func NewClient(cfg *config.Config) (Client, error) {
 	conn, err := pgx.Connect(
 		context.Background(),

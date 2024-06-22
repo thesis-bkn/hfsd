@@ -11,29 +11,323 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const insertSample = `-- name: InsertSample :exec
-INSERT INTO samples (
-    save_dir, resume_from, image_fn, 
-    prompt_fn, created_at, finished_at
-) VALUES
-(
-    $1, $2, $3, $4, now(), NULL
+const checkModelExists = `-- name: CheckModelExists :one
+SELECT EXISTS (
+    SELECT id, domain, parent_id, status, sample_id, train_id, updated_at, created_at
+    FROM models
+    WHERE id = $1
 )
 `
 
+func (q *Queries) CheckModelExists(ctx context.Context, id string) (bool, error) {
+	row := q.db.QueryRow(ctx, checkModelExists, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const getModelByID = `-- name: GetModelByID :one
+SELECT id, domain, parent_id, status, sample_id, train_id, updated_at, created_at FROM models
+WHERE id = $1
+`
+
+func (q *Queries) GetModelByID(ctx context.Context, id string) (Model, error) {
+	row := q.db.QueryRow(ctx, getModelByID, id)
+	var i Model
+	err := row.Scan(
+		&i.ID,
+		&i.Domain,
+		&i.ParentID,
+		&i.Status,
+		&i.SampleID,
+		&i.TrainID,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getSampleByModelID = `-- name: GetSampleByModelID :one
+SELECT id, model_id, finished_at, created_at FROM samples
+WHERE model_id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetSampleByModelID(ctx context.Context, modelID string) (Sample, error) {
+	row := q.db.QueryRow(ctx, getSampleByModelID, modelID)
+	var i Sample
+	err := row.Scan(
+		&i.ID,
+		&i.ModelID,
+		&i.FinishedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const insertInference = `-- name: InsertInference :exec
+INSERT INTO inferences (
+    id, model_id, prompt, neg_prompt
+) VALUES ( $1, $2, $3, $4 )
+`
+
+type InsertInferenceParams struct {
+	ID        string
+	ModelID   string
+	Prompt    string
+	NegPrompt string
+}
+
+func (q *Queries) InsertInference(ctx context.Context, arg InsertInferenceParams) error {
+	_, err := q.db.Exec(ctx, insertInference,
+		arg.ID,
+		arg.ModelID,
+		arg.Prompt,
+		arg.NegPrompt,
+	)
+	return err
+}
+
+const insertModel = `-- name: InsertModel :exec
+INSERT INTO models (
+    id, domain, parent_id, status,
+    sample_id, train_id, updated_at
+) VALUES (
+    $1, $2, $3, $4,
+    $5, $6, now()
+)
+`
+
+type InsertModelParams struct {
+	ID       string
+	Domain   string
+	ParentID pgtype.Text
+	Status   string
+	SampleID pgtype.Text
+	TrainID  pgtype.Text
+}
+
+func (q *Queries) InsertModel(ctx context.Context, arg InsertModelParams) error {
+	_, err := q.db.Exec(ctx, insertModel,
+		arg.ID,
+		arg.Domain,
+		arg.ParentID,
+		arg.Status,
+		arg.SampleID,
+		arg.TrainID,
+	)
+	return err
+}
+
+const insertSample = `-- name: InsertSample :exec
+INSERT INTO samples ( id, model_id )
+VALUES ( $1, $2 )
+`
+
 type InsertSampleParams struct {
-	SaveDir    pgtype.Timestamptz
-	ResumeFrom pgtype.Timestamptz
-	ImageFn    string
-	PromptFn   string
+	ID      string
+	ModelID string
 }
 
 func (q *Queries) InsertSample(ctx context.Context, arg InsertSampleParams) error {
-	_, err := q.db.Exec(ctx, insertSample,
-		arg.SaveDir,
-		arg.ResumeFrom,
-		arg.ImageFn,
-		arg.PromptFn,
-	)
+	_, err := q.db.Exec(ctx, insertSample, arg.ID, arg.ModelID)
+	return err
+}
+
+const insertTrain = `-- name: InsertTrain :exec
+INSERT INTO trains (id, sample_id)
+VALUES ($1, $2)
+`
+
+type InsertTrainParams struct {
+	ID       string
+	SampleID string
+}
+
+func (q *Queries) InsertTrain(ctx context.Context, arg InsertTrainParams) error {
+	_, err := q.db.Exec(ctx, insertTrain, arg.ID, arg.SampleID)
+	return err
+}
+
+const listAllUnfinishedInferences = `-- name: ListAllUnfinishedInferences :many
+SELECT  i.id as inference_id,
+        i.prompt,
+        i.neg_prompt,
+        i.finished_at,
+        m.id, m.domain, m.parent_id, m.status, m.sample_id, m.train_id, m.updated_at, m.created_at
+FROM inferences i
+JOIN models m on m.id = i.model_id
+WHERE finished_at IS NULL
+`
+
+type ListAllUnfinishedInferencesRow struct {
+	InferenceID string
+	Prompt      string
+	NegPrompt   string
+	FinishedAt  pgtype.Timestamptz
+	ID          string
+	Domain      string
+	ParentID    pgtype.Text
+	Status      string
+	SampleID    pgtype.Text
+	TrainID     pgtype.Text
+	UpdatedAt   pgtype.Timestamptz
+	CreatedAt   pgtype.Timestamptz
+}
+
+func (q *Queries) ListAllUnfinishedInferences(ctx context.Context) ([]ListAllUnfinishedInferencesRow, error) {
+	rows, err := q.db.Query(ctx, listAllUnfinishedInferences)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllUnfinishedInferencesRow
+	for rows.Next() {
+		var i ListAllUnfinishedInferencesRow
+		if err := rows.Scan(
+			&i.InferenceID,
+			&i.Prompt,
+			&i.NegPrompt,
+			&i.FinishedAt,
+			&i.ID,
+			&i.Domain,
+			&i.ParentID,
+			&i.Status,
+			&i.SampleID,
+			&i.TrainID,
+			&i.UpdatedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllUnfinishedSample = `-- name: ListAllUnfinishedSample :many
+SELECT id, model_id, finished_at, created_at FROM samples
+WHERE finished_at IS NULL
+`
+
+func (q *Queries) ListAllUnfinishedSample(ctx context.Context) ([]Sample, error) {
+	rows, err := q.db.Query(ctx, listAllUnfinishedSample)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Sample
+	for rows.Next() {
+		var i Sample
+		if err := rows.Scan(
+			&i.ID,
+			&i.ModelID,
+			&i.FinishedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllUnfinishedTrain = `-- name: ListAllUnfinishedTrain :many
+SELECT trains.id as train_id, m.id, m.domain, m.parent_id, m.status, m.sample_id, m.train_id, m.updated_at, m.created_at FROM trains
+JOIN samples s ON sample_id = s.id
+JOIN models m ON m.id = s.id
+WHERE trains.finished_at IS NULL
+`
+
+type ListAllUnfinishedTrainRow struct {
+	TrainID   string
+	ID        string
+	Domain    string
+	ParentID  pgtype.Text
+	Status    string
+	SampleID  pgtype.Text
+	TrainID_2 pgtype.Text
+	UpdatedAt pgtype.Timestamptz
+	CreatedAt pgtype.Timestamptz
+}
+
+func (q *Queries) ListAllUnfinishedTrain(ctx context.Context) ([]ListAllUnfinishedTrainRow, error) {
+	rows, err := q.db.Query(ctx, listAllUnfinishedTrain)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllUnfinishedTrainRow
+	for rows.Next() {
+		var i ListAllUnfinishedTrainRow
+		if err := rows.Scan(
+			&i.TrainID,
+			&i.ID,
+			&i.Domain,
+			&i.ParentID,
+			&i.Status,
+			&i.SampleID,
+			&i.TrainID_2,
+			&i.UpdatedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listModels = `-- name: ListModels :many
+SELECT id, domain, parent_id, status, sample_id, train_id, updated_at, created_at FROM models
+WHERE id = ANY($1::text[])
+`
+
+func (q *Queries) ListModels(ctx context.Context, dollar_1 []string) ([]Model, error) {
+	rows, err := q.db.Query(ctx, listModels, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Model
+	for rows.Next() {
+		var i Model
+		if err := rows.Scan(
+			&i.ID,
+			&i.Domain,
+			&i.ParentID,
+			&i.Status,
+			&i.SampleID,
+			&i.TrainID,
+			&i.UpdatedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateSampleFinished = `-- name: UpdateSampleFinished :exec
+UPDATE samples
+SET finished_at = now()
+WHERE id = $1
+`
+
+func (q *Queries) UpdateSampleFinished(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, updateSampleFinished, id)
 	return err
 }

@@ -2,8 +2,9 @@
 # versions:
 #   sqlc v1.26.0
 # source: query.sql
+import dataclasses
 import datetime
-from typing import Optional
+from typing import AsyncIterator, Iterator, List, Optional
 
 import sqlalchemy
 import sqlalchemy.ext.asyncio
@@ -11,14 +12,133 @@ import sqlalchemy.ext.asyncio
 from src.database import models
 
 
-INSERT_SAMPLE = """-- name: insert_sample \\:exec
-INSERT INTO samples (
-    save_dir, resume_from, image_fn, 
-    prompt_fn, created_at, finished_at
-) VALUES
-(
-    :p1, :p2, :p3, :p4, now(), NULL
+CHECK_MODEL_EXISTS = """-- name: check_model_exists \\:one
+SELECT EXISTS (
+    SELECT id, domain, parent_id, status, sample_id, train_id, updated_at, created_at
+    FROM models
+    WHERE id = :p1
 )
+"""
+
+
+GET_MODEL_BY_ID = """-- name: get_model_by_id \\:one
+SELECT id, domain, parent_id, status, sample_id, train_id, updated_at, created_at FROM models
+WHERE id = :p1
+"""
+
+
+GET_SAMPLE_BY_MODEL_ID = """-- name: get_sample_by_model_id \\:one
+SELECT id, model_id, finished_at, created_at FROM samples
+WHERE model_id = :p1
+LIMIT 1
+"""
+
+
+INSERT_INFERENCE = """-- name: insert_inference \\:exec
+INSERT INTO inferences (
+    id, model_id, prompt, neg_prompt
+) VALUES ( :p1, :p2, :p3, :p4 )
+"""
+
+
+INSERT_MODEL = """-- name: insert_model \\:exec
+INSERT INTO models (
+    id, domain, parent_id, status,
+    sample_id, train_id, updated_at
+) VALUES (
+    :p1, :p2, :p3, :p4,
+    :p5, :p6, now()
+)
+"""
+
+
+@dataclasses.dataclass()
+class InsertModelParams:
+    id: str
+    domain: str
+    parent_id: Optional[str]
+    status: str
+    sample_id: Optional[str]
+    train_id: Optional[str]
+
+
+INSERT_SAMPLE = """-- name: insert_sample \\:exec
+INSERT INTO samples ( id, model_id )
+VALUES ( :p1, :p2 )
+"""
+
+
+INSERT_TRAIN = """-- name: insert_train \\:exec
+INSERT INTO trains (id, sample_id)
+VALUES (:p1, :p2)
+"""
+
+
+LIST_ALL_UNFINISHED_INFERENCES = """-- name: list_all_unfinished_inferences \\:many
+SELECT  i.id as inference_id,
+        i.prompt,
+        i.neg_prompt,
+        i.finished_at,
+        m.id, m.domain, m.parent_id, m.status, m.sample_id, m.train_id, m.updated_at, m.created_at
+FROM inferences i
+JOIN models m on m.id = i.model_id
+WHERE finished_at IS NULL
+"""
+
+
+@dataclasses.dataclass()
+class ListAllUnfinishedInferencesRow:
+    inference_id: str
+    prompt: str
+    neg_prompt: str
+    finished_at: Optional[datetime.datetime]
+    id: str
+    domain: str
+    parent_id: Optional[str]
+    status: str
+    sample_id: Optional[str]
+    train_id: Optional[str]
+    updated_at: Optional[datetime.datetime]
+    created_at: Optional[datetime.datetime]
+
+
+LIST_ALL_UNFINISHED_SAMPLE = """-- name: list_all_unfinished_sample \\:many
+SELECT id, model_id, finished_at, created_at FROM samples
+WHERE finished_at IS NULL
+"""
+
+
+LIST_ALL_UNFINISHED_TRAIN = """-- name: list_all_unfinished_train \\:many
+SELECT trains.id as train_id, m.id, m.domain, m.parent_id, m.status, m.sample_id, m.train_id, m.updated_at, m.created_at FROM trains
+JOIN samples s ON sample_id = s.id
+JOIN models m ON m.id = s.id
+WHERE trains.finished_at IS NULL
+"""
+
+
+@dataclasses.dataclass()
+class ListAllUnfinishedTrainRow:
+    train_id: str
+    id: str
+    domain: str
+    parent_id: Optional[str]
+    status: str
+    sample_id: Optional[str]
+    train_id_2: Optional[str]
+    updated_at: Optional[datetime.datetime]
+    created_at: Optional[datetime.datetime]
+
+
+LIST_MODELS = """-- name: list_models \\:many
+SELECT id, domain, parent_id, status, sample_id, train_id, updated_at, created_at FROM models
+WHERE id = ANY(:p1\\:\\:text[])
+"""
+
+
+UPDATE_SAMPLE_FINISHED = """-- name: update_sample_finished \\:exec
+UPDATE samples
+SET finished_at = now()
+WHERE id = :p1
 """
 
 
@@ -26,23 +146,239 @@ class Querier:
     def __init__(self, conn: sqlalchemy.engine.Connection):
         self._conn = conn
 
-    def insert_sample(self, *, save_dir: datetime.datetime, resume_from: Optional[datetime.datetime], image_fn: str, prompt_fn: str) -> None:
-        self._conn.execute(sqlalchemy.text(INSERT_SAMPLE), {
-            "p1": save_dir,
-            "p2": resume_from,
-            "p3": image_fn,
-            "p4": prompt_fn,
+    def check_model_exists(self, *, id: str) -> Optional[bool]:
+        row = self._conn.execute(sqlalchemy.text(CHECK_MODEL_EXISTS), {"p1": id}).first()
+        if row is None:
+            return None
+        return row[0]
+
+    def get_model_by_id(self, *, id: str) -> Optional[models.Model]:
+        row = self._conn.execute(sqlalchemy.text(GET_MODEL_BY_ID), {"p1": id}).first()
+        if row is None:
+            return None
+        return models.Model(
+            id=row[0],
+            domain=row[1],
+            parent_id=row[2],
+            status=row[3],
+            sample_id=row[4],
+            train_id=row[5],
+            updated_at=row[6],
+            created_at=row[7],
+        )
+
+    def get_sample_by_model_id(self, *, model_id: str) -> Optional[models.Sample]:
+        row = self._conn.execute(sqlalchemy.text(GET_SAMPLE_BY_MODEL_ID), {"p1": model_id}).first()
+        if row is None:
+            return None
+        return models.Sample(
+            id=row[0],
+            model_id=row[1],
+            finished_at=row[2],
+            created_at=row[3],
+        )
+
+    def insert_inference(self, *, id: str, model_id: str, prompt: str, neg_prompt: str) -> None:
+        self._conn.execute(sqlalchemy.text(INSERT_INFERENCE), {
+            "p1": id,
+            "p2": model_id,
+            "p3": prompt,
+            "p4": neg_prompt,
         })
+
+    def insert_model(self, arg: InsertModelParams) -> None:
+        self._conn.execute(sqlalchemy.text(INSERT_MODEL), {
+            "p1": arg.id,
+            "p2": arg.domain,
+            "p3": arg.parent_id,
+            "p4": arg.status,
+            "p5": arg.sample_id,
+            "p6": arg.train_id,
+        })
+
+    def insert_sample(self, *, id: str, model_id: str) -> None:
+        self._conn.execute(sqlalchemy.text(INSERT_SAMPLE), {"p1": id, "p2": model_id})
+
+    def insert_train(self, *, id: str, sample_id: str) -> None:
+        self._conn.execute(sqlalchemy.text(INSERT_TRAIN), {"p1": id, "p2": sample_id})
+
+    def list_all_unfinished_inferences(self) -> Iterator[ListAllUnfinishedInferencesRow]:
+        result = self._conn.execute(sqlalchemy.text(LIST_ALL_UNFINISHED_INFERENCES))
+        for row in result:
+            yield ListAllUnfinishedInferencesRow(
+                inference_id=row[0],
+                prompt=row[1],
+                neg_prompt=row[2],
+                finished_at=row[3],
+                id=row[4],
+                domain=row[5],
+                parent_id=row[6],
+                status=row[7],
+                sample_id=row[8],
+                train_id=row[9],
+                updated_at=row[10],
+                created_at=row[11],
+            )
+
+    def list_all_unfinished_sample(self) -> Iterator[models.Sample]:
+        result = self._conn.execute(sqlalchemy.text(LIST_ALL_UNFINISHED_SAMPLE))
+        for row in result:
+            yield models.Sample(
+                id=row[0],
+                model_id=row[1],
+                finished_at=row[2],
+                created_at=row[3],
+            )
+
+    def list_all_unfinished_train(self) -> Iterator[ListAllUnfinishedTrainRow]:
+        result = self._conn.execute(sqlalchemy.text(LIST_ALL_UNFINISHED_TRAIN))
+        for row in result:
+            yield ListAllUnfinishedTrainRow(
+                train_id=row[0],
+                id=row[1],
+                domain=row[2],
+                parent_id=row[3],
+                status=row[4],
+                sample_id=row[5],
+                train_id_2=row[6],
+                updated_at=row[7],
+                created_at=row[8],
+            )
+
+    def list_models(self, *, dollar_1: List[str]) -> Iterator[models.Model]:
+        result = self._conn.execute(sqlalchemy.text(LIST_MODELS), {"p1": dollar_1})
+        for row in result:
+            yield models.Model(
+                id=row[0],
+                domain=row[1],
+                parent_id=row[2],
+                status=row[3],
+                sample_id=row[4],
+                train_id=row[5],
+                updated_at=row[6],
+                created_at=row[7],
+            )
+
+    def update_sample_finished(self, *, id: str) -> None:
+        self._conn.execute(sqlalchemy.text(UPDATE_SAMPLE_FINISHED), {"p1": id})
 
 
 class AsyncQuerier:
     def __init__(self, conn: sqlalchemy.ext.asyncio.AsyncConnection):
         self._conn = conn
 
-    async def insert_sample(self, *, save_dir: datetime.datetime, resume_from: Optional[datetime.datetime], image_fn: str, prompt_fn: str) -> None:
-        await self._conn.execute(sqlalchemy.text(INSERT_SAMPLE), {
-            "p1": save_dir,
-            "p2": resume_from,
-            "p3": image_fn,
-            "p4": prompt_fn,
+    async def check_model_exists(self, *, id: str) -> Optional[bool]:
+        row = (await self._conn.execute(sqlalchemy.text(CHECK_MODEL_EXISTS), {"p1": id})).first()
+        if row is None:
+            return None
+        return row[0]
+
+    async def get_model_by_id(self, *, id: str) -> Optional[models.Model]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_MODEL_BY_ID), {"p1": id})).first()
+        if row is None:
+            return None
+        return models.Model(
+            id=row[0],
+            domain=row[1],
+            parent_id=row[2],
+            status=row[3],
+            sample_id=row[4],
+            train_id=row[5],
+            updated_at=row[6],
+            created_at=row[7],
+        )
+
+    async def get_sample_by_model_id(self, *, model_id: str) -> Optional[models.Sample]:
+        row = (await self._conn.execute(sqlalchemy.text(GET_SAMPLE_BY_MODEL_ID), {"p1": model_id})).first()
+        if row is None:
+            return None
+        return models.Sample(
+            id=row[0],
+            model_id=row[1],
+            finished_at=row[2],
+            created_at=row[3],
+        )
+
+    async def insert_inference(self, *, id: str, model_id: str, prompt: str, neg_prompt: str) -> None:
+        await self._conn.execute(sqlalchemy.text(INSERT_INFERENCE), {
+            "p1": id,
+            "p2": model_id,
+            "p3": prompt,
+            "p4": neg_prompt,
         })
+
+    async def insert_model(self, arg: InsertModelParams) -> None:
+        await self._conn.execute(sqlalchemy.text(INSERT_MODEL), {
+            "p1": arg.id,
+            "p2": arg.domain,
+            "p3": arg.parent_id,
+            "p4": arg.status,
+            "p5": arg.sample_id,
+            "p6": arg.train_id,
+        })
+
+    async def insert_sample(self, *, id: str, model_id: str) -> None:
+        await self._conn.execute(sqlalchemy.text(INSERT_SAMPLE), {"p1": id, "p2": model_id})
+
+    async def insert_train(self, *, id: str, sample_id: str) -> None:
+        await self._conn.execute(sqlalchemy.text(INSERT_TRAIN), {"p1": id, "p2": sample_id})
+
+    async def list_all_unfinished_inferences(self) -> AsyncIterator[ListAllUnfinishedInferencesRow]:
+        result = await self._conn.stream(sqlalchemy.text(LIST_ALL_UNFINISHED_INFERENCES))
+        async for row in result:
+            yield ListAllUnfinishedInferencesRow(
+                inference_id=row[0],
+                prompt=row[1],
+                neg_prompt=row[2],
+                finished_at=row[3],
+                id=row[4],
+                domain=row[5],
+                parent_id=row[6],
+                status=row[7],
+                sample_id=row[8],
+                train_id=row[9],
+                updated_at=row[10],
+                created_at=row[11],
+            )
+
+    async def list_all_unfinished_sample(self) -> AsyncIterator[models.Sample]:
+        result = await self._conn.stream(sqlalchemy.text(LIST_ALL_UNFINISHED_SAMPLE))
+        async for row in result:
+            yield models.Sample(
+                id=row[0],
+                model_id=row[1],
+                finished_at=row[2],
+                created_at=row[3],
+            )
+
+    async def list_all_unfinished_train(self) -> AsyncIterator[ListAllUnfinishedTrainRow]:
+        result = await self._conn.stream(sqlalchemy.text(LIST_ALL_UNFINISHED_TRAIN))
+        async for row in result:
+            yield ListAllUnfinishedTrainRow(
+                train_id=row[0],
+                id=row[1],
+                domain=row[2],
+                parent_id=row[3],
+                status=row[4],
+                sample_id=row[5],
+                train_id_2=row[6],
+                updated_at=row[7],
+                created_at=row[8],
+            )
+
+    async def list_models(self, *, dollar_1: List[str]) -> AsyncIterator[models.Model]:
+        result = await self._conn.stream(sqlalchemy.text(LIST_MODELS), {"p1": dollar_1})
+        async for row in result:
+            yield models.Model(
+                id=row[0],
+                domain=row[1],
+                parent_id=row[2],
+                status=row[3],
+                sample_id=row[4],
+                train_id=row[5],
+                updated_at=row[6],
+                created_at=row[7],
+            )
+
+    async def update_sample_finished(self, *, id: str) -> None:
+        await self._conn.execute(sqlalchemy.text(UPDATE_SAMPLE_FINISHED), {"p1": id})

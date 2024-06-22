@@ -1,34 +1,39 @@
 create table if not exists samples (
-    save_dir        timestamp with time zone not null primary key,
-    resume_from     timestamp with time zone,
-    image_fn        text not null,
-    prompt_fn       text not null,
-    created_at      timestamp with time zone not null default now(),
-    finished_at     timestamp with time zone
-);
-
-create table if not exists ratings (
-    json_path       timestamp with time zone not null primary key,
-    sample_id       timestamp with time zone,
-    created_at      timestamp with time zone not null default now(),
-    foreign key(sample_id) references samples(save_dir)
+    id                  text primary key,
+    model_id            text not null,
+    finished_at         timestamp with time zone,
+    created_at          timestamp with time zone not null default now(),
+    foreign key(sampling_model_id) references models(id)
 );
 
 create table if not exists trains (
-    log_path        timestamp with time zone not null primary key,
-    rating_id       timestamp with time zone,
-    created_at      timestamp with time zone not null default now(),
-    finished_at     timestamp with time zone,
-    foreign key(rating_id) references ratings(json_path)
+    id                  text primary key,
+    sample_id           text not null,
+    created_at          timestamp with time zone not null default now(),
+    finished_at         timestamp with time zone,
+    foreign key(training_model_id) references models(id),
+    foreign key(sample_id) references samples(id)
+);
+
+create table if not exists models (
+    id              text primary key,
+    domain          text not null,
+    parent_id       text,
+    status          text not null,
+    sample_id       text,
+    train_id        text,
+    updated_at      timestamp with time zone,
+    created_at      timestamp with time zone default now(),
+    foreign key (parent_id) references models(id),
+    foreign key (sample_id) references samples(id),
+    foreign key (train_id) references trains(id)
 );
 
 create table if not exists inferences (
-    output_path     timestamp with time zone not null primary key,
-    resume_from     timestamp with time zone,
-    image_path      text not null,
-    mask_path       text not null,
+    id              text primary key,
+    model_id        text not null,
     prompt          text not null,
     neg_prompt      text not null,
     finished_at     timestamp with time zone,
-    foreign key(rating_id) references ratings(json_path)
+    foreign key(model_id) references models(id)
 );

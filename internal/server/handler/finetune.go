@@ -1,22 +1,27 @@
 package handler
 
 import (
-    "fmt"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
+	"sort"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/splode/fname"
 	"github.com/ztrue/tracerr"
 
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
+	"github.com/thesis-bkn/hfsd/internal/entity"
 	"github.com/thesis-bkn/hfsd/internal/errors"
+	"github.com/thesis-bkn/hfsd/internal/utils"
+	"github.com/thesis-bkn/hfsd/internal/worker"
 )
 
 type FinetuneModelHandler struct {
+	cc       chan<- interface{}
 	validate *validator.Validate
 	client   database.Client
 	cfg      *config.Config
@@ -24,6 +29,7 @@ type FinetuneModelHandler struct {
 }
 
 func NewFinetuneModelHandler(
+	worker *worker.Worker,
 	validate *validator.Validate,
 	client database.Client,
 	nameRng *fname.Generator,
@@ -31,6 +37,7 @@ func NewFinetuneModelHandler(
 ) *FinetuneModelHandler {
 	return &FinetuneModelHandler{
 		validate: validate,
+		cc:       worker.C,
 		client:   client,
 		nameRng:  nameRng,
 		cfg:      cfg,
@@ -54,49 +61,31 @@ func (h *FinetuneModelHandler) SubmitSampleTask(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	sourceModel, err := h.client.Query().GetModel(c.Request().Context(), req.ModelID)
+	sourceModel, err := h.client.Query().GetModelByID(c.Request().Context(), req.ModelID)
 	if err != nil {
 		c.Error(errors.ErrNotFound)
 		return tracerr.Wrap(err)
 	}
 
-	newModelID, err := gonanoid.Generate(modelIDsAlphabet, 5)
-	if err != nil {
-		return tracerr.Wrap(err)
-	}
+	sourceModelAgg := entity.NewModelFromDB(&sourceModel)
 
 	modelName, err := h.nameRng.Generate()
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	newModel := &database.Model{
-		ID:     newModelID,
-		Domain: sourceModel.Domain,
-		Name:   modelName,
-		Parent: req.ModelID,
-	}
-
-	if err := h.client.Query().InsertPendingModel(c.Request().Context(), database.InsertPendingModelParams{
-		ID:     newModel.ID,
-		Domain: newModel.Domain,
-		Name:   newModel.Name,
-		Parent: newModel.Parent,
-	}); err != nil {
+	sample, err := entity.NewSample(sourceModelAgg, true)
+	if err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	if err := h.client.Query().InsertSampleTask(c.Request().Context(), database.InsertSampleTaskParams{
-		SourceModelID: newModel.Parent,
-		OutputModelID: pgtype.Text{
-			String: newModel.ID,
-			Valid:  true,
-		},
-	}); err != nil {
-		return tracerr.Wrap(err)
-	}
+	// worker do sample task
+	h.cc <- sample
 
-	res.Name = newModel.Name
+	res.Name = modelName
+
+	h.client.Query().InsertSample(c.Request().Context(), sample.Insertion())
+
 	c.JSON(http.StatusOK, res)
 
 	return nil
@@ -128,48 +117,68 @@ func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
 	}
 	defer tx.Rollback(c.Request().Context())
 
-	// get task
-	task, err := h.client.Query().GetTaskWithoutWeight(c.Request().Context(), pgtype.Text{
-		String: req.ModelID,
-		Valid:  true,
-	})
+	modelDB, err := h.client.Query().GetModelByID(c.Request().Context(), req.ModelID)
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	for _, item := range req.Items {
-		var pref int32
-		if item.Option {
-			pref = 0
-		} else {
-			pref = -1
-		}
-        fmt.Println("pref %v", item.Option)
-
-		if err = h.client.Query().SaveHumanPref(
-			c.Request().Context(),
-			database.SaveHumanPrefParams{
-				TaskID: task.ID,
-				Order:  int16(item.Order),
-				Pref: pgtype.Int4{
-					Int32: pref,
-					Valid: true,
-				},
-			}); err != nil {
-			return tracerr.Wrap(err)
-		}
-	}
-
-	if err := h.client.Query().UpdateSampleToFineTuneTask(c.Request().Context(), task.ID); err != nil {
+	model := entity.NewModelFromDB(&modelDB)
+	sample, err := entity.NewSample(model, false)
+	if err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	if err := h.client.Query().UpdateModelStatus(c.Request().Context(), database.UpdateModelStatusParams{
-		ID:     task.OutputModelID.String,
-		Status: database.ModelStatusTraining,
-	}); err != nil {
+	train := entity.NewTrain(sample)
+
+	// -- Write to json file
+	sort.Slice(req.Items, func(i, j int) bool {
+		return req.Items[i].Order < req.Items[j].Order
+	})
+	ratings := utils.Map(req.Items, func(e fineTuneTaskItem) int {
+		if e.Option {
+			return 0
+		}
+		return -1
+	})
+	if err := h.writeJsonFile(model, ratings); err != nil {
+		return tracerr.Wrap(err)
+	}
+
+	h.cc <- train
+
+	if err := h.client.Query().InsertTrain(c.Request().Context(), train.Insertion()); err != nil {
 		return tracerr.Wrap(err)
 	}
 
 	return tx.Commit(c.Request().Context())
+}
+
+func (h *FinetuneModelHandler) writeJsonFile(model *entity.Model, ratings []int) error {
+	ratingGroups := [][]int{}
+	for i := 0; i < len(ratings); i += 7 {
+		for j := 0; j < 7; j++ {
+			ratingGroups[i/7] = append(ratingGroups[i/7], ratings[i+j])
+		}
+	}
+
+	// Open file for writing
+	if err := os.Mkdir(fmt.Sprintf("./data/%s/json", model.ID()), os.ModePerm); err != nil {
+		return tracerr.Wrap(err)
+	}
+
+	file, err := os.Create(fmt.Sprintf("./data/%s/json/data.json", model.ID()))
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return tracerr.Wrap(err)
+	}
+	defer file.Close()
+
+	// Create a JSON encoder and write the nested array to the file
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(ratingGroups); err != nil {
+		fmt.Println("Error encoding JSON to file:", err)
+		return tracerr.Wrap(err)
+	}
+
+	return nil
 }

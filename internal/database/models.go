@@ -9,33 +9,34 @@ import (
 )
 
 type Inference struct {
-	OutputPath pgtype.Timestamptz
-	ResumeFrom pgtype.Timestamptz
-	ImagePath  string
-	MaskPath   string
+	ID         string
+	ModelID    string
 	Prompt     string
 	NegPrompt  string
 	FinishedAt pgtype.Timestamptz
 }
 
-type Rating struct {
-	JsonPath  pgtype.Timestamptz
-	SampleID  pgtype.Timestamptz
+type Model struct {
+	ID        string
+	Domain    string
+	ParentID  pgtype.Text
+	Status    string
+	SampleID  pgtype.Text
+	TrainID   pgtype.Text
+	UpdatedAt pgtype.Timestamptz
 	CreatedAt pgtype.Timestamptz
 }
 
 type Sample struct {
-	SaveDir    pgtype.Timestamptz
-	ResumeFrom pgtype.Timestamptz
-	ImageFn    string
-	PromptFn   string
-	CreatedAt  pgtype.Timestamptz
+	ID         string
+	ModelID    string
 	FinishedAt pgtype.Timestamptz
+	CreatedAt  pgtype.Timestamptz
 }
 
 type Train struct {
-	LogPath    pgtype.Timestamptz
-	RatingID   pgtype.Timestamptz
+	ID         string
+	SampleID   string
 	CreatedAt  pgtype.Timestamptz
 	FinishedAt pgtype.Timestamptz
 }

@@ -36,55 +36,55 @@ func (w *Worker) Run() {
 
 	for data := range w.C {
 		switch task := data.(type) {
-		case *entity.TaskSample:
+		case *entity.Sample:
 			execute(fmtSample(task))
 
-		case *entity.TaskTrain:
+		case *entity.Train:
 			execute(fmtTrain(task))
 
-		case *entity.TaskInference:
+		case *entity.Inference:
 			execute(fmtInf(task))
 		}
 	}
 }
 
-func fmtSample(task *entity.TaskSample) []string {
+func fmtSample(task *entity.Sample) []string {
 	res := []string{
 		"run",
 		"accelerate",
 		"launch",
 		"./d3po/scripts/sample_inpaint.py",
-		"--save_dir", toUnixS(task.SaveDir),
-		"--image_fn", task.ImageFn,
-		"--prompt_fn", task.PromptFn,
+		"--save_dir", task.SaveDir(),
+		"--image_fn", task.Model().Domain().ImageFn(),
+		"--prompt_fn", task.Model().Domain().PromptFn(),
 	}
 
-	if task.ResumeFrom != nil {
-		res = append(res, "--resume_from", toUnixS(task.SaveDir))
+	if !task.Model().IsBase() {
+		res = append(res, "--resume_from", task.Model().ResumeFrom())
 	}
 
 	return res
 }
 
-func fmtTrain(task *entity.TaskTrain) []string {
+func fmtTrain(task *entity.Train) []string {
 	res := []string{
 		"run",
 		"accelerate",
 		"launch",
 		"./d3po/scripts/train_inpaint.py",
-		"--log_dir", toUnixS(task.LogDir),
-		"--train_json_path", task.TrainJsonPath,
-		"--train_sample_path", task.TrainSamplePath,
+		"--log_dir", task.Model().LogDir(),
+		"--train_json_path", task.Model().JsonPath(),
+		"--train_sample_path", task.Model().SamplePath(),
 	}
 
-	if task.ResumeFrom != nil {
-		res = append(res, "--resume_from", toUnixS(*task.ResumeFrom))
+	if !task.Model().IsBase() {
+		res = append(res, "--resume_from", task.Model().ResumeFrom())
 	}
 
 	return res
 }
 
-func fmtInf(task *entity.TaskInference) []string {
+func fmtInf(task *entity.Inference) []string {
 	res := []string{
 		"run",
 		"accelerate",
@@ -93,12 +93,12 @@ func fmtInf(task *entity.TaskInference) []string {
 		"--image_path", task.ImagePath(),
 		"--mask_path", task.MaskPath(),
 		"--output_path", task.OutputPath(),
-		"--prompt", task.Prompt,
-		"--neg_prompt", task.NegPrompt,
+		"--prompt", task.Prompt(),
+		"--neg_prompt", task.NegPrompt(),
 	}
 
-	if task.ResumeFrom != nil {
-		res = append(res, "--resume_from", toUnixS(*task.ResumeFrom))
+	if !task.Model().IsBase() {
+		res = append(res, "--resume_from", task.Model().ResumeFrom())
 	}
 
 	return res

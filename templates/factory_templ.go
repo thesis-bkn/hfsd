@@ -11,11 +11,31 @@ import "io"
 import "bytes"
 
 import "github.com/thesis-bkn/hfsd/templates/components"
-import "github.com/thesis-bkn/hfsd/internal/database"
 import "fmt"
-import "path"
 
-func FactoryView(bucketEpt string, taskWithAssets []database.ListAllTaskWithAssetRow) templ.Component {
+type (
+	TaskType   int
+	TaskStatus int
+)
+
+const (
+	Inference TaskType = iota
+	Sample
+	Train
+
+	Pending TaskStatus = iota
+	Processing
+	Finished
+)
+
+type Task struct {
+	ID       string
+	Type     TaskType
+	ImageUrl string
+	Status   TaskStatus
+}
+
+func FactoryView(bucketEpt string, tasks []Task) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -42,12 +62,12 @@ func FactoryView(bucketEpt string, taskWithAssets []database.ListAllTaskWithAsse
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			for _, taskWithAsset := range taskWithAssets {
+			for _, task := range tasks {
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"card w-96 bg-base-100 shadow-xl\"><figure><img src=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(path.Join(bucketEpt, taskWithAsset.Asset.ImageUrl)))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(task.ImageUrl))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -56,9 +76,9 @@ func FactoryView(bucketEpt string, taskWithAssets []database.ListAllTaskWithAsse
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var3 string
-				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", taskWithAsset.Task.ID))
+				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", task.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/factory.templ`, Line: 21, Col: 49}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/factory.templ`, Line: 41, Col: 35}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -68,36 +88,35 @@ func FactoryView(bucketEpt string, taskWithAssets []database.ListAllTaskWithAsse
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				switch taskWithAsset.Task.TaskType {
-				case database.TaskVariantInference:
+				switch task.Type {
+				case Inference:
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"badge badge-accent\">#inf</div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-				case database.TaskVariantFinetune:
+				case Train:
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"badge badge-primary\">#tune</div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-				case database.TaskVariantSample:
+				case Sample:
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"badge badge-secondary\">#sample</div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
-				if !taskWithAsset.Task.HandledAt.Valid {
+				switch task.Status {
+				case Pending:
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"badge badge-warning\">Pending</div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-				}
-				if taskWithAsset.Task.HandledAt.Valid && !taskWithAsset.Task.FinishedAt.Valid {
+				case Processing:
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"badge badge-info\">Processing</div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-				}
-				if taskWithAsset.Task.FinishedAt.Valid {
+				case Finished:
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"badge badge-warning\">Finished</div>")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err

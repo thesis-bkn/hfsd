@@ -4,12 +4,13 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgtype"
 	echo "github.com/labstack/echo/v4"
+	"github.com/ztrue/tracerr"
+
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/internal/entity"
 	"github.com/thesis-bkn/hfsd/internal/errors"
 	"github.com/thesis-bkn/hfsd/templates"
-	"github.com/ztrue/tracerr"
 )
 
 type FinetuneView struct {

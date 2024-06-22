@@ -8,35 +8,36 @@ from typing import Optional
 
 @dataclasses.dataclass()
 class Inference:
-    output_path: datetime.datetime
-    resume_from: Optional[datetime.datetime]
-    image_path: str
-    mask_path: str
+    id: str
+    model_id: str
     prompt: str
     neg_prompt: str
     finished_at: Optional[datetime.datetime]
 
 
 @dataclasses.dataclass()
-class Rating:
-    json_path: datetime.datetime
-    sample_id: Optional[datetime.datetime]
-    created_at: datetime.datetime
+class Model:
+    id: str
+    domain: str
+    parent_id: Optional[str]
+    status: str
+    sample_id: Optional[str]
+    train_id: Optional[str]
+    updated_at: Optional[datetime.datetime]
+    created_at: Optional[datetime.datetime]
 
 
 @dataclasses.dataclass()
 class Sample:
-    save_dir: datetime.datetime
-    resume_from: Optional[datetime.datetime]
-    image_fn: str
-    prompt_fn: str
-    created_at: datetime.datetime
+    id: str
+    model_id: str
     finished_at: Optional[datetime.datetime]
+    created_at: datetime.datetime
 
 
 @dataclasses.dataclass()
 class Train:
-    log_path: datetime.datetime
-    rating_id: Optional[datetime.datetime]
+    id: str
+    sample_id: str
     created_at: datetime.datetime
     finished_at: Optional[datetime.datetime]

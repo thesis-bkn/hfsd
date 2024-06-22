@@ -3,34 +3,30 @@ package handler
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
 	"image/jpeg"
 	"io"
 	"mime/multipart"
-	"path"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 	"github.com/ztrue/tracerr"
 
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
+	"github.com/thesis-bkn/hfsd/internal/entity"
+	"github.com/thesis-bkn/hfsd/internal/errors"
 	"github.com/thesis-bkn/hfsd/internal/s3"
+	"github.com/thesis-bkn/hfsd/internal/utils"
 	"github.com/thesis-bkn/hfsd/internal/worker"
 )
 
-const (
-	modelIDsAlphabet = `0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ`
-)
-
 type InferenceHandler struct {
-	w        *worker.Worker
+	cc       chan<- interface{}
 	validate *validator.Validate
 	s3Client *s3.Client
 	client   database.Client
@@ -45,7 +41,7 @@ func NewInferenceHandler(
 	validate *validator.Validate,
 ) *InferenceHandler {
 	return &InferenceHandler{
-		w:        w,
+		cc:       w.C,
 		client:   client,
 		s3Client: s3Client,
 		cfg:      cfg,
@@ -60,17 +56,27 @@ type maskObject struct {
 }
 
 type inferRequest struct {
-	Model  string        `json:"model"`
-	Prompt string        `json:"prompt"`
-	Image  string        `json:"image"`
-	Mask   []*maskObject `json:"mask"`
+	ModelID   string        `json:"model"`
+	Prompt    string        `json:"prompt"`
+	Image     string        `json:"image"`
+	NegPrompt string        `json:"negPrompt"`
+	Mask      []*maskObject `json:"mask"`
 }
 
-func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
+func (h *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	var req inferRequest
 	if err := c.Bind(&req); err != nil {
 		return tracerr.Wrap(err)
 	}
+
+	sourceModel, err := h.client.Query().GetModelByID(c.Request().Context(), req.ModelID)
+	if err != nil {
+		c.Error(errors.ErrNotFound)
+		return tracerr.Wrap(err)
+	}
+
+	sourceModelAgg := entity.NewModelFromDB(&sourceModel)
+	inf := entity.NewInference(sourceModelAgg, req.Prompt, req.NegPrompt)
 
 	b64 := req.Image[strings.IndexByte(req.Image, ',')+1:]
 	imageB, err := base64.StdEncoding.DecodeString(b64)
@@ -90,7 +96,7 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	}
 	maskB := buf.Bytes()
 
-	tx, err := i.client.Conn().BeginTx(c.Request().Context(), pgx.TxOptions{})
+	tx, err := h.client.Conn().BeginTx(c.Request().Context(), pgx.TxOptions{})
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
@@ -102,37 +108,23 @@ func (i *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 		}
 	}()
 
-	query := i.client.Query().WithTx(tx)
-	order := 0
-	var taskID int32
-	if taskID, err = query.InsertInferenceTask(c.Request().Context(), req.Model); err != nil {
+	query := h.client.Query().WithTx(tx)
+	if err := utils.SavePNG(inf.ImagePath(), imageB); err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	imageURL := path.Join(i.cfg.ImagePath, fmt.Sprintf("%d-%d", order, taskID))
-	maskUrl := path.Join(i.cfg.MaskPath, fmt.Sprintf("%d-%d", order, taskID))
-
-	if err := i.s3Client.UploadImage(imageB, imageURL); err != nil {
-		return tracerr.Wrap(err)
-	}
-	if err := i.s3Client.UploadImage(maskB, maskUrl); err != nil {
+	if err := utils.
+		SavePNG(inf.MaskPath(), maskB); err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	if err := query.InsertAsset(c.Request().Context(), database.InsertAssetParams{
-		TaskID:   taskID,
-		Order:    0,
-		Prompt:   req.Prompt,
-		Image:    imageB,
-		ImageUrl: imageURL,
-		Mask:     maskB,
-		MaskUrl: pgtype.Text{
-			String: maskUrl,
-			Valid:  true,
-		},
-	}); err != nil {
+	if err := query.InsertInference(
+		c.Request().Context(),
+		inf.Insertion()); err != nil {
 		return tracerr.Wrap(err)
 	}
+
+	h.cc <- inf
 
 	return nil
 }

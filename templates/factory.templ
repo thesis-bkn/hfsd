@@ -1,41 +1,60 @@
 package templates
 
 import "github.com/thesis-bkn/hfsd/templates/components"
-import "github.com/thesis-bkn/hfsd/internal/database"
 import "fmt"
-import "path"
 
-templ FactoryView(bucketEpt string, taskWithAssets []database.ListAllTaskWithAssetRow) {
+type (
+	TaskType   int
+	TaskStatus int
+)
+
+const (
+	Inference TaskType = iota
+	Sample
+	Train
+
+	Pending TaskStatus = iota
+	Processing
+	Finished
+)
+
+type Task struct {
+	ID       string
+	Type     TaskType
+	ImageUrl string
+	Status   TaskStatus
+}
+
+templ FactoryView(bucketEpt string, tasks []Task) {
 	@base() {
 		@components.NavBar("factory")
 		<div class="flex flex-wrap m-20">
-			for _, taskWithAsset := range taskWithAssets {
+			for _, task := range tasks {
 				<div class="card w-96 bg-base-100 shadow-xl">
 					<figure>
 						<img
-							src={ path.Join(bucketEpt, taskWithAsset.Asset.ImageUrl) }
+							src={ task.ImageUrl }
 							alt="Image"
 						/>
 					</figure>
 					<div class="card-body">
 						<h2 class="card-title">
-							{ fmt.Sprintf("%d", taskWithAsset.Task.ID) }
-							switch taskWithAsset.Task.TaskType {
-								case database.TaskVariantInference:
+							{ fmt.Sprintf("%d", task.ID) }
+							switch task.Type {
+								case Inference:
 									<div class="badge badge-accent">#inf</div>
-								case database.TaskVariantFinetune:
+								case Train:
 									<div class="badge badge-primary">#tune</div>
-								case database.TaskVariantSample:
+								case Sample:
 									<div class="badge badge-secondary">#sample</div>
 							}
-							if !taskWithAsset.Task.HandledAt.Valid {
-								<div class="badge badge-warning">Pending</div>
-							}
-							if taskWithAsset.Task.HandledAt.Valid && !taskWithAsset.Task.FinishedAt.Valid {
-								<div class="badge badge-info">Processing</div>
-							}
-							if taskWithAsset.Task.FinishedAt.Valid {
-								<div class="badge badge-warning">Finished</div>
+							switch task.Status {
+								case Pending:
+									<div class="badge badge-warning">Pending</div>
+								case Processing:
+									<div class="badge badge-info">Processing</div>
+								case Finished:
+									<div class="badge badge-warning">Finished</div>
 							}
 						</h2>
 					</div>
