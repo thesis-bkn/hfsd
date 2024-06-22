@@ -11,10 +11,9 @@ import "io"
 import "bytes"
 
 import (
-	"fmt"
-	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/templates/components"
-	"path"
+
+	"fmt"
 )
 
 func directionButton(isActive bool, inner, next string) templ.Component {
@@ -47,7 +46,7 @@ func directionButton(isActive bool, inner, next string) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(inner)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/showcase.templ`, Line: 12, Col: 40}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/showcase.templ`, Line: 11, Col: 40}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -65,7 +64,7 @@ func directionButton(isActive bool, inner, next string) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(inner)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/showcase.templ`, Line: 15, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/showcase.templ`, Line: 14, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -107,7 +106,13 @@ func downloadIcon() templ.Component {
 	})
 }
 
-func ShowcaseView(bucketEpt string, infs []database.Inference, page int64) templ.Component {
+type ShowcaseItem struct {
+	InputImagePath  string
+	OutputImagePath string
+	Prompt          string
+}
+
+func ShowcaseView(bucketEpt string, infs []ShowcaseItem, page int64) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -139,7 +144,7 @@ func ShowcaseView(bucketEpt string, infs []database.Inference, page int64) templ
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(path.Join(bucketEpt, inf.ImageUrl)))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(inf.InputImagePath))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -147,7 +152,7 @@ func ShowcaseView(bucketEpt string, infs []database.Inference, page int64) templ
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(path.Join(bucketEpt, inf.OutputUrl)))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(inf.OutputImagePath))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -156,9 +161,9 @@ func ShowcaseView(bucketEpt string, infs []database.Inference, page int64) templ
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var8 string
-				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(inf.Prompt.String)
+				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(inf.Prompt)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/showcase.templ`, Line: 41, Col: 28}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/showcase.templ`, Line: 46, Col: 21}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -168,7 +173,7 @@ func ShowcaseView(bucketEpt string, infs []database.Inference, page int64) templ
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var9 templ.SafeURL = templ.SafeURL(path.Join(bucketEpt, inf.ImageUrl))
+				var templ_7745c5c3_Var9 templ.SafeURL = templ.SafeURL(inf.InputImagePath)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var9)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -201,7 +206,7 @@ func ShowcaseView(bucketEpt string, infs []database.Inference, page int64) templ
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Page %d", page))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/showcase.templ`, Line: 57, Col: 64}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/showcase.templ`, Line: 62, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {

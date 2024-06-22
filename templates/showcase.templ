@@ -2,9 +2,8 @@ package templates
 
 import (
 	"github.com/thesis-bkn/hfsd/templates/components"
-	"github.com/thesis-bkn/hfsd/internal/database"
+
 	"fmt"
-	"path"
 )
 
 templ directionButton(isActive bool, inner, next string) {
@@ -21,7 +20,13 @@ templ downloadIcon() {
 	<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 9l-5 5-5-5M12 12.8V2.5"></path></svg>
 }
 
-templ ShowcaseView(bucketEpt string, infs []database.Inference, page int64) {
+type ShowcaseItem struct {
+	InputImagePath  string
+	OutputImagePath string
+	Prompt          string
+}
+
+templ ShowcaseView(bucketEpt string, infs []ShowcaseItem, page int64) {
 	@base() {
 		@components.NavBar("showcase")
 		<div class="flex flex-wrap m-20">
@@ -30,18 +35,18 @@ templ ShowcaseView(bucketEpt string, infs []database.Inference, page int64) {
 					<figure>
 						<div class="diff aspect-square">
 							<div class="diff-item-1">
-								<img alt="daisy" src={ path.Join(bucketEpt, inf.ImageUrl) }/>
+								<img alt="daisy" src={ inf.InputImagePath }/>
 							</div>
 							<div class="diff-item-2">
-								<img alt="daisy" src={ path.Join(bucketEpt, inf.OutputUrl) }/>
+								<img alt="daisy" src={ inf.OutputImagePath }/>
 							</div>
 							<div class="diff-resizer"></div>
 						</div>
 					</figure>
 					<div class="card-body">
-						<p>{ inf.Prompt.String }</p>
+						<p>{ inf.Prompt }</p>
 						<div class="card-actions justify-end">
-							<a href={ templ.SafeURL(path.Join(bucketEpt, inf.ImageUrl)) }>
+							<a href={ templ.SafeURL(inf.InputImagePath) }>
 								<button class="btn btn-outline btn-primary">
 									@downloadIcon()
 									Download
