@@ -13,7 +13,7 @@ import (
 
 const checkModelExists = `-- name: CheckModelExists :one
 SELECT EXISTS (
-    SELECT id, domain, parent_id, status, sample_id, train_id, updated_at, created_at
+    SELECT id, domain, name, parent_id, status, sample_id, train_id, updated_at, created_at
     FROM models
     WHERE id = $1
 )
@@ -26,8 +26,24 @@ func (q *Queries) CheckModelExists(ctx context.Context, id string) (bool, error)
 	return exists, err
 }
 
+const checkSampleFinishedByModelID = `-- name: CheckSampleFinishedByModelID :one
+SELECT EXISTS (
+    SELECT id, model_id, finished_at, created_at
+    FROM samples
+    WHERE model_id = $1
+    AND finished_at IS NOT NULL
+)
+`
+
+func (q *Queries) CheckSampleFinishedByModelID(ctx context.Context, modelID string) (bool, error) {
+	row := q.db.QueryRow(ctx, checkSampleFinishedByModelID, modelID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const getModelByID = `-- name: GetModelByID :one
-SELECT id, domain, parent_id, status, sample_id, train_id, updated_at, created_at FROM models
+SELECT id, domain, name, parent_id, status, sample_id, train_id, updated_at, created_at FROM models
 WHERE id = $1
 `
 
@@ -37,6 +53,7 @@ func (q *Queries) GetModelByID(ctx context.Context, id string) (Model, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Domain,
+		&i.Name,
 		&i.ParentID,
 		&i.Status,
 		&i.SampleID,
@@ -90,17 +107,18 @@ func (q *Queries) InsertInference(ctx context.Context, arg InsertInferenceParams
 
 const insertModel = `-- name: InsertModel :exec
 INSERT INTO models (
-    id, domain, parent_id, status,
+    id, domain, name, parent_id, status,
     sample_id, train_id, updated_at
 ) VALUES (
-    $1, $2, $3, $4,
-    $5, $6, now()
+    $1, $2, $3, $4, $5,
+    $6, $7, now()
 )
 `
 
 type InsertModelParams struct {
 	ID       string
 	Domain   string
+	Name     string
 	ParentID pgtype.Text
 	Status   string
 	SampleID pgtype.Text
@@ -111,6 +129,7 @@ func (q *Queries) InsertModel(ctx context.Context, arg InsertModelParams) error 
 	_, err := q.db.Exec(ctx, insertModel,
 		arg.ID,
 		arg.Domain,
+		arg.Name,
 		arg.ParentID,
 		arg.Status,
 		arg.SampleID,
@@ -135,17 +154,18 @@ func (q *Queries) InsertSample(ctx context.Context, arg InsertSampleParams) erro
 }
 
 const insertTrain = `-- name: InsertTrain :exec
-INSERT INTO trains (id, sample_id)
-VALUES ($1, $2)
+INSERT INTO trains (id, model_id, sample_id)
+VALUES ($1, $2, $3)
 `
 
 type InsertTrainParams struct {
 	ID       string
+	ModelID  string
 	SampleID string
 }
 
 func (q *Queries) InsertTrain(ctx context.Context, arg InsertTrainParams) error {
-	_, err := q.db.Exec(ctx, insertTrain, arg.ID, arg.SampleID)
+	_, err := q.db.Exec(ctx, insertTrain, arg.ID, arg.ModelID, arg.SampleID)
 	return err
 }
 
@@ -154,7 +174,7 @@ SELECT  i.id as inference_id,
         i.prompt,
         i.neg_prompt,
         i.finished_at,
-        m.id, m.domain, m.parent_id, m.status, m.sample_id, m.train_id, m.updated_at, m.created_at
+        m.id, m.domain, m.name, m.parent_id, m.status, m.sample_id, m.train_id, m.updated_at, m.created_at
 FROM inferences i
 JOIN models m on m.id = i.model_id
 WHERE finished_at IS NULL
@@ -167,6 +187,7 @@ type ListAllUnfinishedInferencesRow struct {
 	FinishedAt  pgtype.Timestamptz
 	ID          string
 	Domain      string
+	Name        string
 	ParentID    pgtype.Text
 	Status      string
 	SampleID    pgtype.Text
@@ -191,6 +212,7 @@ func (q *Queries) ListAllUnfinishedInferences(ctx context.Context) ([]ListAllUnf
 			&i.FinishedAt,
 			&i.ID,
 			&i.Domain,
+			&i.Name,
 			&i.ParentID,
 			&i.Status,
 			&i.SampleID,
@@ -239,9 +261,8 @@ func (q *Queries) ListAllUnfinishedSample(ctx context.Context) ([]Sample, error)
 }
 
 const listAllUnfinishedTrain = `-- name: ListAllUnfinishedTrain :many
-SELECT trains.id as train_id, m.id, m.domain, m.parent_id, m.status, m.sample_id, m.train_id, m.updated_at, m.created_at FROM trains
-JOIN samples s ON sample_id = s.id
-JOIN models m ON m.id = s.id
+SELECT trains.id as train_id, m.id, m.domain, m.name, m.parent_id, m.status, m.sample_id, m.train_id, m.updated_at, m.created_at FROM trains
+JOIN models m ON m.id = trains.id
 WHERE trains.finished_at IS NULL
 `
 
@@ -249,6 +270,7 @@ type ListAllUnfinishedTrainRow struct {
 	TrainID   string
 	ID        string
 	Domain    string
+	Name      string
 	ParentID  pgtype.Text
 	Status    string
 	SampleID  pgtype.Text
@@ -270,6 +292,7 @@ func (q *Queries) ListAllUnfinishedTrain(ctx context.Context) ([]ListAllUnfinish
 			&i.TrainID,
 			&i.ID,
 			&i.Domain,
+			&i.Name,
 			&i.ParentID,
 			&i.Status,
 			&i.SampleID,
@@ -287,8 +310,149 @@ func (q *Queries) ListAllUnfinishedTrain(ctx context.Context) ([]ListAllUnfinish
 	return items, nil
 }
 
+const listInferences = `-- name: ListInferences :many
+SELECT i.id, model_id, prompt, neg_prompt, finished_at, m.id, domain, name, parent_id, status, sample_id, train_id, updated_at, created_at FROM inferences i
+JOIN models m ON i.model_id = m.id
+LIMIT $1 OFFSET $2
+`
+
+type ListInferencesParams struct {
+	Limit  int32
+	Offset int32
+}
+
+type ListInferencesRow struct {
+	ID         string
+	ModelID    string
+	Prompt     string
+	NegPrompt  string
+	FinishedAt pgtype.Timestamptz
+	ID_2       string
+	Domain     string
+	Name       string
+	ParentID   pgtype.Text
+	Status     string
+	SampleID   pgtype.Text
+	TrainID    pgtype.Text
+	UpdatedAt  pgtype.Timestamptz
+	CreatedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) ListInferences(ctx context.Context, arg ListInferencesParams) ([]ListInferencesRow, error) {
+	rows, err := q.db.Query(ctx, listInferences, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListInferencesRow
+	for rows.Next() {
+		var i ListInferencesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ModelID,
+			&i.Prompt,
+			&i.NegPrompt,
+			&i.FinishedAt,
+			&i.ID_2,
+			&i.Domain,
+			&i.Name,
+			&i.ParentID,
+			&i.Status,
+			&i.SampleID,
+			&i.TrainID,
+			&i.UpdatedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listModelByDomain = `-- name: ListModelByDomain :many
+SELECT 
+    m.id, domain, name, parent_id, status, m.sample_id, train_id, updated_at, m.created_at, s.id, s.model_id, s.finished_at, s.created_at, t.id, t.sample_id, t.model_id, t.created_at, t.finished_at,
+    s.finished_at as sample_finished,
+    t.created_at  as train_created_at,
+    t.finished_at as train_finshed
+FROM models m
+FULL OUTER JOIN samples s ON s.model_id = m.id
+FULL OUTER JOIN trains t ON t.model_id = m.id
+WHERE domain = $1
+`
+
+type ListModelByDomainRow struct {
+	ID             pgtype.Text
+	Domain         pgtype.Text
+	Name           pgtype.Text
+	ParentID       pgtype.Text
+	Status         pgtype.Text
+	SampleID       pgtype.Text
+	TrainID        pgtype.Text
+	UpdatedAt      pgtype.Timestamptz
+	CreatedAt      pgtype.Timestamptz
+	ID_2           pgtype.Text
+	ModelID        pgtype.Text
+	FinishedAt     pgtype.Timestamptz
+	CreatedAt_2    pgtype.Timestamptz
+	ID_3           pgtype.Text
+	SampleID_2     pgtype.Text
+	ModelID_2      pgtype.Text
+	CreatedAt_3    pgtype.Timestamptz
+	FinishedAt_2   pgtype.Timestamptz
+	SampleFinished pgtype.Timestamptz
+	TrainCreatedAt pgtype.Timestamptz
+	TrainFinshed   pgtype.Timestamptz
+}
+
+func (q *Queries) ListModelByDomain(ctx context.Context, domain string) ([]ListModelByDomainRow, error) {
+	rows, err := q.db.Query(ctx, listModelByDomain, domain)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListModelByDomainRow
+	for rows.Next() {
+		var i ListModelByDomainRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Domain,
+			&i.Name,
+			&i.ParentID,
+			&i.Status,
+			&i.SampleID,
+			&i.TrainID,
+			&i.UpdatedAt,
+			&i.CreatedAt,
+			&i.ID_2,
+			&i.ModelID,
+			&i.FinishedAt,
+			&i.CreatedAt_2,
+			&i.ID_3,
+			&i.SampleID_2,
+			&i.ModelID_2,
+			&i.CreatedAt_3,
+			&i.FinishedAt_2,
+			&i.SampleFinished,
+			&i.TrainCreatedAt,
+			&i.TrainFinshed,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listModels = `-- name: ListModels :many
-SELECT id, domain, parent_id, status, sample_id, train_id, updated_at, created_at FROM models
+SELECT id, domain, name, parent_id, status, sample_id, train_id, updated_at, created_at FROM models
 WHERE id = ANY($1::text[])
 `
 
@@ -304,6 +468,7 @@ func (q *Queries) ListModels(ctx context.Context, dollar_1 []string) ([]Model, e
 		if err := rows.Scan(
 			&i.ID,
 			&i.Domain,
+			&i.Name,
 			&i.ParentID,
 			&i.Status,
 			&i.SampleID,

@@ -19,6 +19,7 @@ type Inference struct {
 type Model struct {
 	ID        string
 	Domain    string
+	Name      string
 	ParentID  pgtype.Text
 	Status    string
 	SampleID  pgtype.Text
@@ -37,6 +38,7 @@ type Sample struct {
 type Train struct {
 	ID         string
 	SampleID   string
+	ModelID    string
 	CreatedAt  pgtype.Timestamptz
 	FinishedAt pgtype.Timestamptz
 }

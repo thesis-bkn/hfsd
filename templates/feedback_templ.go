@@ -12,13 +12,17 @@ import "bytes"
 
 import (
 	"fmt"
-	"path"
 
-	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/templates/components"
 )
 
-func FeedBackView(bucketEpt string, modelID string, assets []database.Asset) templ.Component {
+type FeedbackAsset struct {
+	ImageUrl string
+	Group    int
+	Order    int
+}
+
+func FeedBackView(modelID string, assets []FeedbackAsset) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -66,7 +70,7 @@ func FeedBackView(bucketEpt string, modelID string, assets []database.Asset) tem
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(path.Join(bucketEpt, asset.ImageUrl)))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(asset.ImageUrl))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -74,7 +78,7 @@ func FeedBackView(bucketEpt string, modelID string, assets []database.Asset) tem
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("like-%d-%d", asset.Group.Int32, asset.Order)))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("like-%d-%d", asset.Group, asset.Order)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -82,7 +86,7 @@ func FeedBackView(bucketEpt string, modelID string, assets []database.Asset) tem
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("pref-%d-%d", asset.Group.Int32, asset.Order)))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("pref-%d-%d", asset.Group, asset.Order)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -90,7 +94,7 @@ func FeedBackView(bucketEpt string, modelID string, assets []database.Asset) tem
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("dislike-%d-%d", asset.Group.Int32, asset.Order)))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("dislike-%d-%d", asset.Group, asset.Order)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -98,7 +102,7 @@ func FeedBackView(bucketEpt string, modelID string, assets []database.Asset) tem
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("pref-%d-%d", asset.Group.Int32, asset.Order)))
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("pref-%d-%d", asset.Group, asset.Order)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

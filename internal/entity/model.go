@@ -11,12 +11,12 @@ import (
 )
 
 type Model struct {
+    parentID *string
 	id       string
-	parentID *string
-	domain   Domain
-	status   ModelStatus
 	sampleID string
 	trainID  string
+    domain   Domain
+    status   ModelStatus
 }
 
 // ENUM(init, sampling, sampled, rating, training, trained)

@@ -20,7 +20,7 @@ type ModelNode struct {
 	ID     string
 	Name   string
 	Status modelStatus
-    Parent *string
+	Parent *string
 }
 
 templ FinetuneView(models []ModelNode, domain entity.Domain) {
@@ -118,9 +118,9 @@ func graph(models []ModelNode, domain entity.Domain) (map[string]*ModelNode, map
 	}
 
 	for i, model := range models {
-        if model.Parent == nil || graphM[*model.Parent] == nil {
-            continue
-        }
+		if model.Parent == nil || graphM[*model.Parent] == nil {
+			continue
+		}
 
 		graphM[*model.Parent] = append(graphM[*model.Parent], &models[i])
 	}

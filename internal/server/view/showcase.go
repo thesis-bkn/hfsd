@@ -6,6 +6,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
+	"github.com/thesis-bkn/hfsd/internal/entity"
+	"github.com/thesis-bkn/hfsd/internal/utils"
 	"github.com/thesis-bkn/hfsd/templates"
 	"github.com/ztrue/tracerr"
 )
@@ -34,13 +36,15 @@ func (v *ShowcaseView) View(c echo.Context) error {
 		page int64 = 0
 		err  error
 	)
+
 	if pageRaw != "" {
 		page, err = strconv.ParseInt(pageRaw, 0, 64)
 		if err != nil {
 			return tracerr.Wrap(err)
 		}
 	}
-	infs, err := v.client.
+
+	modelInfs, err := v.client.
 		Query().
 		ListInferences(
 			c.Request().Context(),
@@ -53,8 +57,17 @@ func (v *ShowcaseView) View(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
+	infs := utils.Map(modelInfs, entity.NewInferenceFromJoinedModel)
+	showcaseItems := utils.Map(infs, func(i *entity.Inference) templates.ShowcaseItem {
+		return templates.ShowcaseItem{
+			InputImagePath:  i.ImagePath(),
+			OutputImagePath: i.OutputPath(),
+			Prompt:          i.Prompt(),
+		}
+	})
+
 	return templates.
-		ShowcaseView(v.cfg.BucketEpt(), infs, page).
+		ShowcaseView(v.cfg.BucketEpt(), showcaseItems, page).
 		Render(
 			c.Request().Context(),
 			c.Response().Writer,

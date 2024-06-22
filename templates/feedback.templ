@@ -1,14 +1,18 @@
 package templates
 
 import (
-	"path"
 	"fmt"
 
 	"github.com/thesis-bkn/hfsd/templates/components"
-	"github.com/thesis-bkn/hfsd/internal/database"
 )
 
-templ FeedBackView(bucketEpt string, modelID string, assets []database.Asset) {
+type FeedbackAsset struct {
+	ImageUrl string
+	Group    int
+	Order    int
+}
+
+templ FeedBackView(modelID string, assets []FeedbackAsset) {
 	@base() {
 		@components.NavBar("finetune")
 		<form id="feedbacks">
@@ -19,7 +23,7 @@ templ FeedBackView(bucketEpt string, modelID string, assets []database.Asset) {
 					<div class="card w-96 bg-base-100 shadow-xl">
 						<figure>
 							<img
-								src={ path.Join(bucketEpt, asset.ImageUrl) }
+								src={ asset.ImageUrl }
 								alt="Image"
 							/>
 						</figure>
@@ -30,8 +34,8 @@ templ FeedBackView(bucketEpt string, modelID string, assets []database.Asset) {
 										<input
 											type="radio"
 											class="radio radio-accent"
-											id={ fmt.Sprintf("like-%d-%d", asset.Group.Int32, asset.Order) }
-											name={ fmt.Sprintf("pref-%d-%d", asset.Group.Int32, asset.Order) }
+											id={ fmt.Sprintf("like-%d-%d", asset.Group, asset.Order) }
+											name={ fmt.Sprintf("pref-%d-%d", asset.Group, asset.Order) }
 											checked
 											value="like"
 										/>
@@ -43,8 +47,8 @@ templ FeedBackView(bucketEpt string, modelID string, assets []database.Asset) {
 										<input
 											type="radio"
 											class="radio radio-error"
-											id={ fmt.Sprintf("dislike-%d-%d", asset.Group.Int32, asset.Order) }
-											name={ fmt.Sprintf("pref-%d-%d", asset.Group.Int32, asset.Order) }
+											id={ fmt.Sprintf("dislike-%d-%d", asset.Group, asset.Order) }
+											name={ fmt.Sprintf("pref-%d-%d", asset.Group, asset.Order) }
 											value="disklike"
 										/>
 										<span class="label-text ml-1">Dislike</span>

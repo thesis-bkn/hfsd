@@ -36,6 +36,7 @@ func (t *Train) ID() string {
 func (t *Train) Insertion() database.InsertTrainParams {
 	return database.InsertTrainParams{
 		ID:       t.ID(),
+		ModelID:  t.sample.model.id,
 		SampleID: t.sample.id,
 	}
 }

@@ -9,12 +9,12 @@ import (
 )
 
 type Inference struct {
-	id         string
-	prompt     string
-	neg        string
+	model      *Model
 	finishedAt *time.Time
 
-	model *Model
+	id     string
+	prompt string
+	neg    string
 }
 
 func NewInference(
@@ -45,6 +45,30 @@ func NewInferenceFromModel(
 		model:      m,
 		finishedAt: f,
 	}
+}
+
+func NewInferenceFromJoinedModel(
+    r database.ListInferencesRow,
+) *Inference {
+    model := NewModelFromDB(&database.Model{
+    	ID:        r.ModelID,
+    	Domain:    r.Domain,
+    	Name:      r.Name,
+    	ParentID:  r.ParentID,
+    	Status:    r.Status,
+    	SampleID:  r.SampleID,
+    	TrainID:   r.TrainID,
+    	UpdatedAt: r.UpdatedAt,
+    	CreatedAt: r.CreatedAt,
+    })
+
+    return NewInferenceFromModel(model, database.Inference{
+    	ID:         r.ID,
+    	ModelID:    r.ModelID,
+    	Prompt:     r.Prompt,
+    	NegPrompt:  r.NegPrompt,
+    	FinishedAt: r.FinishedAt,
+    })
 }
 
 func (i *Inference) ID() string {

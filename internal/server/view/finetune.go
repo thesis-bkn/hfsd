@@ -1,15 +1,22 @@
 package view
 
 import (
+	"fmt"
+	"path"
+	"path/filepath"
+	"strconv"
+	"strings"
+
 	"github.com/go-playground/validator/v10"
-	"github.com/jackc/pgx/v5/pgtype"
 	echo "github.com/labstack/echo/v4"
 	"github.com/ztrue/tracerr"
 
+	"github.com/thesis-bkn/hfsd/data"
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/internal/entity"
 	"github.com/thesis-bkn/hfsd/internal/errors"
+	"github.com/thesis-bkn/hfsd/internal/utils"
 	"github.com/thesis-bkn/hfsd/templates"
 )
 
@@ -45,17 +52,71 @@ func (v *FinetuneView) View(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	models, err := v.client.Query().ListModelsByDomain(c.Request().Context(), req.Domain.String())
+	models, err := v.client.Query().ListModelByDomain(c.Request().Context(), req.Domain.String())
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
 
+	viewModels := utils.Map(
+		models,
+		func(m database.ListModelByDomainRow) templates.ModelNode {
+			node := templates.ModelNode{
+				ID:   m.ID.String,
+				Name: m.Name.String,
+			}
+
+			if m.ParentID.Valid {
+				node.Parent = &m.ParentID.String
+			}
+
+			if m.SampleFinished.Valid {
+				node.Status = templates.Rating
+			}
+			if m.SampleFinished.Valid && m.TrainCreatedAt.Valid {
+				node.Status = templates.Rating
+			}
+
+			if m.TrainFinshed.Valid {
+				node.Status = templates.Finetuned
+			}
+
+			return node
+		})
+
 	return templates.
-		FinetuneView(models, req.Domain).
+		FinetuneView(viewModels, req.Domain).
 		Render(
 			c.Request().Context(),
 			c.Response().Writer,
 		)
+}
+
+type FeedbackEntry struct {
+	Name string
+}
+
+func (e *FeedbackEntry) Group() int {
+	return e.Index() / 7
+}
+
+func (e *FeedbackEntry) Order() int {
+	return e.Index()
+}
+
+func (e *FeedbackEntry) Index() int {
+	// Extract the file extension
+	ext := filepath.Ext(e.Name)
+
+	// Remove the extension from the filename
+	name := strings.TrimSuffix(e.Name, ext)
+
+	// Convert the name to an integer
+	num, err := strconv.Atoi(name)
+	if err != nil {
+		panic(fmt.Sprint("Error converting filename to integer:", err))
+	}
+
+	return num
 }
 
 func (v *FinetuneView) FeedBackView(c echo.Context) error {
@@ -71,16 +132,36 @@ func (v *FinetuneView) FeedBackView(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	assets, err := v.client.Query().ListFeedbackAssetByModelID(c.Request().Context(), pgtype.Text{
-		String: req.ModelID,
-		Valid:  true,
-	})
+	sampleFished, err := v.client.
+		Query().CheckModelExists(c.Request().Context(), req.ModelID)
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
 
+	if !sampleFished {
+		return errors.ErrUnfinishedSample
+	}
+
+	assets := []templates.FeedbackAsset{}
+	files, err := data.Samples.ReadDir(fmt.Sprintf("%s/images", req.ModelID))
+	if err != nil {
+		return tracerr.Wrap(err)
+	}
+
+	for _, fileName := range files {
+		entry := FeedbackEntry{
+			Name: fileName.Name(),
+		}
+
+		assets = append(assets, templates.FeedbackAsset{
+			ImageUrl: path.Join(data.SamplePath, req.ModelID, "images", entry.Name),
+			Group:    entry.Group(),
+			Order:    entry.Order(),
+		})
+	}
+
 	return templates.
-		FeedBackView(v.cfg.BucketEpt(), req.ModelID, assets).
+		FeedBackView(req.ModelID, assets).
 		Render(
 			c.Request().Context(),
 			c.Response().Writer,

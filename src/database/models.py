@@ -19,6 +19,7 @@ class Inference:
 class Model:
     id: str
     domain: str
+    name: str
     parent_id: Optional[str]
     status: str
     sample_id: Optional[str]
@@ -39,5 +40,6 @@ class Sample:
 class Train:
     id: str
     sample_id: str
+    model_id: str
     created_at: datetime.datetime
     finished_at: Optional[datetime.datetime]

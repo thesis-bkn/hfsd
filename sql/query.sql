@@ -16,9 +16,28 @@ SELECT * FROM samples
 WHERE model_id = $1
 LIMIT 1;
 
+-- name: CheckSampleFinishedByModelID :one
+SELECT EXISTS (
+    SELECT *
+    FROM samples
+    WHERE model_id = $1
+    AND finished_at IS NOT NULL
+);
+
+-- name: ListModelByDomain :many
+SELECT 
+    *,
+    s.finished_at as sample_finished,
+    t.created_at  as train_created_at,
+    t.finished_at as train_finshed
+FROM models m
+FULL OUTER JOIN samples s ON s.model_id = m.id
+FULL OUTER JOIN trains t ON t.model_id = m.id
+WHERE domain = $1;
+
 -- name: InsertTrain :exec
-INSERT INTO trains (id, sample_id)
-VALUES ($1, $2);
+INSERT INTO trains (id, model_id, sample_id)
+VALUES ($1, $2, $3);
 
 -- name: InsertInference :exec
 INSERT INTO inferences (
@@ -34,11 +53,11 @@ SELECT EXISTS (
 
 -- name: InsertModel :exec
 INSERT INTO models (
-    id, domain, parent_id, status,
+    id, domain, name, parent_id, status,
     sample_id, train_id, updated_at
 ) VALUES (
-    $1, $2, $3, $4,
-    $5, $6, now()
+    $1, $2, $3, $4, $5,
+    $6, $7, now()
 );
 
 
@@ -49,8 +68,7 @@ WHERE finished_at IS NULL;
 
 -- name: ListAllUnfinishedTrain :many
 SELECT trains.id as train_id, m.* FROM trains
-JOIN samples s ON sample_id = s.id
-JOIN models m ON m.id = s.id
+JOIN models m ON m.id = trains.id
 WHERE trains.finished_at IS NULL;
 
 -- name: ListAllUnfinishedInferences :many
@@ -66,6 +84,12 @@ WHERE finished_at IS NULL;
 -- name: ListModels :many
 SELECT * FROM models
 WHERE id = ANY($1::text[]);
+
+-- name: ListInferences :many
+SELECT * FROM inferences i
+JOIN models m ON i.model_id = m.id
+LIMIT $1 OFFSET $2;
+
 
 
 

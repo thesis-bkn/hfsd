@@ -37,8 +37,8 @@ func registerRoutes(
 	rng := fname.NewGenerator()
 
 	// Handler
-	inferenceHandler := handler.NewInferenceHandler(cfg, s3Client, client, validate)
-	finetuneHandler := handler.NewFinetuneModelHandler(validate, client, rng, cfg)
+	inferenceHandler := handler.NewInferenceHandler(w, cfg, s3Client, client, validate)
+	finetuneHandler := handler.NewFinetuneModelHandler(w, validate, client, rng, cfg)
 
 	// View
 	homeView := view.NewHomeView()

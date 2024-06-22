@@ -14,15 +14,25 @@ from src.database import models
 
 CHECK_MODEL_EXISTS = """-- name: check_model_exists \\:one
 SELECT EXISTS (
-    SELECT id, domain, parent_id, status, sample_id, train_id, updated_at, created_at
+    SELECT id, domain, name, parent_id, status, sample_id, train_id, updated_at, created_at
     FROM models
     WHERE id = :p1
 )
 """
 
 
+CHECK_SAMPLE_FINISHED_BY_MODEL_ID = """-- name: check_sample_finished_by_model_id \\:one
+SELECT EXISTS (
+    SELECT id, model_id, finished_at, created_at
+    FROM samples
+    WHERE model_id = :p1
+    AND finished_at IS NOT NULL
+)
+"""
+
+
 GET_MODEL_BY_ID = """-- name: get_model_by_id \\:one
-SELECT id, domain, parent_id, status, sample_id, train_id, updated_at, created_at FROM models
+SELECT id, domain, name, parent_id, status, sample_id, train_id, updated_at, created_at FROM models
 WHERE id = :p1
 """
 
@@ -43,11 +53,11 @@ INSERT INTO inferences (
 
 INSERT_MODEL = """-- name: insert_model \\:exec
 INSERT INTO models (
-    id, domain, parent_id, status,
+    id, domain, name, parent_id, status,
     sample_id, train_id, updated_at
 ) VALUES (
-    :p1, :p2, :p3, :p4,
-    :p5, :p6, now()
+    :p1, :p2, :p3, :p4, :p5,
+    :p6, :p7, now()
 )
 """
 
@@ -56,6 +66,7 @@ INSERT INTO models (
 class InsertModelParams:
     id: str
     domain: str
+    name: str
     parent_id: Optional[str]
     status: str
     sample_id: Optional[str]
@@ -69,8 +80,8 @@ VALUES ( :p1, :p2 )
 
 
 INSERT_TRAIN = """-- name: insert_train \\:exec
-INSERT INTO trains (id, sample_id)
-VALUES (:p1, :p2)
+INSERT INTO trains (id, model_id, sample_id)
+VALUES (:p1, :p2, :p3)
 """
 
 
@@ -79,7 +90,7 @@ SELECT  i.id as inference_id,
         i.prompt,
         i.neg_prompt,
         i.finished_at,
-        m.id, m.domain, m.parent_id, m.status, m.sample_id, m.train_id, m.updated_at, m.created_at
+        m.id, m.domain, m.name, m.parent_id, m.status, m.sample_id, m.train_id, m.updated_at, m.created_at
 FROM inferences i
 JOIN models m on m.id = i.model_id
 WHERE finished_at IS NULL
@@ -94,6 +105,7 @@ class ListAllUnfinishedInferencesRow:
     finished_at: Optional[datetime.datetime]
     id: str
     domain: str
+    name: str
     parent_id: Optional[str]
     status: str
     sample_id: Optional[str]
@@ -109,9 +121,8 @@ WHERE finished_at IS NULL
 
 
 LIST_ALL_UNFINISHED_TRAIN = """-- name: list_all_unfinished_train \\:many
-SELECT trains.id as train_id, m.id, m.domain, m.parent_id, m.status, m.sample_id, m.train_id, m.updated_at, m.created_at FROM trains
-JOIN samples s ON sample_id = s.id
-JOIN models m ON m.id = s.id
+SELECT trains.id as train_id, m.id, m.domain, m.name, m.parent_id, m.status, m.sample_id, m.train_id, m.updated_at, m.created_at FROM trains
+JOIN models m ON m.id = trains.id
 WHERE trains.finished_at IS NULL
 """
 
@@ -121,6 +132,7 @@ class ListAllUnfinishedTrainRow:
     train_id: str
     id: str
     domain: str
+    name: str
     parent_id: Optional[str]
     status: str
     sample_id: Optional[str]
@@ -129,8 +141,71 @@ class ListAllUnfinishedTrainRow:
     created_at: Optional[datetime.datetime]
 
 
+LIST_INFERENCES = """-- name: list_inferences \\:many
+SELECT i.id, model_id, prompt, neg_prompt, finished_at, m.id, domain, name, parent_id, status, sample_id, train_id, updated_at, created_at FROM inferences i
+JOIN models m ON i.model_id = m.id
+LIMIT :p1 OFFSET :p2
+"""
+
+
+@dataclasses.dataclass()
+class ListInferencesRow:
+    id: str
+    model_id: str
+    prompt: str
+    neg_prompt: str
+    finished_at: Optional[datetime.datetime]
+    id_2: str
+    domain: str
+    name: str
+    parent_id: Optional[str]
+    status: str
+    sample_id: Optional[str]
+    train_id: Optional[str]
+    updated_at: Optional[datetime.datetime]
+    created_at: Optional[datetime.datetime]
+
+
+LIST_MODEL_BY_DOMAIN = """-- name: list_model_by_domain \\:many
+SELECT 
+    m.id, domain, name, parent_id, status, m.sample_id, train_id, updated_at, m.created_at, s.id, s.model_id, s.finished_at, s.created_at, t.id, t.sample_id, t.model_id, t.created_at, t.finished_at,
+    s.finished_at as sample_finished,
+    t.created_at  as train_created_at,
+    t.finished_at as train_finshed
+FROM models m
+FULL OUTER JOIN samples s ON s.model_id = m.id
+FULL OUTER JOIN trains t ON t.model_id = m.id
+WHERE domain = :p1
+"""
+
+
+@dataclasses.dataclass()
+class ListModelByDomainRow:
+    id: Optional[str]
+    domain: Optional[str]
+    name: Optional[str]
+    parent_id: Optional[str]
+    status: Optional[str]
+    sample_id: Optional[str]
+    train_id: Optional[str]
+    updated_at: Optional[datetime.datetime]
+    created_at: Optional[datetime.datetime]
+    id_2: Optional[str]
+    model_id: Optional[str]
+    finished_at: Optional[datetime.datetime]
+    created_at_2: Optional[datetime.datetime]
+    id_3: Optional[str]
+    sample_id_2: Optional[str]
+    model_id_2: Optional[str]
+    created_at_3: Optional[datetime.datetime]
+    finished_at_2: Optional[datetime.datetime]
+    sample_finished: Optional[datetime.datetime]
+    train_created_at: Optional[datetime.datetime]
+    train_finshed: Optional[datetime.datetime]
+
+
 LIST_MODELS = """-- name: list_models \\:many
-SELECT id, domain, parent_id, status, sample_id, train_id, updated_at, created_at FROM models
+SELECT id, domain, name, parent_id, status, sample_id, train_id, updated_at, created_at FROM models
 WHERE id = ANY(:p1\\:\\:text[])
 """
 
@@ -152,6 +227,12 @@ class Querier:
             return None
         return row[0]
 
+    def check_sample_finished_by_model_id(self, *, model_id: str) -> Optional[bool]:
+        row = self._conn.execute(sqlalchemy.text(CHECK_SAMPLE_FINISHED_BY_MODEL_ID), {"p1": model_id}).first()
+        if row is None:
+            return None
+        return row[0]
+
     def get_model_by_id(self, *, id: str) -> Optional[models.Model]:
         row = self._conn.execute(sqlalchemy.text(GET_MODEL_BY_ID), {"p1": id}).first()
         if row is None:
@@ -159,12 +240,13 @@ class Querier:
         return models.Model(
             id=row[0],
             domain=row[1],
-            parent_id=row[2],
-            status=row[3],
-            sample_id=row[4],
-            train_id=row[5],
-            updated_at=row[6],
-            created_at=row[7],
+            name=row[2],
+            parent_id=row[3],
+            status=row[4],
+            sample_id=row[5],
+            train_id=row[6],
+            updated_at=row[7],
+            created_at=row[8],
         )
 
     def get_sample_by_model_id(self, *, model_id: str) -> Optional[models.Sample]:
@@ -190,17 +272,18 @@ class Querier:
         self._conn.execute(sqlalchemy.text(INSERT_MODEL), {
             "p1": arg.id,
             "p2": arg.domain,
-            "p3": arg.parent_id,
-            "p4": arg.status,
-            "p5": arg.sample_id,
-            "p6": arg.train_id,
+            "p3": arg.name,
+            "p4": arg.parent_id,
+            "p5": arg.status,
+            "p6": arg.sample_id,
+            "p7": arg.train_id,
         })
 
     def insert_sample(self, *, id: str, model_id: str) -> None:
         self._conn.execute(sqlalchemy.text(INSERT_SAMPLE), {"p1": id, "p2": model_id})
 
-    def insert_train(self, *, id: str, sample_id: str) -> None:
-        self._conn.execute(sqlalchemy.text(INSERT_TRAIN), {"p1": id, "p2": sample_id})
+    def insert_train(self, *, id: str, model_id: str, sample_id: str) -> None:
+        self._conn.execute(sqlalchemy.text(INSERT_TRAIN), {"p1": id, "p2": model_id, "p3": sample_id})
 
     def list_all_unfinished_inferences(self) -> Iterator[ListAllUnfinishedInferencesRow]:
         result = self._conn.execute(sqlalchemy.text(LIST_ALL_UNFINISHED_INFERENCES))
@@ -212,12 +295,13 @@ class Querier:
                 finished_at=row[3],
                 id=row[4],
                 domain=row[5],
-                parent_id=row[6],
-                status=row[7],
-                sample_id=row[8],
-                train_id=row[9],
-                updated_at=row[10],
-                created_at=row[11],
+                name=row[6],
+                parent_id=row[7],
+                status=row[8],
+                sample_id=row[9],
+                train_id=row[10],
+                updated_at=row[11],
+                created_at=row[12],
             )
 
     def list_all_unfinished_sample(self) -> Iterator[models.Sample]:
@@ -237,12 +321,60 @@ class Querier:
                 train_id=row[0],
                 id=row[1],
                 domain=row[2],
+                name=row[3],
+                parent_id=row[4],
+                status=row[5],
+                sample_id=row[6],
+                train_id_2=row[7],
+                updated_at=row[8],
+                created_at=row[9],
+            )
+
+    def list_inferences(self, *, limit: int, offset: int) -> Iterator[ListInferencesRow]:
+        result = self._conn.execute(sqlalchemy.text(LIST_INFERENCES), {"p1": limit, "p2": offset})
+        for row in result:
+            yield ListInferencesRow(
+                id=row[0],
+                model_id=row[1],
+                prompt=row[2],
+                neg_prompt=row[3],
+                finished_at=row[4],
+                id_2=row[5],
+                domain=row[6],
+                name=row[7],
+                parent_id=row[8],
+                status=row[9],
+                sample_id=row[10],
+                train_id=row[11],
+                updated_at=row[12],
+                created_at=row[13],
+            )
+
+    def list_model_by_domain(self, *, domain: str) -> Iterator[ListModelByDomainRow]:
+        result = self._conn.execute(sqlalchemy.text(LIST_MODEL_BY_DOMAIN), {"p1": domain})
+        for row in result:
+            yield ListModelByDomainRow(
+                id=row[0],
+                domain=row[1],
+                name=row[2],
                 parent_id=row[3],
                 status=row[4],
                 sample_id=row[5],
-                train_id_2=row[6],
+                train_id=row[6],
                 updated_at=row[7],
                 created_at=row[8],
+                id_2=row[9],
+                model_id=row[10],
+                finished_at=row[11],
+                created_at_2=row[12],
+                id_3=row[13],
+                sample_id_2=row[14],
+                model_id_2=row[15],
+                created_at_3=row[16],
+                finished_at_2=row[17],
+                sample_finished=row[18],
+                train_created_at=row[19],
+                train_finshed=row[20],
             )
 
     def list_models(self, *, dollar_1: List[str]) -> Iterator[models.Model]:
@@ -251,12 +383,13 @@ class Querier:
             yield models.Model(
                 id=row[0],
                 domain=row[1],
-                parent_id=row[2],
-                status=row[3],
-                sample_id=row[4],
-                train_id=row[5],
-                updated_at=row[6],
-                created_at=row[7],
+                name=row[2],
+                parent_id=row[3],
+                status=row[4],
+                sample_id=row[5],
+                train_id=row[6],
+                updated_at=row[7],
+                created_at=row[8],
             )
 
     def update_sample_finished(self, *, id: str) -> None:
@@ -273,6 +406,12 @@ class AsyncQuerier:
             return None
         return row[0]
 
+    async def check_sample_finished_by_model_id(self, *, model_id: str) -> Optional[bool]:
+        row = (await self._conn.execute(sqlalchemy.text(CHECK_SAMPLE_FINISHED_BY_MODEL_ID), {"p1": model_id})).first()
+        if row is None:
+            return None
+        return row[0]
+
     async def get_model_by_id(self, *, id: str) -> Optional[models.Model]:
         row = (await self._conn.execute(sqlalchemy.text(GET_MODEL_BY_ID), {"p1": id})).first()
         if row is None:
@@ -280,12 +419,13 @@ class AsyncQuerier:
         return models.Model(
             id=row[0],
             domain=row[1],
-            parent_id=row[2],
-            status=row[3],
-            sample_id=row[4],
-            train_id=row[5],
-            updated_at=row[6],
-            created_at=row[7],
+            name=row[2],
+            parent_id=row[3],
+            status=row[4],
+            sample_id=row[5],
+            train_id=row[6],
+            updated_at=row[7],
+            created_at=row[8],
         )
 
     async def get_sample_by_model_id(self, *, model_id: str) -> Optional[models.Sample]:
@@ -311,17 +451,18 @@ class AsyncQuerier:
         await self._conn.execute(sqlalchemy.text(INSERT_MODEL), {
             "p1": arg.id,
             "p2": arg.domain,
-            "p3": arg.parent_id,
-            "p4": arg.status,
-            "p5": arg.sample_id,
-            "p6": arg.train_id,
+            "p3": arg.name,
+            "p4": arg.parent_id,
+            "p5": arg.status,
+            "p6": arg.sample_id,
+            "p7": arg.train_id,
         })
 
     async def insert_sample(self, *, id: str, model_id: str) -> None:
         await self._conn.execute(sqlalchemy.text(INSERT_SAMPLE), {"p1": id, "p2": model_id})
 
-    async def insert_train(self, *, id: str, sample_id: str) -> None:
-        await self._conn.execute(sqlalchemy.text(INSERT_TRAIN), {"p1": id, "p2": sample_id})
+    async def insert_train(self, *, id: str, model_id: str, sample_id: str) -> None:
+        await self._conn.execute(sqlalchemy.text(INSERT_TRAIN), {"p1": id, "p2": model_id, "p3": sample_id})
 
     async def list_all_unfinished_inferences(self) -> AsyncIterator[ListAllUnfinishedInferencesRow]:
         result = await self._conn.stream(sqlalchemy.text(LIST_ALL_UNFINISHED_INFERENCES))
@@ -333,12 +474,13 @@ class AsyncQuerier:
                 finished_at=row[3],
                 id=row[4],
                 domain=row[5],
-                parent_id=row[6],
-                status=row[7],
-                sample_id=row[8],
-                train_id=row[9],
-                updated_at=row[10],
-                created_at=row[11],
+                name=row[6],
+                parent_id=row[7],
+                status=row[8],
+                sample_id=row[9],
+                train_id=row[10],
+                updated_at=row[11],
+                created_at=row[12],
             )
 
     async def list_all_unfinished_sample(self) -> AsyncIterator[models.Sample]:
@@ -358,12 +500,60 @@ class AsyncQuerier:
                 train_id=row[0],
                 id=row[1],
                 domain=row[2],
+                name=row[3],
+                parent_id=row[4],
+                status=row[5],
+                sample_id=row[6],
+                train_id_2=row[7],
+                updated_at=row[8],
+                created_at=row[9],
+            )
+
+    async def list_inferences(self, *, limit: int, offset: int) -> AsyncIterator[ListInferencesRow]:
+        result = await self._conn.stream(sqlalchemy.text(LIST_INFERENCES), {"p1": limit, "p2": offset})
+        async for row in result:
+            yield ListInferencesRow(
+                id=row[0],
+                model_id=row[1],
+                prompt=row[2],
+                neg_prompt=row[3],
+                finished_at=row[4],
+                id_2=row[5],
+                domain=row[6],
+                name=row[7],
+                parent_id=row[8],
+                status=row[9],
+                sample_id=row[10],
+                train_id=row[11],
+                updated_at=row[12],
+                created_at=row[13],
+            )
+
+    async def list_model_by_domain(self, *, domain: str) -> AsyncIterator[ListModelByDomainRow]:
+        result = await self._conn.stream(sqlalchemy.text(LIST_MODEL_BY_DOMAIN), {"p1": domain})
+        async for row in result:
+            yield ListModelByDomainRow(
+                id=row[0],
+                domain=row[1],
+                name=row[2],
                 parent_id=row[3],
                 status=row[4],
                 sample_id=row[5],
-                train_id_2=row[6],
+                train_id=row[6],
                 updated_at=row[7],
                 created_at=row[8],
+                id_2=row[9],
+                model_id=row[10],
+                finished_at=row[11],
+                created_at_2=row[12],
+                id_3=row[13],
+                sample_id_2=row[14],
+                model_id_2=row[15],
+                created_at_3=row[16],
+                finished_at_2=row[17],
+                sample_finished=row[18],
+                train_created_at=row[19],
+                train_finshed=row[20],
             )
 
     async def list_models(self, *, dollar_1: List[str]) -> AsyncIterator[models.Model]:
@@ -372,12 +562,13 @@ class AsyncQuerier:
             yield models.Model(
                 id=row[0],
                 domain=row[1],
-                parent_id=row[2],
-                status=row[3],
-                sample_id=row[4],
-                train_id=row[5],
-                updated_at=row[6],
-                created_at=row[7],
+                name=row[2],
+                parent_id=row[3],
+                status=row[4],
+                sample_id=row[5],
+                train_id=row[6],
+                updated_at=row[7],
+                created_at=row[8],
             )
 
     async def update_sample_finished(self, *, id: str) -> None:

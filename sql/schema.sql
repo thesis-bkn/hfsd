@@ -9,15 +9,16 @@ create table if not exists samples (
 create table if not exists trains (
     id                  text primary key,
     sample_id           text not null,
+    model_id            text not null,
     created_at          timestamp with time zone not null default now(),
     finished_at         timestamp with time zone,
-    foreign key(training_model_id) references models(id),
     foreign key(sample_id) references samples(id)
 );
 
 create table if not exists models (
     id              text primary key,
     domain          text not null,
+    name            text not null,
     parent_id       text,
     status          text not null,
     sample_id       text,

@@ -2,16 +2,18 @@ package entity
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/google/uuid"
+	"github.com/thesis-bkn/hfsd/data"
 	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/ztrue/tracerr"
 )
 
 type Sample struct {
-	id string
-
 	model *Model
+
+	id string
 }
 
 func NewSample(
@@ -42,11 +44,8 @@ func retrieve(model *Model) *Sample {
 
 func (s *Sample) Insertion() database.InsertSampleParams {
 	return database.InsertSampleParams{
-		ID:       s.id,
-		ModelID:  s.model.id,
-		SaveDir:  fmt.Sprintf("./data/%s", s.id),
-		ImageFn:  s.model.domain.ImageFn(),
-		PromptFn: s.model.domain.PromptFn(),
+		ID:      s.id,
+		ModelID: s.model.id,
 	}
 }
 
@@ -55,9 +54,14 @@ func (s *Sample) Model() *Model {
 }
 
 func (s *Sample) SaveDir() string {
-	return fmt.Sprintf("./data/%s", s.id)
+	return path.Join("./data", data.SamplePath, s.id)
 }
 
 func (s *Sample) ViewImage() string {
-	return fmt.Sprintf("/data/%s/images/001.png", s.id)
+	files, err := data.Samples.ReadDir(s.id)
+	if err != nil {
+		fmt.Println("should not err here")
+	}
+
+	return path.Join("/data", data.SamplePath, s.id, "images", files[0].Name())
 }
