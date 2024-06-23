@@ -374,50 +374,20 @@ func (q *Queries) ListInferences(ctx context.Context, arg ListInferencesParams) 
 }
 
 const listModelByDomain = `-- name: ListModelByDomain :many
-SELECT 
-    m.id, domain, name, parent_id, status, m.sample_id, train_id, updated_at, m.created_at, s.id, s.model_id, s.finished_at, s.created_at, t.id, t.sample_id, t.model_id, t.created_at, t.finished_at,
-    s.finished_at as sample_finished,
-    t.created_at  as train_created_at,
-    t.finished_at as train_finshed
-FROM models m
-FULL OUTER JOIN samples s ON s.model_id = m.id
-FULL OUTER JOIN trains t ON t.model_id = m.id
+SELECT id, domain, name, parent_id, status, sample_id, train_id, updated_at, created_at
+FROM models
 WHERE domain = $1
 `
 
-type ListModelByDomainRow struct {
-	ID             pgtype.Text
-	Domain         pgtype.Text
-	Name           pgtype.Text
-	ParentID       pgtype.Text
-	Status         pgtype.Text
-	SampleID       pgtype.Text
-	TrainID        pgtype.Text
-	UpdatedAt      pgtype.Timestamptz
-	CreatedAt      pgtype.Timestamptz
-	ID_2           pgtype.Text
-	ModelID        pgtype.Text
-	FinishedAt     pgtype.Timestamptz
-	CreatedAt_2    pgtype.Timestamptz
-	ID_3           pgtype.Text
-	SampleID_2     pgtype.Text
-	ModelID_2      pgtype.Text
-	CreatedAt_3    pgtype.Timestamptz
-	FinishedAt_2   pgtype.Timestamptz
-	SampleFinished pgtype.Timestamptz
-	TrainCreatedAt pgtype.Timestamptz
-	TrainFinshed   pgtype.Timestamptz
-}
-
-func (q *Queries) ListModelByDomain(ctx context.Context, domain string) ([]ListModelByDomainRow, error) {
+func (q *Queries) ListModelByDomain(ctx context.Context, domain string) ([]Model, error) {
 	rows, err := q.db.Query(ctx, listModelByDomain, domain)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListModelByDomainRow
+	var items []Model
 	for rows.Next() {
-		var i ListModelByDomainRow
+		var i Model
 		if err := rows.Scan(
 			&i.ID,
 			&i.Domain,
@@ -428,18 +398,6 @@ func (q *Queries) ListModelByDomain(ctx context.Context, domain string) ([]ListM
 			&i.TrainID,
 			&i.UpdatedAt,
 			&i.CreatedAt,
-			&i.ID_2,
-			&i.ModelID,
-			&i.FinishedAt,
-			&i.CreatedAt_2,
-			&i.ID_3,
-			&i.SampleID_2,
-			&i.ModelID_2,
-			&i.CreatedAt_3,
-			&i.FinishedAt_2,
-			&i.SampleFinished,
-			&i.TrainCreatedAt,
-			&i.TrainFinshed,
 		); err != nil {
 			return nil, err
 		}

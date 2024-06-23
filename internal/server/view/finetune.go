@@ -59,25 +59,30 @@ func (v *FinetuneView) View(c echo.Context) error {
 
 	viewModels := utils.Map(
 		models,
-		func(m database.ListModelByDomainRow) templates.ModelNode {
+		func(m database.Model) templates.ModelNode {
 			node := templates.ModelNode{
-				ID:   m.ID.String,
-				Name: m.Name.String,
+				ID:   m.ID,
+				Name: m.Name,
 			}
+
+            if m.Status == "trained" {
+				node.Status = templates.Finetuned
+            }
+
+            if m.Status == "training" {
+                node.Status = templates.Training
+            }
+
+            if m.Status == "sampling" {
+				node.Status = templates.Sampling
+            }
+
+            if m.Status == "sampled" {
+				node.Status = templates.Rating
+            }
 
 			if m.ParentID.Valid {
 				node.Parent = &m.ParentID.String
-			}
-
-			if m.SampleFinished.Valid {
-				node.Status = templates.Rating
-			}
-			if m.SampleFinished.Valid && m.TrainCreatedAt.Valid {
-				node.Status = templates.Rating
-			}
-
-			if m.TrainFinshed.Valid {
-				node.Status = templates.Finetuned
 			}
 
 			return node

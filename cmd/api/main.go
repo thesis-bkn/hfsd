@@ -1,9 +1,10 @@
 package main
 
 import (
+	"github.com/ztrue/tracerr"
+
 	"github.com/thesis-bkn/hfsd/internal/server"
 	"github.com/thesis-bkn/hfsd/internal/worker"
-	"github.com/ztrue/tracerr"
 )
 
 func main() {

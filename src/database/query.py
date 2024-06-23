@@ -167,41 +167,10 @@ class ListInferencesRow:
 
 
 LIST_MODEL_BY_DOMAIN = """-- name: list_model_by_domain \\:many
-SELECT 
-    m.id, domain, name, parent_id, status, m.sample_id, train_id, updated_at, m.created_at, s.id, s.model_id, s.finished_at, s.created_at, t.id, t.sample_id, t.model_id, t.created_at, t.finished_at,
-    s.finished_at as sample_finished,
-    t.created_at  as train_created_at,
-    t.finished_at as train_finshed
-FROM models m
-FULL OUTER JOIN samples s ON s.model_id = m.id
-FULL OUTER JOIN trains t ON t.model_id = m.id
+SELECT id, domain, name, parent_id, status, sample_id, train_id, updated_at, created_at
+FROM models
 WHERE domain = :p1
 """
-
-
-@dataclasses.dataclass()
-class ListModelByDomainRow:
-    id: Optional[str]
-    domain: Optional[str]
-    name: Optional[str]
-    parent_id: Optional[str]
-    status: Optional[str]
-    sample_id: Optional[str]
-    train_id: Optional[str]
-    updated_at: Optional[datetime.datetime]
-    created_at: Optional[datetime.datetime]
-    id_2: Optional[str]
-    model_id: Optional[str]
-    finished_at: Optional[datetime.datetime]
-    created_at_2: Optional[datetime.datetime]
-    id_3: Optional[str]
-    sample_id_2: Optional[str]
-    model_id_2: Optional[str]
-    created_at_3: Optional[datetime.datetime]
-    finished_at_2: Optional[datetime.datetime]
-    sample_finished: Optional[datetime.datetime]
-    train_created_at: Optional[datetime.datetime]
-    train_finshed: Optional[datetime.datetime]
 
 
 LIST_MODELS = """-- name: list_models \\:many
@@ -350,10 +319,10 @@ class Querier:
                 created_at=row[13],
             )
 
-    def list_model_by_domain(self, *, domain: str) -> Iterator[ListModelByDomainRow]:
+    def list_model_by_domain(self, *, domain: str) -> Iterator[models.Model]:
         result = self._conn.execute(sqlalchemy.text(LIST_MODEL_BY_DOMAIN), {"p1": domain})
         for row in result:
-            yield ListModelByDomainRow(
+            yield models.Model(
                 id=row[0],
                 domain=row[1],
                 name=row[2],
@@ -363,18 +332,6 @@ class Querier:
                 train_id=row[6],
                 updated_at=row[7],
                 created_at=row[8],
-                id_2=row[9],
-                model_id=row[10],
-                finished_at=row[11],
-                created_at_2=row[12],
-                id_3=row[13],
-                sample_id_2=row[14],
-                model_id_2=row[15],
-                created_at_3=row[16],
-                finished_at_2=row[17],
-                sample_finished=row[18],
-                train_created_at=row[19],
-                train_finshed=row[20],
             )
 
     def list_models(self, *, dollar_1: List[str]) -> Iterator[models.Model]:
@@ -529,10 +486,10 @@ class AsyncQuerier:
                 created_at=row[13],
             )
 
-    async def list_model_by_domain(self, *, domain: str) -> AsyncIterator[ListModelByDomainRow]:
+    async def list_model_by_domain(self, *, domain: str) -> AsyncIterator[models.Model]:
         result = await self._conn.stream(sqlalchemy.text(LIST_MODEL_BY_DOMAIN), {"p1": domain})
         async for row in result:
-            yield ListModelByDomainRow(
+            yield models.Model(
                 id=row[0],
                 domain=row[1],
                 name=row[2],
@@ -542,18 +499,6 @@ class AsyncQuerier:
                 train_id=row[6],
                 updated_at=row[7],
                 created_at=row[8],
-                id_2=row[9],
-                model_id=row[10],
-                finished_at=row[11],
-                created_at_2=row[12],
-                id_3=row[13],
-                sample_id_2=row[14],
-                model_id_2=row[15],
-                created_at_3=row[16],
-                finished_at_2=row[17],
-                sample_finished=row[18],
-                train_created_at=row[19],
-                train_finshed=row[20],
             )
 
     async def list_models(self, *, dollar_1: List[str]) -> AsyncIterator[models.Model]:

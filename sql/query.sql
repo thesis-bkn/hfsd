@@ -25,14 +25,8 @@ SELECT EXISTS (
 );
 
 -- name: ListModelByDomain :many
-SELECT 
-    *,
-    s.finished_at as sample_finished,
-    t.created_at  as train_created_at,
-    t.finished_at as train_finshed
-FROM models m
-FULL OUTER JOIN samples s ON s.model_id = m.id
-FULL OUTER JOIN trains t ON t.model_id = m.id
+SELECT *
+FROM models
 WHERE domain = $1;
 
 -- name: InsertTrain :exec

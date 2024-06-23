@@ -9,13 +9,21 @@ import (
 )
 
 type Querier interface {
-	CheckModelExists(ctx context.Context, logPath string) (bool, error)
-	GetModelByID(ctx context.Context, logPath string) (Train, error)
-	GetSampleByModelID(ctx context.Context, saveDir string) (Sample, error)
+	CheckModelExists(ctx context.Context, id string) (bool, error)
+	CheckSampleFinishedByModelID(ctx context.Context, modelID string) (bool, error)
+	GetModelByID(ctx context.Context, id string) (Model, error)
+	GetSampleByModelID(ctx context.Context, modelID string) (Sample, error)
 	InsertInference(ctx context.Context, arg InsertInferenceParams) error
+	InsertModel(ctx context.Context, arg InsertModelParams) error
 	InsertSample(ctx context.Context, arg InsertSampleParams) error
 	InsertTrain(ctx context.Context, arg InsertTrainParams) error
-	UpdateFeedBackedSample(ctx context.Context, saveDir string) error
-	UpdateSampleFinished(ctx context.Context, saveDir string) error
+	ListAllUnfinishedInferences(ctx context.Context) ([]ListAllUnfinishedInferencesRow, error)
+	ListAllUnfinishedSample(ctx context.Context) ([]Sample, error)
+	ListAllUnfinishedTrain(ctx context.Context) ([]ListAllUnfinishedTrainRow, error)
+	ListInferences(ctx context.Context, arg ListInferencesParams) ([]ListInferencesRow, error)
+	ListModelByDomain(ctx context.Context, domain string) ([]Model, error)
+	ListModels(ctx context.Context, dollar_1 []string) ([]Model, error)
+	UpdateSampleFinished(ctx context.Context, id string) error
 }
 
+var _ Querier = (*Queries)(nil)

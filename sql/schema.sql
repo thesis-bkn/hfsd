@@ -1,9 +1,28 @@
+create table if not exists models (
+    id              text primary key,
+    domain          text not null,
+    name            text not null,
+    parent_id       text,
+    status          text not null,
+    sample_id       text,
+    train_id        text,
+    updated_at      timestamp with time zone,
+    created_at      timestamp with time zone default now()
+);
+
+insert into models (
+    id, domain, name, parent_id, status, sample_id, train_id, updated_at
+) values
+      ('base-1', 'sessile', 'base', NULL, 'trained', '', '', now()),
+      ('base-2', 'pedunculated', 'base', NULL, 'trained', '', '', now()),
+      ('base-3', 'outpaint', 'base', NULL, 'trained', '', '', now());
+
 create table if not exists samples (
     id                  text primary key,
     model_id            text not null,
     finished_at         timestamp with time zone,
     created_at          timestamp with time zone not null default now(),
-    foreign key(sampling_model_id) references models(id)
+    foreign key(model_id) references models(id)
 );
 
 create table if not exists trains (
@@ -15,21 +34,6 @@ create table if not exists trains (
     foreign key(sample_id) references samples(id)
 );
 
-create table if not exists models (
-    id              text primary key,
-    domain          text not null,
-    name            text not null,
-    parent_id       text,
-    status          text not null,
-    sample_id       text,
-    train_id        text,
-    updated_at      timestamp with time zone,
-    created_at      timestamp with time zone default now(),
-    foreign key (parent_id) references models(id),
-    foreign key (sample_id) references samples(id),
-    foreign key (train_id) references trains(id)
-);
-
 create table if not exists inferences (
     id              text primary key,
     model_id        text not null,
@@ -38,3 +42,5 @@ create table if not exists inferences (
     finished_at     timestamp with time zone,
     foreign key(model_id) references models(id)
 );
+
+

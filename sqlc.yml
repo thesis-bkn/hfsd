@@ -12,6 +12,8 @@ sql:
     schema: "sql/schema.sql"
     gen:
       go:
+        emit_prepared_queries: true
+        emit_interface: true
         package: "database"
         out: "internal/database"
         sql_package: "pgx/v5"
