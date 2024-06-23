@@ -2,6 +2,7 @@ package entity
 
 import (
 	"errors"
+    "strings"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -36,6 +37,7 @@ func NewModelFromDB(m *database.Model) *Model {
 		m.Status,
 		m.SampleID.String,
 		m.TrainID.String,
+        m.ID,
 	)
 
 	return mm
@@ -127,7 +129,7 @@ func (m *Model) Domain() Domain {
 }
 
 func (m *Model) IsBase() bool {
-	return m.parentID == nil
+	return m.parentID == nil || strings.Contains(*m.parentID, "base")
 }
 
 func (m *Model) ResumeFrom() string {

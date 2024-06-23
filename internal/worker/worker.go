@@ -24,6 +24,7 @@ func (w *Worker) Run() {
 			"poetry",
 			x...,
 		)
+        fmt.Println("execute task: ", cmd)
 		stdout, err := cmd.Output()
 		if err != nil {
 			fmt.Println(err.Error())
@@ -37,6 +38,7 @@ func (w *Worker) Run() {
 	for data := range w.C {
 		switch task := data.(type) {
 		case *entity.Sample:
+            fmt.Println("receive sampling task")
 			execute(fmtSample(task))
 
 		case *entity.Train:

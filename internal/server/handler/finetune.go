@@ -111,12 +111,6 @@ func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	tx, err := h.client.Conn().Begin(c.Request().Context())
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(c.Request().Context())
-
 	modelDB, err := h.client.Query().GetModelByID(c.Request().Context(), req.ModelID)
 	if err != nil {
 		return tracerr.Wrap(err)
@@ -150,7 +144,7 @@ func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	return tx.Commit(c.Request().Context())
+	return nil
 }
 
 func (h *FinetuneModelHandler) writeJsonFile(model *entity.Model, ratings []int) error {
