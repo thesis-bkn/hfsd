@@ -91,7 +91,7 @@ func FinetuneView(models []ModelNode, domain entity.Domain) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = tree(graph(models, domain)).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = tree(graph(models)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -283,7 +283,7 @@ func tree(modelM map[string]*ModelNode, graphM map[string][]*ModelNode, curModel
 	})
 }
 
-func graph(models []ModelNode, domain entity.Domain) (map[string]*ModelNode, map[string][]*ModelNode, string) {
+func graph(models []ModelNode) (map[string]*ModelNode, map[string][]*ModelNode, string) {
 	graphM := make(map[string][]*ModelNode)
 	modelM := make(map[string]*ModelNode)
 
@@ -292,15 +292,17 @@ func graph(models []ModelNode, domain entity.Domain) (map[string]*ModelNode, map
 		modelM[models[i].ID] = &models[i]
 	}
 
+	var rootID string
 	for i, model := range models {
 		if model.Parent == nil || graphM[*model.Parent] == nil {
+			rootID = model.ID
 			continue
 		}
 
 		graphM[*model.Parent] = append(graphM[*model.Parent], &models[i])
 	}
 
-	return modelM, graphM, fmt.Sprintf("base-%s", domain.String())
+	return modelM, graphM, rootID
 }
 
 func swalStyle(model *ModelNode) templ.Component {
@@ -331,7 +333,7 @@ func swalStyle(model *ModelNode) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(model.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 133, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 135, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {

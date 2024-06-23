@@ -35,7 +35,7 @@ templ FinetuneView(models []ModelNode, domain entity.Domain) {
 		</div>
 		<div class="flex overflow-x-auto justify-center mt-8">
 			<ul class="tree">
-				@tree(graph(models, domain))
+				@tree(graph(models))
 			</ul>
 		</div>
 	}
@@ -108,7 +108,7 @@ templ tree(modelM map[string]*ModelNode, graphM map[string][]*ModelNode, curMode
 	</li>
 }
 
-func graph(models []ModelNode, domain entity.Domain) (map[string]*ModelNode, map[string][]*ModelNode, string) {
+func graph(models []ModelNode) (map[string]*ModelNode, map[string][]*ModelNode, string) {
 	graphM := make(map[string][]*ModelNode)
 	modelM := make(map[string]*ModelNode)
 
@@ -117,15 +117,17 @@ func graph(models []ModelNode, domain entity.Domain) (map[string]*ModelNode, map
 		modelM[models[i].ID] = &models[i]
 	}
 
+	var rootID string
 	for i, model := range models {
 		if model.Parent == nil || graphM[*model.Parent] == nil {
+			rootID = model.ID
 			continue
 		}
 
 		graphM[*model.Parent] = append(graphM[*model.Parent], &models[i])
 	}
 
-	return modelM, graphM, fmt.Sprintf("base-%s", domain.String())
+	return modelM, graphM, rootID
 }
 
 templ swalStyle(model *ModelNode) {
