@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/splode/fname"
 	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/ztrue/tracerr"
 )
@@ -16,6 +17,7 @@ type Model struct {
 	id       string
 	sampleID string
 	trainID  string
+	name     string
 	domain   Domain
 	status   ModelStatus
 }
@@ -37,7 +39,7 @@ func NewModelFromDB(m *database.Model) *Model {
 		m.Status,
 		m.SampleID.String,
 		m.TrainID.String,
-		m.ID,
+		m.ID, m.Name,
 	)
 
 	return mm
@@ -49,7 +51,7 @@ func NewModel(
 	status string,
 	sampleID string,
 	trainID string,
-	id ...string,
+	opts ...string,
 ) (*Model, error) {
 	modelStatus, err := ParseModelStatus(status)
 	if err != nil {
@@ -61,13 +63,23 @@ func NewModel(
 	}
 
 	modelID := uuid.NewString()
-	if len(id) != 0 {
-		modelID = id[0]
+	if len(opts) != 0 {
+		modelID = opts[0]
+	}
+
+	modelName, err := fname.NewGenerator().Generate()
+	if err != nil {
+		return nil, tracerr.Wrap(err)
+	}
+
+	if len(opts) == 2 {
+		modelName = opts[1]
 	}
 
 	return &Model{
 		id:       modelID,
 		parentID: parentID,
+		name:     modelName,
 		domain:   modelDomain,
 		status:   modelStatus,
 		sampleID: sampleID,
@@ -117,6 +129,7 @@ func (m *Model) Insertion() database.InsertModelParams {
 			String: *m.parentID,
 			Valid:  true,
 		},
+		Name:   m.name,
 		Status: m.status.String(),
 		SampleID: pgtype.Text{
 			String: m.sampleID,
