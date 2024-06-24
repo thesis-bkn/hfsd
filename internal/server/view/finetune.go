@@ -77,7 +77,7 @@ func (v *FinetuneView) View(c echo.Context) error {
 				node.Status = templates.Sampling
             }
 
-            if m.Status == "sampled" {
+            if m.Status == "rating" {
 				node.Status = templates.Rating
             }
 
