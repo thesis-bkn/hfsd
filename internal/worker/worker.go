@@ -24,7 +24,7 @@ func (w *Worker) Run() {
 			"poetry",
 			x...,
 		)
-        fmt.Println("execute task: ", cmd)
+		fmt.Println("execute task: ", cmd)
 		stdout, err := cmd.Output()
 		if err != nil {
 			fmt.Println(err.Error())
@@ -38,7 +38,7 @@ func (w *Worker) Run() {
 	for data := range w.C {
 		switch task := data.(type) {
 		case *entity.Sample:
-            fmt.Println("receive sampling task")
+			fmt.Println("receive sampling task")
 			execute(fmtSample(task))
 
 		case *entity.Train:
@@ -56,6 +56,7 @@ func fmtSample(task *entity.Sample) []string {
 		"accelerate",
 		"launch",
 		"./d3po/scripts/sample_inpaint.py",
+		"--model_id", task.Model().ID(),
 		"--save_dir", task.SaveDir(),
 		"--image_fn", task.Model().Domain().ImageFn(),
 		"--prompt_fn", task.Model().Domain().PromptFn(),
@@ -74,6 +75,7 @@ func fmtTrain(task *entity.Train) []string {
 		"accelerate",
 		"launch",
 		"./d3po/scripts/train_inpaint.py",
+		"--model_id", task.Model().ID(),
 		"--log_dir", task.Model().LogDir(),
 		"--train_json_path", task.Model().JsonPath(),
 		"--train_sample_path", task.Model().SamplePath(),
