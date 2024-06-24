@@ -2,8 +2,8 @@ package entity
 
 import (
 	"errors"
-    "strings"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -12,12 +12,12 @@ import (
 )
 
 type Model struct {
-    parentID *string
+	parentID *string
 	id       string
 	sampleID string
 	trainID  string
-    domain   Domain
-    status   ModelStatus
+	domain   Domain
+	status   ModelStatus
 }
 
 // ENUM(init, sampling, sampled, rating, training, trained)
@@ -37,7 +37,7 @@ func NewModelFromDB(m *database.Model) *Model {
 		m.Status,
 		m.SampleID.String,
 		m.TrainID.String,
-        m.ID,
+		m.ID,
 	)
 
 	return mm
@@ -98,6 +98,10 @@ func (m *Model) NewChild(sampleID string) (*Model, error) {
 
 func (m *Model) Sampling() {
 	m.status = ModelStatusSampling
+}
+
+func (m *Model) Training() {
+    m.status = ModelStatusTraining
 }
 
 func (m *Model) Insertion() database.InsertModelParams {

@@ -444,6 +444,22 @@ func (q *Queries) ListModels(ctx context.Context, dollar_1 []string) ([]Model, e
 	return items, nil
 }
 
+const updateModelStatus = `-- name: UpdateModelStatus :exec
+UPDATE models
+SET status = $2
+WHERE id = $1
+`
+
+type UpdateModelStatusParams struct {
+	ID     string
+	Status string
+}
+
+func (q *Queries) UpdateModelStatus(ctx context.Context, arg UpdateModelStatusParams) error {
+	_, err := q.db.Exec(ctx, updateModelStatus, arg.ID, arg.Status)
+	return err
+}
+
 const updateSampleFinished = `-- name: UpdateSampleFinished :exec
 UPDATE samples
 SET finished_at = now()

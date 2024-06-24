@@ -23,6 +23,7 @@ type Querier interface {
 	ListInferences(ctx context.Context, arg ListInferencesParams) ([]ListInferencesRow, error)
 	ListModelByDomain(ctx context.Context, domain string) ([]Model, error)
 	ListModels(ctx context.Context, dollar_1 []string) ([]Model, error)
+	UpdateModelStatus(ctx context.Context, arg UpdateModelStatusParams) error
 	UpdateSampleFinished(ctx context.Context, id string) error
 }
 

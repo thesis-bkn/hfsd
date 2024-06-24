@@ -11,6 +11,11 @@ UPDATE samples
 SET finished_at = now()
 WHERE id = $1;
 
+-- name: UpdateModelStatus :exec
+UPDATE models
+SET status = $2
+WHERE id = $1;
+
 -- name: GetSampleByModelID :one
 SELECT * FROM samples
 WHERE model_id = $1

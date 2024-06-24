@@ -84,7 +84,13 @@ func (h *FinetuneModelHandler) SubmitSampleTask(c echo.Context) error {
 
 	res.Name = modelName
 
-	h.client.Query().InsertSample(c.Request().Context(), sample.Insertion())
+	sample.Model().Sampling()
+	if err := h.client.Query().InsertSample(c.Request().Context(), sample.Insertion()); err != nil {
+		return tracerr.Wrap(err)
+	}
+	if err := h.client.Query().InsertModel(c.Request().Context(), sample.Model().Insertion()); err != nil {
+		return tracerr.Wrap(err)
+	}
 
 	c.JSON(http.StatusOK, res)
 
@@ -141,6 +147,11 @@ func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
 	h.cc <- train
 
 	if err := h.client.Query().InsertTrain(c.Request().Context(), train.Insertion()); err != nil {
+		return tracerr.Wrap(err)
+	}
+
+	sample.Model().Training()
+	if err := h.client.Query().InsertModel(c.Request().Context(), sample.Model().Insertion()); err != nil {
 		return tracerr.Wrap(err)
 	}
 
