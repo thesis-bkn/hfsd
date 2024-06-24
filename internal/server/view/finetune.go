@@ -11,7 +11,6 @@ import (
 	echo "github.com/labstack/echo/v4"
 	"github.com/ztrue/tracerr"
 
-	"github.com/thesis-bkn/hfsd/data"
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/internal/entity"
@@ -65,21 +64,21 @@ func (v *FinetuneView) View(c echo.Context) error {
 				Name: m.Name,
 			}
 
-            if m.Status == "trained" {
+			if m.Status == "trained" {
 				node.Status = templates.Finetuned
-            }
+			}
 
-            if m.Status == "training" {
-                node.Status = templates.Training
-            }
+			if m.Status == "training" {
+				node.Status = templates.Training
+			}
 
-            if m.Status == "sampling" {
+			if m.Status == "sampling" {
 				node.Status = templates.Sampling
-            }
+			}
 
-            if m.Status == "rating" {
+			if m.Status == "rating" {
 				node.Status = templates.Rating
-            }
+			}
 
 			if m.ParentID.Valid {
 				node.Parent = &m.ParentID.String
@@ -137,29 +136,27 @@ func (v *FinetuneView) FeedBackView(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	sampleFished, err := v.client.
-		Query().CheckModelExists(c.Request().Context(), req.ModelID)
+	dbModel, err := v.client.Query().GetModelByID(c.Request().Context(), req.ModelID)
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	if !sampleFished {
-		return errors.ErrUnfinishedSample
+	model := entity.NewModelFromDB(&dbModel)
+	sample, err := entity.NewSample(model, false)
+	if err != nil {
+		return tracerr.Wrap(err)
 	}
 
 	assets := []templates.FeedbackAsset{}
-	files, err := data.Samples.ReadDir(fmt.Sprintf("%s/images", req.ModelID))
-	if err != nil {
-		return tracerr.Wrap(err)
-	}
+	files := sample.SampleImages()
 
 	for _, fileName := range files {
 		entry := FeedbackEntry{
-			Name: fileName.Name(),
+			Name: fileName,
 		}
 
 		assets = append(assets, templates.FeedbackAsset{
-			ImageUrl: path.Join(data.SamplePath, req.ModelID, "images", entry.Name),
+			ImageUrl: path.Join("/data", "assets", "samples", req.ModelID, "images", entry.Name),
 			Group:    entry.Group(),
 			Order:    entry.Order(),
 		})
