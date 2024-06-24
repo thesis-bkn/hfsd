@@ -100,8 +100,13 @@ func (m *Model) Sampling() {
 	m.status = ModelStatusSampling
 }
 
-func (m *Model) Training() {
-    m.status = ModelStatusTraining
+func (m *Model) Training() ModelStatus {
+	m.status = ModelStatusTraining
+	return m.status
+}
+
+func (m *Model) Status() ModelStatus {
+	return m.status
 }
 
 func (m *Model) Insertion() database.InsertModelParams {

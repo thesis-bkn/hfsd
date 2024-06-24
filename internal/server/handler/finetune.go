@@ -85,10 +85,11 @@ func (h *FinetuneModelHandler) SubmitSampleTask(c echo.Context) error {
 	res.Name = modelName
 
 	sample.Model().Sampling()
-	if err := h.client.Query().InsertSample(c.Request().Context(), sample.Insertion()); err != nil {
+	if err := h.client.Query().InsertModel(c.Request().Context(), sample.Model().Insertion()); err != nil {
 		return tracerr.Wrap(err)
 	}
-	if err := h.client.Query().InsertModel(c.Request().Context(), sample.Model().Insertion()); err != nil {
+
+	if err := h.client.Query().InsertSample(c.Request().Context(), sample.Insertion()); err != nil {
 		return tracerr.Wrap(err)
 	}
 
@@ -150,8 +151,15 @@ func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	sample.Model().Training()
-	if err := h.client.Query().InsertModel(c.Request().Context(), sample.Model().Insertion()); err != nil {
+	modelStatus := sample.Model().Training()
+	if err := h.client.
+		Query().
+		UpdateModelStatus(
+			c.Request().Context(),
+			database.UpdateModelStatusParams{
+				ID:     train.Model().ID(),
+				Status: modelStatus.String(),
+			}); err != nil {
 		return tracerr.Wrap(err)
 	}
 
