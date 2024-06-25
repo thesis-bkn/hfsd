@@ -50,9 +50,9 @@ func NewInferenceHandler(
 }
 
 type maskObject struct {
-	X int `json:"x"`
-	Y int `json:"y"`
-	R int `json:"r"`
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	R float64 `json:"r"`
 }
 
 type inferRequest struct {
@@ -87,7 +87,7 @@ func (h *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	mask := image.NewRGBA(image.Rect(0, 0, 512, 512))
 	draw.Draw(mask, mask.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 	for _, obj := range req.Mask {
-		drawCircle(mask, obj.X, obj.Y, obj.R, color.White)
+		drawCircle(mask, int(obj.X), int(obj.Y), int(obj.R), color.White)
 	}
 
 	var buf bytes.Buffer
