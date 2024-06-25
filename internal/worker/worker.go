@@ -45,6 +45,7 @@ func (w *Worker) Run() {
 			execute(fmtTrain(task))
 
 		case *entity.Inference:
+			fmt.Println("receive inference task")
 			execute(fmtInf(task))
 		}
 	}
@@ -95,6 +96,7 @@ func fmtInf(task *entity.Inference) []string {
 		"accelerate",
 		"launch",
 		"./d3po/scripts/inference_inpaint.py",
+		"--inference_id", task.ImagePath(),
 		"--image_path", task.ImagePath(),
 		"--mask_path", task.MaskPath(),
 		"--output_path", task.OutputPath(),
