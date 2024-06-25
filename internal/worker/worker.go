@@ -96,7 +96,7 @@ func fmtInf(task *entity.Inference) []string {
 		"accelerate",
 		"launch",
 		"./d3po/scripts/inference_inpaint.py",
-		"--inference_id", task.ImagePath(),
+		"--inference_id", task.ID(),
 		"--image_path", task.ImagePath(),
 		"--mask_path", task.MaskPath(),
 		"--output_path", task.OutputPath(),
