@@ -6,10 +6,6 @@ VALUES ( $1, $2 );
 SELECT * FROM models
 WHERE id = $1;
 
--- name: UpdateSampleFinished :exec
-UPDATE samples
-SET finished_at = now()
-WHERE id = $1;
 
 -- name: UpdateModelStatus :exec
 UPDATE models
@@ -84,13 +80,24 @@ WHERE finished_at IS NULL;
 SELECT * FROM models
 WHERE id = ANY($1::text[]);
 
--- name: ListInferences :many
+-- name: ListFinishedInferences :many
 SELECT * FROM inferences i
 JOIN models m ON i.model_id = m.id
+WHERE finished_at IS NOT NULL
 LIMIT $1 OFFSET $2;
 
+-- name: UpdateInferenceFinished :exec
+UPDATE inferences
+SET finished_at = now()
+WHERE id = $1;
 
+-- name: UpdateSampleFinished :exec
+UPDATE samples
+SET finished_at = now()
+WHERE id = $1;
 
-
-
+-- name: UpdateTrainFinished :exec
+UPDATE trains
+SET finished_at = now()
+WHERE id = $1;
 

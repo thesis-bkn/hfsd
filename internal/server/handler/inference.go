@@ -1,15 +1,11 @@
 package handler
 
 import (
-	"bytes"
-	"encoding/base64"
 	"image"
 	"image/color"
 	"image/draw"
-	"image/jpeg"
 	"io"
 	"mime/multipart"
-	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5"
@@ -78,23 +74,11 @@ func (h *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	sourceModelAgg := entity.NewModelFromDB(&sourceModel)
 	inf := entity.NewInference(sourceModelAgg, req.Prompt, req.NegPrompt)
 
-	b64 := req.Image[strings.IndexByte(req.Image, ',')+1:]
-	imageB, err := base64.StdEncoding.DecodeString(b64)
-	if err != nil {
-		return tracerr.Wrap(err)
-	}
-
 	mask := image.NewRGBA(image.Rect(0, 0, 512, 512))
 	draw.Draw(mask, mask.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 	for _, obj := range req.Mask {
 		drawCircle(mask, int(obj.X), int(obj.Y), int(obj.R), color.White)
 	}
-
-	var buf bytes.Buffer
-	if err := jpeg.Encode(&buf, mask, nil); err != nil {
-		return tracerr.Wrap(err)
-	}
-	maskB := buf.Bytes()
 
 	tx, err := h.client.Conn().BeginTx(c.Request().Context(), pgx.TxOptions{})
 	if err != nil {
@@ -109,12 +93,11 @@ func (h *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 	}()
 
 	query := h.client.Query().WithTx(tx)
-	if err := utils.SavePNG(inf.ImagePath(), imageB); err != nil {
+	if err := utils.SaveBase64ImageToFile(req.Image, inf.ImagePath()); err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	if err := utils.
-		SavePNG(inf.MaskPath(), maskB); err != nil {
+	if err := utils.SaveRGBAImageToJPEG(mask, inf.MaskPath()); err != nil {
 		return tracerr.Wrap(err)
 	}
 

@@ -1,6 +1,7 @@
 package view
 
 import (
+	"path"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -46,9 +47,9 @@ func (v *ShowcaseView) View(c echo.Context) error {
 
 	modelInfs, err := v.client.
 		Query().
-		ListInferences(
+		ListFinishedInferences(
 			c.Request().Context(),
-			database.ListInferencesParams{
+			database.ListFinishedInferencesParams{
 				Limit:  int32(LIMIT_PER_PAGE),
 				Offset: int32(page * LIMIT_PER_PAGE),
 			},
@@ -60,8 +61,8 @@ func (v *ShowcaseView) View(c echo.Context) error {
 	infs := utils.Map(modelInfs, entity.NewInferenceFromJoinedModel)
 	showcaseItems := utils.Map(infs, func(i *entity.Inference) templates.ShowcaseItem {
 		return templates.ShowcaseItem{
-			InputImagePath:  i.ImagePath(),
-			OutputImagePath: i.OutputPath(),
+			InputImagePath:  path.Join(v.cfg.EndpointUrl, v.cfg.Bucket, i.ID(), "in.jpg"),
+			OutputImagePath: path.Join(v.cfg.EndpointUrl, v.cfg.Bucket, i.ID(), "out.jpg"),
 			Prompt:          i.Prompt(),
 		}
 	})

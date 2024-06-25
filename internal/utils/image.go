@@ -1,41 +1,49 @@
 package utils
 
 import (
-	"bytes"
+	"encoding/base64"
+	"fmt"
 	"image"
-	"image/png"
+	"image/jpeg"
+	"io/ioutil"
 	"os"
-
-	"github.com/ztrue/tracerr"
+	"strings"
 )
 
-// loadPNGFromBytes decodes a PNG image from a byte slice
-func loadPNGFromBytes(data []byte) (image.Image, error) {
-	img, err := png.Decode(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
+// SaveBase64ImageToFile decodes a Base64 encoded image and saves it to the specified file path
+func SaveBase64ImageToFile(base64String, filePath string) error {
+	// Split the base64 string to get the format and the actual data
+	parts := strings.Split(base64String, ",")
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid base64 string format")
 	}
-	return img, nil
+
+	// Decode the base64 string to binary data
+	imageData, err := base64.StdEncoding.DecodeString(parts[1])
+	if err != nil {
+		return fmt.Errorf("failed to decode base64 string: %w", err)
+	}
+
+	// Write the binary data to a file
+	if err := ioutil.WriteFile(filePath, imageData, 0644); err != nil {
+		return fmt.Errorf("failed to write image to file: %w", err)
+	}
+
+	return nil
 }
 
-// savePNG saves a PNG image to the specified file path
-func SavePNG(filePath string, data []byte) error {
-	// Create a file
-	outFile, err := os.Create(filePath)
+// SaveRGBAImageToPNG saves an *image.RGBA to a PNG file
+func SaveRGBAImageToJPEG(img *image.RGBA, filePath string) error {
+	// Create the file
+	file, err := os.Create(filePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create file: %w", err)
 	}
-	defer outFile.Close()
+	defer file.Close()
 
-	// Encode the image to PNG and write it to the file
-	img, err := loadPNGFromBytes(data)
-	if err != nil {
-		return tracerr.Wrap(err)
-	}
-
-	err = png.Encode(outFile, img)
-	if err != nil {
-		return err
+	// Encode the RGBA image to PNG and write to file
+	if err := jpeg.Encode(file, img, nil); err != nil {
+		return fmt.Errorf("failed to encode image to PNG: %w", err)
 	}
 
 	return nil

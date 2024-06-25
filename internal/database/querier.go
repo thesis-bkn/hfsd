@@ -20,11 +20,13 @@ type Querier interface {
 	ListAllUnfinishedInferences(ctx context.Context) ([]ListAllUnfinishedInferencesRow, error)
 	ListAllUnfinishedSample(ctx context.Context) ([]Sample, error)
 	ListAllUnfinishedTrain(ctx context.Context) ([]ListAllUnfinishedTrainRow, error)
-	ListInferences(ctx context.Context, arg ListInferencesParams) ([]ListInferencesRow, error)
+	ListFinishedInferences(ctx context.Context, arg ListFinishedInferencesParams) ([]ListFinishedInferencesRow, error)
 	ListModelByDomain(ctx context.Context, domain string) ([]Model, error)
 	ListModels(ctx context.Context, dollar_1 []string) ([]Model, error)
+	UpdateInferenceFinished(ctx context.Context, id string) error
 	UpdateModelStatus(ctx context.Context, arg UpdateModelStatusParams) error
 	UpdateSampleFinished(ctx context.Context, id string) error
+	UpdateTrainFinished(ctx context.Context, id string) error
 }
 
 var _ Querier = (*Queries)(nil)

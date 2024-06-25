@@ -1,6 +1,8 @@
 package view
 
 import (
+	"path"
+
 	"github.com/labstack/echo/v4"
 
 	"github.com/thesis-bkn/hfsd/internal/config"
@@ -41,11 +43,25 @@ func (f *FactoryView) View(c echo.Context) error {
 	}
 
 	trains, err := utils.MapErr(modelTrains, modelTrainsToTrain)
+	if err != nil {
+		return tracerr.Wrap(err)
+	}
+
 	infs, err := utils.MapErr(modelInfs, modelInfsToInfs)
+	if err != nil {
+		return tracerr.Wrap(err)
+	}
 
 	var tasks []templates.Task
 	tasks = utils.Map(trains, trainToTask)
-	tasks = append(tasks, utils.Map(infs, infToTask)...)
+	tasks = append(tasks, utils.Map(infs, func(i *entity.Inference) templates.Task {
+		return templates.Task{
+			ID:       i.ID(),
+			Type:     templates.Inference,
+			ImageUrl: path.Join(f.cfg.EndpointUrl, f.cfg.Bucket, i.ID(), "in.jpg"),
+			Status:   0,
+		}
+	})...)
 
 	return templates.
 		FactoryView(f.cfg.BucketEpt(), tasks).
@@ -57,15 +73,6 @@ func trainToTask(t *entity.Train) templates.Task {
 		ID:       t.ID(),
 		Type:     templates.Train,
 		ImageUrl: t.GetSample().ViewImage(),
-		Status:   0,
-	}
-}
-
-func infToTask(i *entity.Inference) templates.Task {
-	return templates.Task{
-		ID:       i.ID(),
-		Type:     templates.Inference,
-		ImageUrl: i.ViewImage(),
 		Status:   0,
 	}
 }

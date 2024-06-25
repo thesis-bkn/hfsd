@@ -310,18 +310,19 @@ func (q *Queries) ListAllUnfinishedTrain(ctx context.Context) ([]ListAllUnfinish
 	return items, nil
 }
 
-const listInferences = `-- name: ListInferences :many
+const listFinishedInferences = `-- name: ListFinishedInferences :many
 SELECT i.id, model_id, prompt, neg_prompt, finished_at, m.id, domain, name, parent_id, status, sample_id, train_id, updated_at, created_at FROM inferences i
 JOIN models m ON i.model_id = m.id
+WHERE finished_at IS NOT NULL
 LIMIT $1 OFFSET $2
 `
 
-type ListInferencesParams struct {
+type ListFinishedInferencesParams struct {
 	Limit  int32
 	Offset int32
 }
 
-type ListInferencesRow struct {
+type ListFinishedInferencesRow struct {
 	ID         string
 	ModelID    string
 	Prompt     string
@@ -338,15 +339,15 @@ type ListInferencesRow struct {
 	CreatedAt  pgtype.Timestamptz
 }
 
-func (q *Queries) ListInferences(ctx context.Context, arg ListInferencesParams) ([]ListInferencesRow, error) {
-	rows, err := q.db.Query(ctx, listInferences, arg.Limit, arg.Offset)
+func (q *Queries) ListFinishedInferences(ctx context.Context, arg ListFinishedInferencesParams) ([]ListFinishedInferencesRow, error) {
+	rows, err := q.db.Query(ctx, listFinishedInferences, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListInferencesRow
+	var items []ListFinishedInferencesRow
 	for rows.Next() {
-		var i ListInferencesRow
+		var i ListFinishedInferencesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ModelID,
@@ -444,6 +445,17 @@ func (q *Queries) ListModels(ctx context.Context, dollar_1 []string) ([]Model, e
 	return items, nil
 }
 
+const updateInferenceFinished = `-- name: UpdateInferenceFinished :exec
+UPDATE inferences
+SET finished_at = now()
+WHERE id = $1
+`
+
+func (q *Queries) UpdateInferenceFinished(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, updateInferenceFinished, id)
+	return err
+}
+
 const updateModelStatus = `-- name: UpdateModelStatus :exec
 UPDATE models
 SET status = $2
@@ -468,5 +480,16 @@ WHERE id = $1
 
 func (q *Queries) UpdateSampleFinished(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, updateSampleFinished, id)
+	return err
+}
+
+const updateTrainFinished = `-- name: UpdateTrainFinished :exec
+UPDATE trains
+SET finished_at = now()
+WHERE id = $1
+`
+
+func (q *Queries) UpdateTrainFinished(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, updateTrainFinished, id)
 	return err
 }

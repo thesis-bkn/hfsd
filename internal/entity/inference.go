@@ -48,27 +48,27 @@ func NewInferenceFromModel(
 }
 
 func NewInferenceFromJoinedModel(
-    r database.ListInferencesRow,
+	r database.ListFinishedInferencesRow,
 ) *Inference {
-    model := NewModelFromDB(&database.Model{
-    	ID:        r.ModelID,
-    	Domain:    r.Domain,
-    	Name:      r.Name,
-    	ParentID:  r.ParentID,
-    	Status:    r.Status,
-    	SampleID:  r.SampleID,
-    	TrainID:   r.TrainID,
-    	UpdatedAt: r.UpdatedAt,
-    	CreatedAt: r.CreatedAt,
-    })
+	model := NewModelFromDB(&database.Model{
+		ID:        r.ModelID,
+		Domain:    r.Domain,
+		Name:      r.Name,
+		ParentID:  r.ParentID,
+		Status:    r.Status,
+		SampleID:  r.SampleID,
+		TrainID:   r.TrainID,
+		UpdatedAt: r.UpdatedAt,
+		CreatedAt: r.CreatedAt,
+	})
 
-    return NewInferenceFromModel(model, database.Inference{
-    	ID:         r.ID,
-    	ModelID:    r.ModelID,
-    	Prompt:     r.Prompt,
-    	NegPrompt:  r.NegPrompt,
-    	FinishedAt: r.FinishedAt,
-    })
+	return NewInferenceFromModel(model, database.Inference{
+		ID:         r.ID,
+		ModelID:    r.ModelID,
+		Prompt:     r.Prompt,
+		NegPrompt:  r.NegPrompt,
+		FinishedAt: r.FinishedAt,
+	})
 }
 
 func (i *Inference) ID() string {
@@ -76,19 +76,15 @@ func (i *Inference) ID() string {
 }
 
 func (i *Inference) ImagePath() string {
-	return fmt.Sprintf("./data/inferences/in_%s.png", i.id)
-}
-
-func (i *Inference) ViewImage() string {
-	return fmt.Sprintf("/data/inferences/in_%s.png", i.id)
+	return fmt.Sprintf("./data/assets/infs/%s_in.jpg", i.id)
 }
 
 func (i *Inference) MaskPath() string {
-	return fmt.Sprintf("./data/inferences/ms_%s.png", i.id)
+	return fmt.Sprintf("./data/assets/infs/%s_ms.jpg", i.id)
 }
 
 func (i *Inference) OutputPath() string {
-	return fmt.Sprintf("./data/inferences/ou_%s.png", i.id)
+	return fmt.Sprintf("./data/assets/infs/%s_ou.jpg", i.id)
 }
 
 func (i *Inference) Prompt() string {
