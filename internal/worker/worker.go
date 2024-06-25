@@ -98,8 +98,8 @@ func fmtInf(task *entity.Inference) []string {
 		"--image_path", task.ImagePath(),
 		"--mask_path", task.MaskPath(),
 		"--output_path", task.OutputPath(),
-		"--prompt", task.Prompt(),
-		"--neg_prompt", task.NegPrompt(),
+		"--prompt", fmt.Sprintf("'%s'", task.Prompt()),
+		"--neg_prompt", fmt.Sprintf("'%s'", task.NegPrompt()),
 	}
 
 	if !task.Model().IsBase() {
