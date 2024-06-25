@@ -80,6 +80,10 @@ func (s *Sample) SampleImages() []string {
 	return files
 }
 
+func (s *Sample) ID() string {
+    return s.id
+}
+
 func readFilesInFolder(folderPath string) ([]string, error) {
 	var fileNames []string
 

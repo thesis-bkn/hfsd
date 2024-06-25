@@ -156,7 +156,7 @@ func (v *FinetuneView) FeedBackView(c echo.Context) error {
 		}
 
 		assets = append(assets, templates.FeedbackAsset{
-			ImageUrl: path.Join("/data", "assets", "samples", req.ModelID, "images", entry.Name),
+			ImageUrl: path.Join(v.cfg.EndpointUrl, v.cfg.Bucket, sample.ID(), fileName),
 			Group:    entry.Group(),
 			Order:    entry.Order(),
 		})

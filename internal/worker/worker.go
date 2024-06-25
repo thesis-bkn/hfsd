@@ -57,6 +57,7 @@ func fmtSample(task *entity.Sample) []string {
 		"launch",
 		"./d3po/scripts/sample_inpaint.py",
 		"--model_id", task.Model().ID(),
+		"--sample_id", task.ID(),
 		"--save_dir", task.SaveDir(),
 		"--image_fn", task.Model().Domain().ImageFn(),
 		"--prompt_fn", task.Model().Domain().PromptFn(),
