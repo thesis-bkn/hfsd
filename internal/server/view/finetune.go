@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -161,6 +162,10 @@ func (v *FinetuneView) FeedBackView(c echo.Context) error {
 			Order:    entry.Order(),
 		})
 	}
+
+	sort.Slice(assets, func(i, j int) bool {
+		return assets[i].Order < assets[j].Order
+	})
 
 	return templates.
 		FeedBackView(req.ModelID, assets).
