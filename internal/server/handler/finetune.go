@@ -169,17 +169,18 @@ func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
 func (h *FinetuneModelHandler) writeJsonFile(model *entity.Model, ratings []int) error {
 	ratingGroups := [][]int{}
 	for i := 0; i < len(ratings); i += 7 {
+		ratingGroups = append(ratingGroups, []int{})
 		for j := 0; j < 7; j++ {
 			ratingGroups[i/7] = append(ratingGroups[i/7], ratings[i+j])
 		}
 	}
 
 	// Open file for writing
-	if err := os.Mkdir(fmt.Sprintf("./data/%s/json", model.ID()), os.ModePerm); err != nil {
+	if err := os.Mkdir(fmt.Sprintf("./data/assets/samples/%s/json", model.SampleID()), os.ModePerm); err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	file, err := os.Create(fmt.Sprintf("./data/%s/json/data.json", model.ID()))
+	file, err := os.Create(fmt.Sprintf("./data/assets/samples/%s/json/data.json", model.SampleID()))
 	if err != nil {
 		fmt.Println("Error creating file:", err)
 		return tracerr.Wrap(err)

@@ -88,7 +88,7 @@ templ submitFeedbacks(modelID string) {
 
                 _group = elements[1]
                 order = elements[2]
-                option = pair[1] != 'like'
+                option = pair[1] == 'like'
 
                 selectedItems.push({
                     "order": parseInt(order),

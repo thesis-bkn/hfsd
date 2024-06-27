@@ -146,6 +146,10 @@ func (m *Model) ID() string {
 	return m.id
 }
 
+func (m *Model) SampleID() string {
+    return m.sampleID
+}
+
 func (m *Model) Domain() Domain {
 	return m.domain
 }
