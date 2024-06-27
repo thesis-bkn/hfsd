@@ -30,7 +30,7 @@ type ModelStatus int
 func NewModelFromDB(m *database.Model) *Model {
 	var parentID *string
 	if m.ParentID.Valid {
-		parentID = &m.ID
+		parentID = &m.ParentID.String
 	}
 
 	mm, _ := NewModel(
@@ -147,7 +147,7 @@ func (m *Model) ID() string {
 }
 
 func (m *Model) SampleID() string {
-    return m.sampleID
+	return m.sampleID
 }
 
 func (m *Model) Domain() Domain {
@@ -175,9 +175,9 @@ func (m *Model) LogDir() string {
 }
 
 func (m *Model) JsonPath() string {
-	return fmt.Sprintf("./data/%s/json", m.id)
+	return fmt.Sprintf("./data/assets/samples/%s/json", m.sampleID)
 }
 
 func (m *Model) SamplePath() string {
-	return fmt.Sprintf("./data/%s", m.id)
+	return fmt.Sprintf("./data/assets/samples/%s", m.sampleID)
 }
