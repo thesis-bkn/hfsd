@@ -17,7 +17,6 @@ import (
 	"github.com/thesis-bkn/hfsd/internal/entity"
 	"github.com/thesis-bkn/hfsd/internal/errors"
 	"github.com/thesis-bkn/hfsd/internal/utils"
-	"github.com/thesis-bkn/hfsd/internal/worker"
 )
 
 type FinetuneModelHandler struct {
@@ -29,7 +28,7 @@ type FinetuneModelHandler struct {
 }
 
 func NewFinetuneModelHandler(
-	worker *worker.Worker,
+    taskqueue chan<- interface{},
 	validate *validator.Validate,
 	client database.Client,
 	nameRng *fname.Generator,
@@ -37,7 +36,7 @@ func NewFinetuneModelHandler(
 ) *FinetuneModelHandler {
 	return &FinetuneModelHandler{
 		validate: validate,
-		cc:       worker.C,
+		cc:       taskqueue,
 		client:   client,
 		nameRng:  nameRng,
 		cfg:      cfg,

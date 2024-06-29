@@ -9,13 +9,14 @@ import (
 
 func main() {
 	w := worker.NewWorker()
-	server, err := server.NewServer(w)
+    taskQueue := make(chan interface{})
+	server, err := server.NewServer(taskQueue)
 	if err != nil {
 		tracerr.PrintSourceColor(err)
 		return
 	}
 
-	go w.Run()
+	go w.Run(taskQueue)
 
 	server.Logger.Fatal(server.Start(server.Server.Addr))
 }

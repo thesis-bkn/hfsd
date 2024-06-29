@@ -18,7 +18,6 @@ import (
 	"github.com/thesis-bkn/hfsd/internal/errors"
 	"github.com/thesis-bkn/hfsd/internal/s3"
 	"github.com/thesis-bkn/hfsd/internal/utils"
-	"github.com/thesis-bkn/hfsd/internal/worker"
 )
 
 type InferenceHandler struct {
@@ -30,14 +29,14 @@ type InferenceHandler struct {
 }
 
 func NewInferenceHandler(
-	w *worker.Worker,
+    taskqueue chan<- interface{},
 	cfg *config.Config,
 	s3Client *s3.Client,
 	client database.Client,
 	validate *validator.Validate,
 ) *InferenceHandler {
 	return &InferenceHandler{
-		cc:       w.C,
+		cc:       taskqueue,
 		client:   client,
 		s3Client: s3Client,
 		cfg:      cfg,

@@ -163,7 +163,7 @@ func (m *Model) ResumeFrom() string {
 		panic("can not resume for base model")
 	}
 
-	return fmt.Sprintf("./data/assets/logs/%s", *m.parentID)
+	return fmt.Sprintf("./data/assets/logs/%s/checkpoints/checkpoint_9/", *m.parentID)
 }
 
 func (m *Model) LogDir() string {

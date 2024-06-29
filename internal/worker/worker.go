@@ -8,18 +8,22 @@ import (
 	"github.com/thesis-bkn/hfsd/internal/entity"
 )
 
-type Worker struct {
-	C chan interface{}
-}
+type Worker struct{}
 
 func NewWorker() *Worker {
-	return &Worker{
-		C: make(chan interface{}),
-	}
+	return &Worker{}
 }
 
-func (w *Worker) Run() {
+func (w *Worker) Run(c <-chan interface{}) {
+	runningTask := 0
+	pending := []interface{}{}
+
 	execute := func(x []string) {
+		runningTask++
+		defer func() {
+			runningTask = max(0, runningTask - 1)
+		}()
+
 		cmd := exec.Command(
 			"poetry",
 			x...,
@@ -35,7 +39,7 @@ func (w *Worker) Run() {
 		fmt.Println(string(stdout))
 	}
 
-	for data := range w.C {
+	handler := func(data interface{}) {
 		switch task := data.(type) {
 		case *entity.Sample:
 			fmt.Println("receive sampling task")
@@ -47,6 +51,22 @@ func (w *Worker) Run() {
 		case *entity.Inference:
 			fmt.Println("receive inference task")
 			execute(fmtInf(task))
+		}
+	}
+
+	for {
+		select {
+		case data := <-c:
+			pending = append(pending, data)
+		default:
+			if runningTask == 0 && len(pending) != 0 {
+				task := pending[0]
+				pending = pending[1:]
+
+                go handler(task)
+			}
+
+			time.Sleep(1 * time.Second)
 		}
 	}
 }
@@ -78,7 +98,7 @@ func fmtTrain(task *entity.Train) []string {
 		"launch",
 		"./d3po/scripts/train_inpaint.py",
 		"--model_id", task.Model().ID(),
-		"--log_dir", task.Model().LogDir(),
+		"--llog_dir", task.Model().LogDir(),
 		"--train_json_path", task.Model().JsonPath(),
 		"--train_sample_path", task.Model().SamplePath(),
 	}
