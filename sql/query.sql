@@ -84,6 +84,7 @@ WHERE id = ANY($1::text[]);
 SELECT * FROM inferences i
 JOIN models m ON i.model_id = m.id
 WHERE finished_at IS NOT NULL
+ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
 
 -- name: UpdateInferenceFinished :exec

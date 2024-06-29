@@ -3,39 +3,32 @@ package database
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/ztrue/tracerr"
 )
 
 type Client interface {
 	Query() *Queries
-	Conn() *pgx.Conn
+	Conn() *pgxpool.Pool
 }
 
 type client struct {
 	queries *Queries
-	conn    *pgx.Conn
-}
-
-type QuerierT[T any] interface {
-	New(db pgx.Conn) *T
+	conn    *pgxpool.Pool
 }
 
 func NewClient(cfg *config.Config) (Client, error) {
-	conn, err := pgx.Connect(
-		context.Background(),
-		cfg.DatabaseURL,
-	)
+	pool, err := pgxpool.New(context.Background(), cfg.DatabaseURL)
 	if err != nil {
 		return nil, tracerr.Wrap(err)
 	}
 
-	queries := New(conn)
+	queries := New(pool)
 
 	return &client{
 		queries: queries,
-		conn:    conn,
+		conn:    pool,
 	}, nil
 }
 
@@ -43,6 +36,6 @@ func (c *client) Query() *Queries {
 	return c.queries
 }
 
-func (c *client) Conn() *pgx.Conn {
+func (c *client) Conn() *pgxpool.Pool {
 	return c.conn
 }

@@ -8,7 +8,6 @@ import (
 	"mime/multipart"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
 	"github.com/ztrue/tracerr"
 
@@ -79,7 +78,7 @@ func (h *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 		drawCircle(mask, int(obj.X), int(obj.Y), int(obj.R), color.White)
 	}
 
-	tx, err := h.client.Conn().BeginTx(c.Request().Context(), pgx.TxOptions{})
+	tx, err := h.client.Conn().Begin(c.Request().Context())
 	if err != nil {
 		return tracerr.Wrap(err)
 	}

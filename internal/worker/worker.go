@@ -25,13 +25,13 @@ func (w *Worker) Run(
 	c <-chan entity.Task,
 	client database.Client,
 ) {
-	runningTask := 0
+	runningTask := false
 	pending := []*taskWrapper{}
 
 	execute := func(x []string) {
-		runningTask++
+		runningTask = true
 		defer func() {
-			runningTask = max(0, runningTask-1)
+			runningTask = false
 		}()
 
 		cmd := exec.Command(
@@ -95,7 +95,7 @@ func (w *Worker) Run(
 			})
 
 		default:
-			if runningTask == 0 && len(pending) != 0 {
+			if !runningTask && len(pending) != 0 {
 				task := pending[0]
 				pending = pending[1:]
 
