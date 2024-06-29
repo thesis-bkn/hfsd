@@ -153,6 +153,34 @@ func (q *Queries) InsertSample(ctx context.Context, arg InsertSampleParams) erro
 	return err
 }
 
+const insertTask = `-- name: InsertTask :one
+INSERT INTO tasks (
+    task_type, content,
+    status, estimate, updated_at
+)
+VALUES ( $1, $2, $3, $4, now())
+RETURNING task_id
+`
+
+type InsertTaskParams struct {
+	TaskType string
+	Content  string
+	Status   string
+	Estimate int64
+}
+
+func (q *Queries) InsertTask(ctx context.Context, arg InsertTaskParams) (int32, error) {
+	row := q.db.QueryRow(ctx, insertTask,
+		arg.TaskType,
+		arg.Content,
+		arg.Status,
+		arg.Estimate,
+	)
+	var task_id int32
+	err := row.Scan(&task_id)
+	return task_id, err
+}
+
 const insertTrain = `-- name: InsertTrain :exec
 INSERT INTO trains (id, model_id, sample_id)
 VALUES ($1, $2, $3)
@@ -445,6 +473,39 @@ func (q *Queries) ListModels(ctx context.Context, dollar_1 []string) ([]Model, e
 	return items, nil
 }
 
+const listTasks = `-- name: ListTasks :many
+SELECT task_id, task_type, content, status, estimate, updated_at, created_at FROM tasks
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
+	rows, err := q.db.Query(ctx, listTasks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.TaskType,
+			&i.Content,
+			&i.Status,
+			&i.Estimate,
+			&i.UpdatedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateInferenceFinished = `-- name: UpdateInferenceFinished :exec
 UPDATE inferences
 SET finished_at = now()
@@ -480,6 +541,25 @@ WHERE id = $1
 
 func (q *Queries) UpdateSampleFinished(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, updateSampleFinished, id)
+	return err
+}
+
+const updateTaskStatus = `-- name: UpdateTaskStatus :exec
+UPDATE tasks
+SET status = $2,
+    estimate = $3,
+    updated_at = now()
+WHERE task_id = $1
+`
+
+type UpdateTaskStatusParams struct {
+	TaskID   int32
+	Status   string
+	Estimate int64
+}
+
+func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) error {
+	_, err := q.db.Exec(ctx, updateTaskStatus, arg.TaskID, arg.Status, arg.Estimate)
 	return err
 }
 

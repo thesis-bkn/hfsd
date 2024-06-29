@@ -35,6 +35,16 @@ type Sample struct {
 	CreatedAt  pgtype.Timestamptz
 }
 
+type Task struct {
+	TaskID    int32
+	TaskType  string
+	Content   string
+	Status    string
+	Estimate  int64
+	UpdatedAt pgtype.Timestamptz
+	CreatedAt pgtype.Timestamptz
+}
+
 type Train struct {
 	ID         string
 	SampleID   string

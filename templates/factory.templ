@@ -3,6 +3,15 @@ package templates
 import "github.com/thesis-bkn/hfsd/templates/components"
 import "fmt"
 
+type Task struct {
+	ID      int32
+	Type    TaskType
+	Status  TaskStatus
+	Content string
+	Max     int64
+	Value   int64
+}
+
 type (
 	TaskType   int
 	TaskStatus int
@@ -18,11 +27,17 @@ const (
 	Finished
 )
 
-type Task struct {
-	ID       string
-	Type     TaskType
-	ImageUrl string
-	Status   TaskStatus
+func (t TaskType) String() string {
+	switch t {
+	case Inference:
+		return "inference"
+	case Sample:
+		return "sample"
+	case Train:
+		return "train"
+	}
+
+	return ""
 }
 
 templ FactoryView(bucketEpt string, tasks []Task) {
@@ -30,33 +45,25 @@ templ FactoryView(bucketEpt string, tasks []Task) {
 		@components.NavBar("factory")
 		<div class="flex flex-wrap m-20">
 			for _, task := range tasks {
-				<div class="card w-96 bg-base-100 shadow-xl">
-					<figure>
-						<img
-							src={ task.ImageUrl }
-							alt="Image"
-						/>
-					</figure>
+				<div class="card bg-base-100 m-2 w-96 shadow-xl">
 					<div class="card-body">
 						<h2 class="card-title">
-							{ fmt.Sprintf("%d", task.ID) }
-							switch task.Type {
-								case Inference:
-									<div class="badge badge-accent">#inf</div>
-								case Train:
-									<div class="badge badge-primary">#tune</div>
-								case Sample:
-									<div class="badge badge-secondary">#sample</div>
-							}
+							{ task.Type.String() }
 							switch task.Status {
-								case Pending:
-									<div class="badge badge-warning">Pending</div>
 								case Processing:
-									<div class="badge badge-info">Processing</div>
+									<div class="badge badge-warning gap-2">processing</div>
 								case Finished:
-									<div class="badge badge-warning">Finished</div>
+									<div class="badge badge-success gap-2">finished</div>
+								case Pending:
+									<div class="badge badge-info gap-2">pending</div>
 							}
 						</h2>
+						<p>{ task.Content }</p>
+						<progress
+							class="progress progress-secondary w-56"
+							value={ fmt.Sprintf("%d", task.Value) }
+							max={ fmt.Sprintf("%d", task.Max) }
+						></progress>
 					</div>
 				</div>
 			}

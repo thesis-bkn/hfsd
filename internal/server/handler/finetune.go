@@ -20,7 +20,7 @@ import (
 )
 
 type FinetuneModelHandler struct {
-	cc       chan<- interface{}
+	cc       chan<- entity.Task
 	validate *validator.Validate
 	client   database.Client
 	cfg      *config.Config
@@ -28,7 +28,7 @@ type FinetuneModelHandler struct {
 }
 
 func NewFinetuneModelHandler(
-    taskqueue chan<- interface{},
+	taskqueue chan<- entity.Task,
 	validate *validator.Validate,
 	client database.Client,
 	nameRng *fname.Generator,
@@ -78,9 +78,6 @@ func (h *FinetuneModelHandler) SubmitSampleTask(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	// worker do sample task
-	h.cc <- sample
-
 	res.Name = modelName
 
 	sample.Model().Sampling()
@@ -91,6 +88,9 @@ func (h *FinetuneModelHandler) SubmitSampleTask(c echo.Context) error {
 	if err := h.client.Query().InsertSample(c.Request().Context(), sample.Insertion()); err != nil {
 		return tracerr.Wrap(err)
 	}
+
+	// worker do sample task
+	h.cc <- sample
 
 	c.JSON(http.StatusOK, res)
 

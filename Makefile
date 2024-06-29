@@ -6,8 +6,8 @@ gen:
 	@templ generate
 
 fmt:
-	echo "hehe"
-	# @ls templates/*.templ | gxargs -L 1 -d '\n' templ fmt
+	# echo "hehe"
+	@ls templates/*.templ | gxargs -L 1 -d '\n' templ fmt
 
 
 build: gen fmt

@@ -1,13 +1,12 @@
 package view
 
 import (
-	"path"
+	"time"
 
 	"github.com/labstack/echo/v4"
 
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
-	"github.com/thesis-bkn/hfsd/internal/entity"
 	"github.com/thesis-bkn/hfsd/internal/utils"
 	"github.com/thesis-bkn/hfsd/templates"
 	"github.com/ztrue/tracerr"
@@ -29,97 +28,55 @@ func NewFactoryView(
 }
 
 func (f *FactoryView) View(c echo.Context) error {
-	modelTrains, err := f.client.
-		Query().
-		ListAllUnfinishedTrain(c.Request().Context())
+	tasks, err := f.client.Query().ListTasks(c.Request().Context())
 	if err != nil {
 		return tracerr.Wrap(err)
 	}
 
-	modelInfs, err := f.client.
-		Query().ListAllUnfinishedInferences(c.Request().Context())
-	if err != nil {
-		return tracerr.Wrap(err)
-	}
+	viewTasks := utils.Map(tasks, func(t database.Task) templates.Task {
+		var taskType templates.TaskType
+		var status templates.TaskStatus
+		var maxV int64 = 100
+		var val int64 = 100
 
-	trains, err := utils.MapErr(modelTrains, modelTrainsToTrain)
-	if err != nil {
-		return tracerr.Wrap(err)
-	}
-
-	infs, err := utils.MapErr(modelInfs, modelInfsToInfs)
-	if err != nil {
-		return tracerr.Wrap(err)
-	}
-
-	var tasks []templates.Task
-	tasks = utils.Map(trains, trainToTask)
-	tasks = append(tasks, utils.Map(infs, func(i *entity.Inference) templates.Task {
-		return templates.Task{
-			ID:       i.ID(),
-			Type:     templates.Inference,
-			ImageUrl: path.Join(f.cfg.EndpointUrl, f.cfg.Bucket, i.ID(), "in.jpg"),
-			Status:   0,
+		switch t.TaskType {
+		case "inference":
+			taskType = templates.Inference
+		case "train":
+			taskType = templates.Train
+		case "sample":
+			taskType = templates.Sample
 		}
-	})...)
+
+		switch t.Status {
+		case "pending":
+			status = templates.Pending
+		case "running":
+			status = templates.Processing
+		case "finished":
+			status = templates.Finished
+		}
+
+		if t.Estimate != -1 {
+			val = int64(time.Since(t.UpdatedAt.Time).Seconds())
+			maxV = t.Estimate
+		}
+
+		if t.Estimate == -1 && status == templates.Pending {
+			val = 0
+		}
+
+		return templates.Task{
+			ID:      t.TaskID,
+			Type:    taskType,
+			Status:  status,
+			Content: t.Content,
+			Max:     maxV,
+			Value:   val,
+		}
+	})
 
 	return templates.
-		FactoryView(f.cfg.BucketEpt(), tasks).
+		FactoryView(f.cfg.BucketEpt(), viewTasks).
 		Render(c.Request().Context(), c.Response().Writer)
-}
-
-func trainToTask(t *entity.Train) templates.Task {
-	return templates.Task{
-		ID:       t.ID(),
-		Type:     templates.Train,
-		ImageUrl: t.GetSample().ViewImage(),
-		Status:   0,
-	}
-}
-
-func modelInfsToInfs(mi database.ListAllUnfinishedInferencesRow) (*entity.Inference, error) {
-	var parentID *string
-	if mi.ParentID.Valid {
-		parentID = &mi.ParentID.String
-	}
-	m, err := entity.NewModel(
-		mi.Domain,
-		parentID,
-		mi.Status,
-		mi.SampleID.String,
-		mi.TrainID.String,
-		mi.ID,
-	)
-	if err != nil {
-		return nil, tracerr.Wrap(err)
-	}
-
-	return entity.NewInferenceFromModel(m,
-		database.Inference{
-			ID:         mi.ID,
-			ModelID:    m.ID(),
-			Prompt:     mi.Prompt,
-			NegPrompt:  mi.NegPrompt,
-			FinishedAt: mi.FinishedAt,
-		}), nil
-}
-
-func modelTrainsToTrain(mt database.ListAllUnfinishedTrainRow) (*entity.Train, error) {
-	var parentID *string
-	if mt.ParentID.Valid {
-		parentID = &mt.ParentID.String
-	}
-	m, err := entity.NewModel(
-		mt.Domain,
-		parentID,
-		mt.Status,
-		mt.SampleID.String,
-		mt.TrainID,
-		mt.ID,
-	)
-	if err != nil {
-		return nil, tracerr.Wrap(err)
-	}
-
-	return entity.NewTrainFromModel(m)
 }

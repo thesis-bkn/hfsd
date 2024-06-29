@@ -43,4 +43,15 @@ create table if not exists inferences (
     foreign key(model_id) references models(id)
 );
 
+create table if not exists tasks
+(
+    task_id         serial      not null,
+    task_type       text        not null,
+    content         text        not null,
+    status          text        not null,
+    estimate        bigint      not null default 0,
+    updated_at      timestamp with time zone,
+    created_at      timestamp with time zone not null default now(),
+    primary key (task_id)
+);
 

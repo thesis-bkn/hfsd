@@ -16,6 +16,7 @@ type Querier interface {
 	InsertInference(ctx context.Context, arg InsertInferenceParams) error
 	InsertModel(ctx context.Context, arg InsertModelParams) error
 	InsertSample(ctx context.Context, arg InsertSampleParams) error
+	InsertTask(ctx context.Context, arg InsertTaskParams) (int32, error)
 	InsertTrain(ctx context.Context, arg InsertTrainParams) error
 	ListAllUnfinishedInferences(ctx context.Context) ([]ListAllUnfinishedInferencesRow, error)
 	ListAllUnfinishedSample(ctx context.Context) ([]Sample, error)
@@ -23,9 +24,11 @@ type Querier interface {
 	ListFinishedInferences(ctx context.Context, arg ListFinishedInferencesParams) ([]ListFinishedInferencesRow, error)
 	ListModelByDomain(ctx context.Context, domain string) ([]Model, error)
 	ListModels(ctx context.Context, dollar_1 []string) ([]Model, error)
+	ListTasks(ctx context.Context) ([]Task, error)
 	UpdateInferenceFinished(ctx context.Context, id string) error
 	UpdateModelStatus(ctx context.Context, arg UpdateModelStatusParams) error
 	UpdateSampleFinished(ctx context.Context, id string) error
+	UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) error
 	UpdateTrainFinished(ctx context.Context, id string) error
 }
 

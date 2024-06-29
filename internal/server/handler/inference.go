@@ -21,7 +21,7 @@ import (
 )
 
 type InferenceHandler struct {
-	cc       chan<- interface{}
+	cc       chan<- entity.Task
 	validate *validator.Validate
 	s3Client *s3.Client
 	client   database.Client
@@ -29,7 +29,7 @@ type InferenceHandler struct {
 }
 
 func NewInferenceHandler(
-    taskqueue chan<- interface{},
+    taskqueue chan<- entity.Task,
 	cfg *config.Config,
 	s3Client *s3.Client,
 	client database.Client,

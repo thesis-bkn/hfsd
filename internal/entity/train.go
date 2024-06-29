@@ -1,12 +1,16 @@
 package entity
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/ztrue/tracerr"
 )
 
 type Train struct {
-	id string
+	id         string
+	finishedAt time.Time
 
 	sample *Sample
 }
@@ -47,4 +51,16 @@ func (t *Train) Model() *Model {
 
 func (t *Train) GetSample() *Sample {
 	return t.sample
+}
+
+func (i *Train) TaskContent() string {
+	return fmt.Sprintf("train-model-%s", i.sample.model.id)
+}
+
+func (i *Train) TaskType() string {
+	return "train"
+}
+
+func (i *Train) Estimate() time.Duration {
+	return time.Minute * 20
 }

@@ -12,6 +12,7 @@ import (
 
 	"github.com/thesis-bkn/hfsd/internal/config"
 	"github.com/thesis-bkn/hfsd/internal/database"
+	"github.com/thesis-bkn/hfsd/internal/entity"
 	"github.com/thesis-bkn/hfsd/internal/s3"
 	"github.com/thesis-bkn/hfsd/internal/server/handler"
 	appmw "github.com/thesis-bkn/hfsd/internal/server/middleware"
@@ -22,7 +23,7 @@ import (
 func registerRoutes(
 	cfg *config.Config,
 	client database.Client,
-    taskqueue chan<- interface{},
+	taskqueue chan<- entity.Task,
 ) *echo.Echo {
 	e := echo.New()
 	e.Server.Addr = fmt.Sprintf(":%d", cfg.Port)
@@ -38,8 +39,8 @@ func registerRoutes(
 	// Handler
 	inferenceHandler := handler.NewInferenceHandler(taskqueue, cfg, s3Client, client, validate)
 	finetuneHandler := handler.NewFinetuneModelHandler(taskqueue, validate, client, rng, cfg)
-    // View 
-    homeView := view.NewHomeView()
+	// View
+	homeView := view.NewHomeView()
 	infView := view.NewInferenceView()
 	finetuneView := view.NewFinetuneView(cfg, validate, client)
 	factoryView := view.NewFactoryView(client, cfg)

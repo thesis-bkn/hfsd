@@ -1,10 +1,12 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"time"
 
+	"github.com/thesis-bkn/hfsd/internal/database"
 	"github.com/thesis-bkn/hfsd/internal/entity"
 )
 
@@ -14,14 +16,22 @@ func NewWorker() *Worker {
 	return &Worker{}
 }
 
-func (w *Worker) Run(c <-chan interface{}) {
+type taskWrapper struct {
+	taskID int32
+	data   entity.Task
+}
+
+func (w *Worker) Run(
+	c <-chan entity.Task,
+	client database.Client,
+) {
 	runningTask := 0
-	pending := []interface{}{}
+	pending := []*taskWrapper{}
 
 	execute := func(x []string) {
 		runningTask++
 		defer func() {
-			runningTask = max(0, runningTask - 1)
+			runningTask = max(0, runningTask-1)
 		}()
 
 		cmd := exec.Command(
@@ -39,8 +49,8 @@ func (w *Worker) Run(c <-chan interface{}) {
 		fmt.Println(string(stdout))
 	}
 
-	handler := func(data interface{}) {
-		switch task := data.(type) {
+	handler := func(wrapper *taskWrapper) {
+		switch task := wrapper.data.(type) {
 		case *entity.Sample:
 			fmt.Println("receive sampling task")
 			execute(fmtSample(task))
@@ -52,18 +62,53 @@ func (w *Worker) Run(c <-chan interface{}) {
 			fmt.Println("receive inference task")
 			execute(fmtInf(task))
 		}
+
+		if err := client.Query().
+			UpdateTaskStatus(context.Background(), database.UpdateTaskStatusParams{
+				TaskID:   wrapper.taskID,
+				Status:   "finished",
+				Estimate: -1,
+			}); err != nil {
+			fmt.Println("error update task failed: ", err.Error())
+			return
+		}
 	}
 
 	for {
 		select {
-		case data := <-c:
-			pending = append(pending, data)
+		case task := <-c:
+			taskID, err := client.Query().
+				InsertTask(context.Background(), database.InsertTaskParams{
+					TaskType: task.TaskType(),
+					Content:  task.TaskContent(),
+					Status:   "pending",
+					Estimate: -1,
+				})
+			if err != nil {
+				fmt.Println("error update task sampled: ", err.Error())
+				return
+			}
+
+			pending = append(pending, &taskWrapper{
+				taskID: taskID,
+				data:   task,
+			})
+
 		default:
 			if runningTask == 0 && len(pending) != 0 {
 				task := pending[0]
 				pending = pending[1:]
 
-                go handler(task)
+				if err := client.Query().
+					UpdateTaskStatus(context.Background(), database.UpdateTaskStatusParams{
+						TaskID:   task.taskID,
+						Status:   "running",
+						Estimate: int64(task.data.Estimate().Seconds()),
+					}); err != nil {
+					continue
+				}
+
+				go handler(task)
 			}
 
 			time.Sleep(1 * time.Second)

@@ -101,3 +101,22 @@ UPDATE trains
 SET finished_at = now()
 WHERE id = $1;
 
+-- name: InsertTask :one
+INSERT INTO tasks (
+    task_type, content,
+    status, estimate, updated_at
+)
+VALUES ( $1, $2, $3, $4, now())
+RETURNING task_id;
+
+-- name: UpdateTaskStatus :exec
+UPDATE tasks
+SET status = $2,
+    estimate = $3,
+    updated_at = now()
+WHERE task_id = $1;
+
+
+-- name: ListTasks :many
+SELECT * FROM tasks
+ORDER BY created_at DESC;

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/ztrue/tracerr"
@@ -41,6 +42,18 @@ func retrieve(model *Model) *Sample {
 		id:    model.sampleID,
 		model: model,
 	}
+}
+
+func (i *Sample) TaskContent() string {
+	return fmt.Sprintf("sample-model-%s", i.model.id)
+}
+
+func (i *Sample) TaskType() string {
+	return "sample"
+}
+
+func (i *Sample) Estimate() time.Duration {
+	return time.Minute * 5
 }
 
 func (s *Sample) Insertion() database.InsertSampleParams {
@@ -81,7 +94,7 @@ func (s *Sample) SampleImages() []string {
 }
 
 func (s *Sample) ID() string {
-    return s.id
+	return s.id
 }
 
 func readFilesInFolder(folderPath string) ([]string, error) {

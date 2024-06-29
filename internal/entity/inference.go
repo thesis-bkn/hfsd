@@ -71,6 +71,18 @@ func NewInferenceFromJoinedModel(
 	})
 }
 
+func (i *Inference) TaskContent() string {
+	return fmt.Sprintf("inference-model-%s", i.model.id)
+}
+
+func (i *Inference) TaskType() string {
+	return fmt.Sprintf("inference")
+}
+
+func (i *Inference) Estimate() time.Duration {
+	return time.Second * 10
+}
+
 func (i *Inference) ID() string {
 	return i.id
 }
