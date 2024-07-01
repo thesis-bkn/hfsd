@@ -342,7 +342,7 @@ const listFinishedInferences = `-- name: ListFinishedInferences :many
 SELECT i.id, model_id, prompt, neg_prompt, finished_at, m.id, domain, name, parent_id, status, sample_id, train_id, updated_at, created_at FROM inferences i
 JOIN models m ON i.model_id = m.id
 WHERE finished_at IS NOT NULL
-ORDER BY created_at DESC
+ORDER BY finished_at DESC
 LIMIT $1 OFFSET $2
 `
 
