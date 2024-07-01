@@ -31,7 +31,7 @@ templ ShowcaseView(bucketEpt string, infs []ShowcaseItem, page int64) {
 		@components.NavBar("showcase")
 		<div class="flex flex-wrap m-20">
 			for _, inf := range infs {
-				<div class="card w-96 bg-base-100 shadow-xl">
+				<div class="card w-96 bg-base-100 shadow-xl m-2">
 					<figure>
 						<div class="diff aspect-square">
 							<div class="diff-item-1">
@@ -46,7 +46,7 @@ templ ShowcaseView(bucketEpt string, infs []ShowcaseItem, page int64) {
 					<div class="card-body">
 						<p>{ inf.Prompt }</p>
 						<div class="card-actions justify-end">
-							<a href={ templ.SafeURL(inf.InputImagePath) }>
+							<a href={ templ.SafeURL(inf.OutputImagePath) }>
 								<button class="btn btn-outline btn-primary">
 									@downloadIcon()
 									Download

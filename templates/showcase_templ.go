@@ -140,7 +140,7 @@ func ShowcaseView(bucketEpt string, infs []ShowcaseItem, page int64) templ.Compo
 				return templ_7745c5c3_Err
 			}
 			for _, inf := range infs {
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"card w-96 bg-base-100 shadow-xl\"><figure><div class=\"diff aspect-square\"><div class=\"diff-item-1\"><img alt=\"daisy\" src=\"")
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"card w-96 bg-base-100 shadow-xl m-2\"><figure><div class=\"diff aspect-square\"><div class=\"diff-item-1\"><img alt=\"daisy\" src=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -173,7 +173,7 @@ func ShowcaseView(bucketEpt string, infs []ShowcaseItem, page int64) templ.Compo
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var9 templ.SafeURL = templ.SafeURL(inf.InputImagePath)
+				var templ_7745c5c3_Var9 templ.SafeURL = templ.SafeURL(inf.OutputImagePath)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var9)))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
