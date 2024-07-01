@@ -45,7 +45,7 @@ func retrieve(model *Model) *Sample {
 }
 
 func (i *Sample) TaskContent() string {
-	return fmt.Sprintf("sample-model-%s", i.model.id)
+	return fmt.Sprintf("sampling for model \"%s\"", i.model.name)
 }
 
 func (i *Sample) TaskType() string {

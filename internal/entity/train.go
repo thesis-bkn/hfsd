@@ -54,7 +54,7 @@ func (t *Train) GetSample() *Sample {
 }
 
 func (i *Train) TaskContent() string {
-	return fmt.Sprintf("train-model-%s", i.sample.model.id)
+	return fmt.Sprintf("training model \"%s\"", i.sample.model.name)
 }
 
 func (i *Train) TaskType() string {

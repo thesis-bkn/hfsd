@@ -72,11 +72,11 @@ func NewInferenceFromJoinedModel(
 }
 
 func (i *Inference) TaskContent() string {
-	return fmt.Sprintf("inference-model-%s", i.model.id)
+	return fmt.Sprintf("inferencing using model \"%s\"", i.model.name)
 }
 
 func (i *Inference) TaskType() string {
-	return fmt.Sprintf("inference")
+	return "inference"
 }
 
 func (i *Inference) Estimate() time.Duration {
