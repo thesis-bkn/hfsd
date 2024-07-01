@@ -26,6 +26,21 @@ const (
 	Training
 )
 
+func (s modelStatus) ToolTip() string {
+	switch s {
+	case Sampling:
+		return "This model is being sampling"
+	case Rating:
+		return "This model is sampled, please give feedback for finetuning"
+	case Training:
+		return "This model is being trained based on previous feedbacks"
+	case Finetuned:
+		return "This model is ready to be used to inference or further finetuning"
+	}
+
+	return ""
+}
+
 type ModelNode struct {
 	ID     string
 	Name   string
@@ -81,7 +96,7 @@ func FinetuneView(models []ModelNode, domain entity.Domain) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(domain.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 33, Col: 23}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 48, Col: 23}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -184,7 +199,7 @@ func tree(modelM map[string]*ModelNode, graphM map[string][]*ModelNode, curModel
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var5 = []any{"btn", "place-content-center",
+		var templ_7745c5c3_Var5 = []any{"btn", "place-content-center", "duration-150", "ease-in-out", "hover:bg-primary-accent-200",
 			templ.KV("btn-accent", modelM[curModel].Status == Sampling),
 			templ.KV("btn-secondary", modelM[curModel].Status == Rating),
 			templ.KV("btn-primary", modelM[curModel].Status == Finetuned),
@@ -239,14 +254,22 @@ func tree(modelM map[string]*ModelNode, graphM map[string][]*ModelNode, curModel
 				return templ_7745c5c3_Err
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" data-twe-toggle=\"tooltip\" data-twe-placement=\"right\" data-twe-ripple-init data-twe-ripple-color=\"light\" title=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(modelM[curModel].Status.ToolTip()))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(modelM[curModel].Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 98, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 118, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -333,7 +356,7 @@ func swalStyle(model *ModelNode) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(model.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 135, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 155, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {

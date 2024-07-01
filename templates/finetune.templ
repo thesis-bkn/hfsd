@@ -16,6 +16,21 @@ const (
 	Training
 )
 
+func (s modelStatus) ToolTip() string {
+	switch s {
+	case Sampling:
+		return "This model is being sampling"
+	case Rating:
+		return "This model is sampled, please give feedback for finetuning"
+	case Training:
+		return "This model is being trained based on previous feedbacks"
+	case Finetuned:
+		return "This model is ready to be used to inference or further finetuning"
+	}
+
+	return ""
+}
+
 type ModelNode struct {
 	ID     string
 	Name   string
@@ -84,7 +99,7 @@ script redirectTo(url string) {
 templ tree(modelM map[string]*ModelNode, graphM map[string][]*ModelNode, curModel string) {
 	<li>
 		<button
-			class={ "btn", "place-content-center",
+			class={ "btn", "place-content-center", "duration-150", "ease-in-out","hover:bg-primary-accent-200",
                 templ.KV("btn-accent", modelM[curModel].Status == Sampling),
                 templ.KV("btn-secondary", modelM[curModel].Status == Rating),
                 templ.KV("btn-primary", modelM[curModel].Status == Finetuned),
@@ -95,6 +110,11 @@ templ tree(modelM map[string]*ModelNode, graphM map[string][]*ModelNode, curMode
 			if modelM[curModel].Status == Rating {
 				onClick={ redirectTo(fmt.Sprintf("/feedback/%s", modelM[curModel].ID)) }
 			}
+			data-twe-toggle="tooltip"
+			data-twe-placement="right"
+			data-twe-ripple-init
+			data-twe-ripple-color="light"
+			title={ modelM[curModel].Status.ToolTip() }
 		>
 			{ modelM[curModel].Name }
 		</button>
