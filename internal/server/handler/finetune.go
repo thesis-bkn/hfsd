@@ -90,7 +90,9 @@ func (h *FinetuneModelHandler) SubmitSampleTask(c echo.Context) error {
 	}
 
 	// worker do sample task
-	h.cc <- sample
+	go func() {
+        h.cc <- sample    
+    }()
 
 	c.JSON(http.StatusOK, res)
 
@@ -144,7 +146,9 @@ func (h *FinetuneModelHandler) SubmitFinetuneTask(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	h.cc <- train
+	go func() {
+        h.cc <- train
+    }()
 
 	if err := h.client.Query().InsertTrain(c.Request().Context(), train.Insertion()); err != nil {
 		return tracerr.Wrap(err)

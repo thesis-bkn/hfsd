@@ -2,7 +2,7 @@ package entity
 
 //go:generate go-enum --marshal --values
 
-// ENUM(outpaint, sessile, pendunculated)
+// ENUM(sessile, pendunculated)
 type Domain int
 
 func (d Domain) ImageFn() string {
@@ -21,7 +21,7 @@ func (d Domain) PromptFn() string {
 	case DomainSessile:
 		return "sessile_prompt"
 	case DomainPendunculated:
-		return "penduculated_imgs"
+		return "penduculated_prompt"
 	}
 
 	panic("not found domain")

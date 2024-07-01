@@ -41,14 +41,14 @@ templ NavBar(current string) {
 							</div>
 							<ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
 								for _, domain := range entity.DomainValues() {
-									<li>
-										<a
-											class="capitalize"
-											href={ templ.SafeURL(fmt.Sprintf("/finetune/%s", domain.String())) }
-										>
-											{ domain.String() }
-										</a>
-									</li>
+                                    <li>
+                                        <a
+                                            class="capitalize"
+                                            href={ templ.SafeURL(fmt.Sprintf("/finetune/%s", domain.String())) }
+                                        >
+                                            { domain.String() }
+                                        </a>
+                                    </li>
 								}
 							</ul>
 						</div>

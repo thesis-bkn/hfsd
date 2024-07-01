@@ -105,7 +105,9 @@ func (h *InferenceHandler) SubmitInferenceTask(c echo.Context) error {
 		return tracerr.Wrap(err)
 	}
 
-	h.cc <- inf
+    go func() {
+        h.cc <- inf
+    }()
 
 	return nil
 }
