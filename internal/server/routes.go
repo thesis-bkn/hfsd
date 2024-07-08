@@ -45,6 +45,7 @@ func registerRoutes(
 	finetuneView := view.NewFinetuneView(cfg, validate, client)
 	factoryView := view.NewFactoryView(client, cfg)
 	showcaseView := view.NewShowcaseView(client, cfg)
+	guideView := view.NewUserGuideView()
 
 	// Global Middleware
 	e.Use(middleware.Logger())
@@ -71,6 +72,7 @@ func registerRoutes(
 	e.GET("/finetune/:domain", finetuneView.View)
 	e.GET("/feedback/:modelID", finetuneView.FeedBackView)
 	e.GET("/showcase", showcaseView.View)
+	e.GET("/guide", guideView.View)
 
 	return e
 }
