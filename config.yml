@@ -1,5 +1,6 @@
 base_assets:
-  - image_dir: "./data/kvasir/sessile-polyps/images"
+  # - image_dir: "./data/kvasir/sessile-polyps/images"
+  - image_dir: "./data/kvasir/fixed-sessile/images"
     mask_dir: "./data/kvasir/sessile-polyps/masks"
     domain: sessile
 
