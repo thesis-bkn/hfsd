@@ -45,7 +45,7 @@ func registerRoutes(
 	finetuneView := view.NewFinetuneView(cfg, validate, client)
 	factoryView := view.NewFactoryView(client, cfg)
 	showcaseView := view.NewShowcaseView(client, cfg)
-	guideView := view.NewUserGuideView()
+	guideView := view.NewUserGuideView(cfg)
 
 	// Global Middleware
 	e.Use(middleware.Logger())

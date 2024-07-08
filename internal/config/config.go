@@ -12,6 +12,7 @@ type Config struct {
 	DatabaseURL        string `env:"DATABASE_URL"`
 	Bucket             string `env:"BUCKET_NAME"`
 	AwsAccessKeyID     string `env:"AWS_ACCESS_KEY_ID"`
+	DownloadDataUrl    string `env:"DOWNLOAD_DATA_URL"`
 	AwsSecretAccessKey string `env:"AWS_SECRET_ACCESS_KEY"`
 	EndpointUrl        string `env:"S3_ENDPOINT_URL"`
 	ImagePath          string `env:"IMAGE_PATH"`

@@ -2,7 +2,7 @@ package templates
 
 import "github.com/thesis-bkn/hfsd/templates/components"
 
-templ UserGuideView() {
+templ UserGuideView(downloadUrl string) {
 	@base() {
 		@components.NavBar("guide")
 		<div class="container mx-auto mt-10 p-5 bg-white shadow-lg rounded-lg">
@@ -49,6 +49,16 @@ templ UserGuideView() {
 					<p class="text-lg">View the gallery of previous inference tasks.</p>
 					<!-- <p class="text-lg">Compare and review the results of different model versions.</p> -->
 				</div>
+			</div>
+			<div class="text-center mt-10">
+				<a
+					href={ templ.SafeURL(downloadUrl) }
+					class="text-lg text-white bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded-full"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					<i class="fas fa-download mr-2"></i> Download Data
+				</a>
 			</div>
 		</div>
 	}

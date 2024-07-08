@@ -12,7 +12,7 @@ import "bytes"
 
 import "github.com/thesis-bkn/hfsd/templates/components"
 
-func UserGuideView() templ.Component {
+func UserGuideView(downloadUrl string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -35,7 +35,16 @@ func UserGuideView() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" <div class=\"container mx-auto mt-10 p-5 bg-white shadow-lg rounded-lg\"><h1 class=\"text-3xl font-bold mb-5 text-center\">User Guide for Fine-Tuning Model</h1><div class=\"mb-8 flex items-center\"><i class=\"fas fa-project-diagram text-4xl text-blue-500 mr-4\"></i><div><h2 class=\"text-2xl font-semibold mb-2\">Step 1: Navigate to the Task Manager</h2><p class=\"text-lg\">Track running tasks like inference, sampling, and training.</p><!-- <p class=\"text-lg\">View the status and details of your tasks.</p> --></div></div><div class=\"mb-8 flex items-center\"><i class=\"fas fa-sitemap text-4xl text-green-500 mr-4\"></i><div><h2 class=\"text-2xl font-semibold mb-2\">Step 2: Go to the Model Tree</h2><p class=\"text-lg\">Access the model tree of specific domain.</p><p class=\"text-lg flex items-center\"><i class=\"fas fa-mouse-pointer text-blue-500 mr-2\"></i> Click on a node for fine-tuning or inference.</p><p class=\"text-lg flex items-center\"><i class=\"fas fa-eye text-blue-500 mr-2\"></i> Hover over a node to see its current state.</p></div></div><div class=\"mb-8 flex items-center\"><i class=\"fas fa-check-circle text-4xl text-red-500 mr-4\"></i><div><h2 class=\"text-2xl font-semibold mb-2\">Step 3: Submit Feedback</h2><p class=\"text-lg flex items-center\"><i class=\"fas fa-arrow-circle-right text-blue-500 mr-2\"></i> Click the \"Submit\" button once after giving feedback.</p><p class=\"text-lg flex items-center\"><i class=\"fas fa-clock text-blue-500 mr-2\"></i> Wait for 6-8 seconds due to network delay.</p></div></div><div class=\"mb-8 flex items-center\"><i class=\"fas fa-images text-4xl text-purple-500 mr-4\"></i><div><h2 class=\"text-2xl font-semibold mb-2\">Step 4: Use the Showcase</h2><p class=\"text-lg\">View the gallery of previous inference tasks.</p><!-- <p class=\"text-lg\">Compare and review the results of different model versions.</p> --></div></div></div>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(" <div class=\"container mx-auto mt-10 p-5 bg-white shadow-lg rounded-lg\"><h1 class=\"text-3xl font-bold mb-5 text-center\">User Guide for Fine-Tuning Model</h1><div class=\"mb-8 flex items-center\"><i class=\"fas fa-project-diagram text-4xl text-blue-500 mr-4\"></i><div><h2 class=\"text-2xl font-semibold mb-2\">Step 1: Navigate to the Task Manager</h2><p class=\"text-lg\">Track running tasks like inference, sampling, and training.</p><!-- <p class=\"text-lg\">View the status and details of your tasks.</p> --></div></div><div class=\"mb-8 flex items-center\"><i class=\"fas fa-sitemap text-4xl text-green-500 mr-4\"></i><div><h2 class=\"text-2xl font-semibold mb-2\">Step 2: Go to the Model Tree</h2><p class=\"text-lg\">Access the model tree of specific domain.</p><p class=\"text-lg flex items-center\"><i class=\"fas fa-mouse-pointer text-blue-500 mr-2\"></i> Click on a node for fine-tuning or inference.</p><p class=\"text-lg flex items-center\"><i class=\"fas fa-eye text-blue-500 mr-2\"></i> Hover over a node to see its current state.</p></div></div><div class=\"mb-8 flex items-center\"><i class=\"fas fa-check-circle text-4xl text-red-500 mr-4\"></i><div><h2 class=\"text-2xl font-semibold mb-2\">Step 3: Submit Feedback</h2><p class=\"text-lg flex items-center\"><i class=\"fas fa-arrow-circle-right text-blue-500 mr-2\"></i> Click the \"Submit\" button once after giving feedback.</p><p class=\"text-lg flex items-center\"><i class=\"fas fa-clock text-blue-500 mr-2\"></i> Wait for 6-8 seconds due to network delay.</p></div></div><div class=\"mb-8 flex items-center\"><i class=\"fas fa-images text-4xl text-purple-500 mr-4\"></i><div><h2 class=\"text-2xl font-semibold mb-2\">Step 4: Use the Showcase</h2><p class=\"text-lg\">View the gallery of previous inference tasks.</p><!-- <p class=\"text-lg\">Compare and review the results of different model versions.</p> --></div></div><div class=\"text-center mt-10\"><a href=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var3 templ.SafeURL = templ.SafeURL(downloadUrl)
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var3)))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" class=\"text-lg text-white bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded-full\" target=\"_blank\" rel=\"noopener noreferrer\"><i class=\"fas fa-download mr-2\"></i> Download Data</a></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
