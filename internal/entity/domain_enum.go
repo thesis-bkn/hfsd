@@ -16,23 +16,31 @@ const (
 	DomainSessile Domain = iota
 	// DomainPendunculated is a Domain of type Pendunculated.
 	DomainPendunculated
+	// DomainHuman is a Domain of type Human.
+	DomainHuman
+	// DomainLandscape is a Domain of type Landscape.
+	DomainLandscape
 )
 
 var ErrInvalidDomain = errors.New("not a valid Domain")
 
-const _DomainName = "sessilependunculated"
+const _DomainName = "sessilependunculatedhumanlandscape"
 
 // DomainValues returns a list of the values for Domain
 func DomainValues() []Domain {
 	return []Domain{
 		DomainSessile,
 		DomainPendunculated,
+		DomainHuman,
+		DomainLandscape,
 	}
 }
 
 var _DomainMap = map[Domain]string{
 	DomainSessile:       _DomainName[0:7],
 	DomainPendunculated: _DomainName[7:20],
+	DomainHuman:         _DomainName[20:25],
+	DomainLandscape:     _DomainName[25:34],
 }
 
 // String implements the Stringer interface.
@@ -51,8 +59,10 @@ func (x Domain) IsValid() bool {
 }
 
 var _DomainValue = map[string]Domain{
-	_DomainName[0:7]:  DomainSessile,
-	_DomainName[7:20]: DomainPendunculated,
+	_DomainName[0:7]:   DomainSessile,
+	_DomainName[7:20]:  DomainPendunculated,
+	_DomainName[20:25]: DomainHuman,
+	_DomainName[25:34]: DomainLandscape,
 }
 
 // ParseDomain attempts to convert a string to a Domain.

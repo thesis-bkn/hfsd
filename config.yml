@@ -7,3 +7,12 @@ base_assets:
   - image_dir: "./data/kvasir/pedunculated-polyps/images/"
     mask_dir: "./data/kvasir/pedunculated-polyps/masks/"
     domain: pedunculated
+
+
+  - image_dir: "./data/Human"
+    mask_dir: "./data/outpaint/masks/mask.png"
+    domain: human
+
+  - image_dir: "./data/Landscape"
+    mask_dir: "./data/outpaint/masks/mask.png"
+    domain: landscape

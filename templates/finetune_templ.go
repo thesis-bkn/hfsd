@@ -362,7 +362,7 @@ func swalStyle(model *ModelNode) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span></swal-title> <swal-html><p>Finetune or inference using this model</p></swal-html> <swal-button type=\"confirm\" color=\"#36D399\">Finetune</swal-button> <swal-button type=\"deny\" color=\"#CC009C\">Inference</swal-button> <swal-button type=\"cancel\">Cancel</swal-button></template>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span></swal-title> <swal-html><p>Finetune or inference using this model</p></swal-html> <swal-button type=\"confirm\" color=\"#36D399\">Finetune</swal-button> <swal-button type=\"deny\" color=\"#CC009C\">Inference</swal-button> <swal-button type=\"cancel\" color=\"#CCCCCC\">Cancel</swal-button></template>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

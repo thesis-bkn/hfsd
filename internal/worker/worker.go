@@ -117,11 +117,15 @@ func (w *Worker) Run(
 }
 
 func fmtSample(task *entity.Sample) []string {
+    sampleScript := "./d3po/scripts/sample_inpaint.py"
+    if task.Model().Domain() == entity.DomainHuman || task.Model().Domain() == entity.DomainLandscape {
+        sampleScript = "./d3po/scripts/sample_outpaint.py"
+    }
 	res := []string{
 		"run",
 		"accelerate",
 		"launch",
-		"./d3po/scripts/sample_inpaint.py",
+        sampleScript,
 		"--model_id", task.Model().ID(),
 		"--sample_id", task.ID(),
 		"--save_dir", task.SaveDir(),
