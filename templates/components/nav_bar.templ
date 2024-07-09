@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+    "strings"
 
 	"github.com/thesis-bkn/hfsd/internal/entity"
 )
@@ -46,7 +47,7 @@ templ NavBar(current string) {
 											class="capitalize"
 											href={ templ.SafeURL(fmt.Sprintf("/finetune/%s", domain.String())) }
 										>
-											{ domain.String() }
+											{ snakeToPascalCase(domain.String()) }
 										</a>
 									</li>
 								}
@@ -60,4 +61,14 @@ templ NavBar(current string) {
 			</div>
 		</div>
 	</nav>
+}
+
+func snakeToPascalCase(input string) string {
+	words := strings.Split(input, "_")
+	for i, word := range words {
+		if len(word) > 0 {
+			words[i] = strings.ToUpper(string(word[0])) + word[1:]
+		}
+	}
+	return strings.Join(words, " ")
 }

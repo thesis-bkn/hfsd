@@ -12,6 +12,7 @@ import "bytes"
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/thesis-bkn/hfsd/internal/entity"
 )
@@ -106,9 +107,9 @@ func NavBar(current string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var6 string
-			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(domain.String())
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(snakeToPascalCase(domain.String()))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/components/nav_bar.templ`, Line: 48, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/components/nav_bar.templ`, Line: 49, Col: 47}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -145,4 +146,14 @@ func NavBar(current string) templ.Component {
 		}
 		return templ_7745c5c3_Err
 	})
+}
+
+func snakeToPascalCase(input string) string {
+	words := strings.Split(input, "_")
+	for i, word := range words {
+		if len(word) > 0 {
+			words[i] = strings.ToUpper(string(word[0])) + word[1:]
+		}
+	}
+	return strings.Join(words, " ")
 }

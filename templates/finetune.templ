@@ -2,6 +2,7 @@ package templates
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/thesis-bkn/hfsd/templates/components"
 	"github.com/thesis-bkn/hfsd/internal/entity"
@@ -43,10 +44,10 @@ templ FinetuneView(models []ModelNode, domain entity.Domain) {
 		@components.NavBar("finetune")
 		@treeStyle()
 		for i := range models {
-			@swalStyle(&models[i])
+			@swalStyle(&models[i], true, domain != entity.DomainSimpleAnimal, true)
 		}
 		<div class="max-w-max mx-auto fixed inset-x-0 top-10 capitalize text-2xl text-gray-900 dark:text-white">
-			<p>{ domain.String() } Models</p>
+			<p>{ snakeToPascalCase(domain.String()) } Models</p>
 		</div>
 		<div class="flex overflow-x-auto justify-center mt-8">
 			<ul class="tree">
@@ -54,6 +55,16 @@ templ FinetuneView(models []ModelNode, domain entity.Domain) {
 			</ul>
 		</div>
 	}
+}
+
+func snakeToPascalCase(input string) string {
+	words := strings.Split(input, "_")
+	for i, word := range words {
+		if len(word) > 0 {
+			words[i] = strings.ToUpper(string(word[0])) + word[1:]
+		}
+	}
+	return strings.Join(words, " ")
 }
 
 script swalFire(modelID string) {
@@ -150,7 +161,7 @@ func graph(models []ModelNode) (map[string]*ModelNode, map[string][]*ModelNode, 
 	return modelM, graphM, rootID
 }
 
-templ swalStyle(model *ModelNode) {
+templ swalStyle(model *ModelNode, shows ...bool) {
 	<template id={ fmt.Sprintf("model-%s", model.ID) }>
 		<swal-title>
 			<span class="text-blue-600">{ model.Name }</span>
@@ -158,15 +169,21 @@ templ swalStyle(model *ModelNode) {
 		<swal-html>
 			<p>Finetune or inference using this model</p>
 		</swal-html>
-		<swal-button type="confirm" color="#36D399">
-			Finetune
-		</swal-button>
-		<swal-button type="deny" color="#CC009C">
-			Inference
-		</swal-button>
-		<swal-button type="cancel" color="#CCCCCC">
-			Cancel
-		</swal-button>
+		if shows[0] {
+			<swal-button type="confirm" color="#36D399">
+				Finetune
+			</swal-button>
+		}
+		if shows[1] {
+			<swal-button type="deny" color="#CC009C">
+				Inference
+			</swal-button>
+		}
+		if shows[2] {
+			<swal-button type="cancel" color="#CCCCCC">
+				Cancel
+			</swal-button>
+		}
 	</template>
 }
 

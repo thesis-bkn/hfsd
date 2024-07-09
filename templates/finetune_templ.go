@@ -12,6 +12,7 @@ import "bytes"
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/thesis-bkn/hfsd/internal/entity"
 	"github.com/thesis-bkn/hfsd/templates/components"
@@ -84,7 +85,7 @@ func FinetuneView(models []ModelNode, domain entity.Domain) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			for i := range models {
-				templ_7745c5c3_Err = swalStyle(&models[i]).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = swalStyle(&models[i], true, domain != entity.DomainSimpleAnimal, true).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -94,9 +95,9 @@ func FinetuneView(models []ModelNode, domain entity.Domain) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
-			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(domain.String())
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(snakeToPascalCase(domain.String()))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 48, Col: 23}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 49, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -128,6 +129,16 @@ func FinetuneView(models []ModelNode, domain entity.Domain) templ.Component {
 		}
 		return templ_7745c5c3_Err
 	})
+}
+
+func snakeToPascalCase(input string) string {
+	words := strings.Split(input, "_")
+	for i, word := range words {
+		if len(word) > 0 {
+			words[i] = strings.ToUpper(string(word[0])) + word[1:]
+		}
+	}
+	return strings.Join(words, " ")
 }
 
 func swalFire(modelID string) templ.ComponentScript {
@@ -269,7 +280,7 @@ func tree(modelM map[string]*ModelNode, graphM map[string][]*ModelNode, curModel
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(modelM[curModel].Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 118, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 129, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -328,7 +339,7 @@ func graph(models []ModelNode) (map[string]*ModelNode, map[string][]*ModelNode, 
 	return modelM, graphM, rootID
 }
 
-func swalStyle(model *ModelNode) templ.Component {
+func swalStyle(model *ModelNode, shows ...bool) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -356,13 +367,35 @@ func swalStyle(model *ModelNode) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(model.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 155, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 166, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span></swal-title> <swal-html><p>Finetune or inference using this model</p></swal-html> <swal-button type=\"confirm\" color=\"#36D399\">Finetune</swal-button> <swal-button type=\"deny\" color=\"#CC009C\">Inference</swal-button> <swal-button type=\"cancel\" color=\"#CCCCCC\">Cancel</swal-button></template>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</span></swal-title> <swal-html><p>Finetune or inference using this model</p></swal-html> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if shows[0] {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<swal-button type=\"confirm\" color=\"#36D399\">Finetune</swal-button>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		if shows[1] {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<swal-button type=\"deny\" color=\"#CC009C\">Inference</swal-button>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		if shows[2] {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<swal-button type=\"cancel\" color=\"#CCCCCC\">Cancel</swal-button>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</template>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

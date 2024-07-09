@@ -15,7 +15,11 @@ insert into models (
 ) values
       ('base-1', 'sessile', 'base', NULL, 'trained', '', '', now()),
       ('base-2', 'pedunculated', 'base', NULL, 'trained', '', '', now()),
-      ('base-3', 'outpaint', 'base', NULL, 'trained', '', '', now());
+      ('base-3', 'outpaint', 'base', NULL, 'trained', '', '', now()),
+      ('base-4', 'human', 'base', NULL, 'trained', '', '', now()),
+      ('base-5', 'landscape', 'base', NULL, 'trained', '', '', now()),
+      ('base-6', 'simple_animal', 'base', NULL, 'trained', '', '', now())
+on conflict (id) do nothing;
 
 create table if not exists samples (
     id                  text primary key,
