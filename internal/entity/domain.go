@@ -16,7 +16,7 @@ func (d Domain) ImageFn() string {
 	case DomainLandscape:
 		return "landscape_imgs"
 	case DomainSimpleAnimal:
-		return ""
+		return "dummy"
 	}
 
 	panic("not found domain")
