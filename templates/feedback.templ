@@ -124,6 +124,7 @@ templ submitFeedbacks(modelID string) {
                         title: 'Success!',
                         text: 'Success upload feedbacks',
                         icon: 'success',
+                        confirmButtonColor: "#cccccc",
                         confirmButtonText: 'Continue'
                     }).then((result) => {
                         window.location.replace('/factory')
@@ -133,6 +134,7 @@ templ submitFeedbacks(modelID string) {
                         title: 'Error!',
                         text: 'Failed to upload, please try again',
                         icon: 'error',
+                        confirmButtonColor: "#cccccc",
                         confirmButtonText: 'Continue'
                     })
                 }

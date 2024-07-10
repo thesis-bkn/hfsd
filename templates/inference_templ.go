@@ -188,8 +188,8 @@ func textInput(label, id, name, placeholder string, disable bool) templ.Componen
 
 func drawMask() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_drawMask_6bdd`,
-		Function: `function __templ_drawMask_6bdd(){let imageCanvas;
+		Name: `__templ_drawMask_d6a0`,
+		Function: `function __templ_drawMask_d6a0(){let imageCanvas;
     let imageCtx;
     let imageData;
     let isDrawing = false;
@@ -301,6 +301,7 @@ func drawMask() templ.ComponentScript {
                     title: 'Success!',
                     text: 'Success upload inference task',
                     icon: 'success',
+                    confirmButtonColor: "#cccccc",
                     confirmButtonText: 'Continue'
                 }).then((result) => {
                     window.location.replace('/factory')
@@ -310,6 +311,7 @@ func drawMask() templ.ComponentScript {
                     title: 'Error!',
                     text: 'Failed to upload, please try again',
                     icon: 'error',
+                    confirmButtonColor: "#cccccc",
                     confirmButtonText: 'Continue'
                 })
             }
@@ -355,7 +357,7 @@ func drawMask() templ.ComponentScript {
         });
     });
 }`,
-		Call:       templ.SafeScript(`__templ_drawMask_6bdd`),
-		CallInline: templ.SafeScriptInline(`__templ_drawMask_6bdd`),
+		Call:       templ.SafeScript(`__templ_drawMask_d6a0`),
+		CallInline: templ.SafeScriptInline(`__templ_drawMask_d6a0`),
 	}
 }

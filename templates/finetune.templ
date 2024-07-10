@@ -83,6 +83,7 @@ script swalFire(modelID string) {
                         icon: 'success',
                         title: 'Success!',
                         text: 'Submit finetuning model successfully',
+                        confirmButtonColor: "#cccccc",
                         confirmButtonText: 'Continue'
                     }).then(_ => {
                         window.location.reload()
@@ -92,6 +93,7 @@ script swalFire(modelID string) {
                         icon: 'error',
                         title: 'Error!',
                         text: 'Failed to submit finetune new model.',
+                        confirmButtonColor: "#cccccc",
                         confirmButtonText: 'Continue'
                     });
                 }

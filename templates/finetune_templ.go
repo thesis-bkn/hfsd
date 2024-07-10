@@ -143,8 +143,8 @@ func snakeToPascalCase(input string) string {
 
 func swalFire(modelID string) templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_swalFire_7646`,
-		Function: `function __templ_swalFire_7646(modelID){Swal.fire(
+		Name: `__templ_swalFire_33a2`,
+		Function: `function __templ_swalFire_33a2(modelID){Swal.fire(
         { template: ` + "`" + `#model-${modelID}` + "`" + ` }
     ).then((result) => {
         if (result.isConfirmed) {
@@ -159,6 +159,7 @@ func swalFire(modelID string) templ.ComponentScript {
                         icon: 'success',
                         title: 'Success!',
                         text: 'Submit finetuning model successfully',
+                        confirmButtonColor: "#cccccc",
                         confirmButtonText: 'Continue'
                     }).then(_ => {
                         window.location.reload()
@@ -168,6 +169,7 @@ func swalFire(modelID string) templ.ComponentScript {
                         icon: 'error',
                         title: 'Error!',
                         text: 'Failed to submit finetune new model.',
+                        confirmButtonColor: "#cccccc",
                         confirmButtonText: 'Continue'
                     });
                 }
@@ -178,8 +180,8 @@ func swalFire(modelID string) templ.ComponentScript {
         }
     })
 }`,
-		Call:       templ.SafeScript(`__templ_swalFire_7646`, modelID),
-		CallInline: templ.SafeScriptInline(`__templ_swalFire_7646`, modelID),
+		Call:       templ.SafeScript(`__templ_swalFire_33a2`, modelID),
+		CallInline: templ.SafeScriptInline(`__templ_swalFire_33a2`, modelID),
 	}
 }
 
@@ -280,7 +282,7 @@ func tree(modelM map[string]*ModelNode, graphM map[string][]*ModelNode, curModel
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(modelM[curModel].Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 129, Col: 26}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 131, Col: 26}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -367,7 +369,7 @@ func swalStyle(model *ModelNode, shows ...bool) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(model.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 166, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/finetune.templ`, Line: 168, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {

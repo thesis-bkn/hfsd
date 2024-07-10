@@ -38,3 +38,4 @@ local
 __pycache__
 test
 wandb
+tmp*
