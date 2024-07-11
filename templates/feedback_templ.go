@@ -70,6 +70,7 @@ func FeedBackView(modelID string, assets []FeedbackAsset) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
+                fmt.Println("image url: ", asset.ImageUrl)
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(asset.ImageUrl))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

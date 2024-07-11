@@ -33,5 +33,9 @@ func main() {
 
 	go w.Run(taskQueue, client)
 
-	server.Logger.Fatal(server.Start(server.Server.Addr))
+	server.Logger.Fatal(server.StartTLS(
+        server.Server.Addr,
+        "./cert/thesis-hfsd.xyz-ssl-bundle/domain.cert.pem",
+        "./cert/thesis-hfsd.xyz-ssl-bundle/private.key.pem",
+    ))
 }

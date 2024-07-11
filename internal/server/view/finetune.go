@@ -2,7 +2,6 @@ package view
 
 import (
 	"fmt"
-	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -157,7 +156,7 @@ func (v *FinetuneView) FeedBackView(c echo.Context) error {
 		}
 
 		assets = append(assets, templates.FeedbackAsset{
-			ImageUrl: path.Join(v.cfg.EndpointUrl, v.cfg.Bucket, sample.ID(), fileName),
+			ImageUrl: strings.Join([]string{v.cfg.EndpointUrl, v.cfg.Bucket, sample.ID(), fileName}, "/"),
 			Group:    entry.Group(),
 			Order:    entry.Order(),
 		})
